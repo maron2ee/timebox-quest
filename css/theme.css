@@ -698,4 +698,8 @@ input, select { font-family: var(--sans); }
   .tab { flex: 1 1 0; padding: 8px 4px; font-size: 12px; text-align: center; }
   /* center the tamagotchi device when the card stacks */
   .char-stage-art.tama { align-self: center; }
+  /* plan tools: keep 어제 복사 / 템플릿 적용 / 템플릿 저장 on one line */
+  .mode-row { flex-direction: column; align-items: stretch; gap: 8px; }
+  .plan-tools { margin-left: 0; width: 100%; flex-wrap: nowrap; gap: 5px; }
+  .plan-tools .pixel-btn { flex: 1 1 0; padding: 6px 3px; font-size: 11px; white-space: nowrap; }
 }
