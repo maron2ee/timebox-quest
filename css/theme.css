@@ -277,6 +277,7 @@ input, select { font-family: var(--sans); }
   background: #fff; border: 1px solid var(--line); border-radius: var(--pill);
   padding: 9px 20px; font-size: 13px; font-weight: 600; color: var(--ink-dim);
   box-shadow: var(--shadow-sm); transition: all 0.15s;
+  white-space: nowrap;
 }
 .tab:hover { color: var(--ink); transform: translateY(-1px); }
 .tab.active { background: linear-gradient(135deg, var(--primary), var(--purple)); color: #fff; border-color: transparent; box-shadow: var(--glow-primary); }
@@ -509,7 +510,7 @@ input, select { font-family: var(--sans); }
 }
 /* tamagotchi device shell */
 .char-stage-art.tama {
-  flex: 0 0 212px; width: 212px; align-self: stretch;
+  flex: 0 0 212px; width: 212px;
   display: flex; flex-direction: column; align-items: center; gap: 11px;
   padding: 16px 18px;
   border-radius: 40px 40px 30px 30px;
@@ -692,4 +693,9 @@ input, select { font-family: var(--sans); }
   .stat-level { min-width: 130px; }
   .xpbar { width: 120px; }
   .stage, .tabs { padding-left: 16px; padding-right: 16px; }
+  /* tabs: fit 4 evenly on one line, no wrapping */
+  .tabs { gap: 5px; }
+  .tab { flex: 1 1 0; padding: 8px 4px; font-size: 12px; text-align: center; }
+  /* center the tamagotchi device when the card stacks */
+  .char-stage-art.tama { align-self: center; }
 }

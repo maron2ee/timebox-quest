@@ -1,5 +1,5 @@
 /* TIMEBOX QUEST service worker — offline app shell + CDN font caching */
-const CACHE = "tbq-v2";
+const CACHE = "tbq-v3";
 const SHELL = [
   "./", "./index.html", "./css/theme.css",
   "./js/state.js", "./js/charts.js", "./js/gamify.js", "./js/character.js",
