@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+<title>TamaBox — 하루를 키우는 타임박스</title>
+<meta name="description" content="타임박스로 하루를 계획하고 카테고리별 실천을 추적하며 다마고찌 친구를 키우는 귀여운 앱" />
+
+<!-- Modern Korean sans (Pretendard) + rounded display (Fredoka) + Korean pixel (Galmuri) -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/quiple/galmuri/dist/galmuri.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet" />
+
+<link rel="stylesheet" href="css/theme.css" />
+<link rel="icon" href="icon.svg" />
+<link rel="manifest" href="manifest.webmanifest" />
+<meta name="theme-color" content="#05071a" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="타임박스" />
+<link rel="apple-touch-icon" href="icon.svg" />
+</head>
+<body class="pixel">
+<div class="scanlines" aria-hidden="true"></div>
+
+<!-- ===================== HUD HEADER ===================== -->
+<header class="hud">
+  <div class="hud-left">
+    <span class="logo">🥚</span>
+    <div class="title-wrap">
+      <h1 class="title">TamaBox</h1>
+      <p class="subtitle">하루를 키우는 타임박스 🐾</p>
+    </div>
+  </div>
+
+  <div class="hud-stats">
+    <div class="stat stat-level">
+      <span class="stat-label">LV</span>
+      <span id="hudLevel" class="stat-value">1</span>
+      <div class="xpbar"><div id="hudXpFill" class="xpbar-fill"></div></div>
+      <span id="hudXpText" class="xp-text">0 / 100 XP</span>
+    </div>
+    <div class="stat stat-streak" title="연속 달성일">
+      <svg class="px-ico" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true">
+        <rect x="7" y="1" width="2" height="3" fill="#ffec27"/>
+        <rect x="6" y="3" width="4" height="3" fill="#ffa300"/>
+        <rect x="5" y="5" width="6" height="3" fill="#ff7a18"/>
+        <rect x="4" y="8" width="8" height="5" fill="#ff004d"/>
+        <rect x="6" y="9" width="4" height="4" fill="#ffa300"/>
+        <rect x="7" y="11" width="2" height="2" fill="#ffec27"/>
+      </svg>
+      <span id="hudStreak" class="stat-value">0</span>
+      <span class="stat-unit">일</span>
+    </div>
+    <div class="stat stat-coin" title="누적 완료 시간">
+      <svg class="px-ico" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true">
+        <rect x="2" y="2" width="12" height="12" fill="#0b1f52"/>
+        <rect x="4" y="4" width="8" height="8" fill="#ffec27"/>
+        <rect x="7" y="5" width="2" height="4" fill="#0b1f52"/>
+        <rect x="8" y="7" width="3" height="2" fill="#0b1f52"/>
+      </svg>
+      <span id="hudHours" class="stat-value">0</span>
+      <span class="stat-unit">h</span>
+    </div>
+  </div>
+
+  <button id="syncBtn" class="pixel-btn tiny sync-chip" title="클라우드 동기화">
+    <span id="syncDot" class="sync-dot off"></span><span id="syncLabel">오프라인</span>
+  </button>
+</header>
+
+<!-- ===================== TABS ===================== -->
+<nav class="tabs" role="tablist" aria-label="화면 전환">
+  <button class="tab active" data-view="planner" role="tab" aria-selected="true">🗓️ 오늘</button>
+  <button class="tab" data-view="stats" role="tab" aria-selected="false">📊 성과</button>
+  <button class="tab" data-view="codex" role="tab" aria-selected="false">🗂️ 도감</button>
+  <button class="tab" data-view="settings" role="tab" aria-selected="false">⚙️ 설정</button>
+</nav>
+
+<main class="stage">
+
+  <!-- ===================== PLANNER VIEW ===================== -->
+  <section id="view-planner" class="view active">
+
+    <!-- character (raise-a-pet) hero -->
+    <div class="char-card panel">
+      <div class="char-stage-art tama">
+        <div class="tama-brand">TamaBox</div>
+        <div class="tama-screen">
+          <div id="tamaName" class="tama-name"></div>
+          <div id="charArt" class="char-art" title="쓰다듬기"></div>
+          <div id="charParty" class="char-party"></div>
+        </div>
+        <div class="tama-buttons">
+          <button id="tamaA" class="tama-btn" title="쓰다듬기" aria-label="쓰다듬기">♥</button>
+          <button id="tamaB" class="tama-btn" title="밥주기" aria-label="밥주기">🍖</button>
+          <button id="tamaC" class="tama-btn" title="도감" aria-label="도감">≡</button>
+        </div>
+      </div>
+      <div class="char-info">
+        <div class="char-namerow">
+          <h2 id="charName" class="char-name">퀘스토</h2>
+          <button id="charRename" class="pixel-btn tiny ghost" title="이름 바꾸기">✎</button>
+          <span id="charStage" class="char-stage-badge">Lv.1 · 알</span>
+        </div>
+        <p id="charMood" class="char-mood">기분 좋아요!</p>
+        <div class="char-evo">
+          <div class="char-evo-head"><span id="charEvoText">다음 진화까지</span></div>
+          <div class="char-evo-bar"><div id="charEvoFill" class="char-evo-fill"></div></div>
+        </div>
+        <div class="char-full">
+          <div class="char-full-head"><span>🍖 포만감</span><span id="charFullText">100%</span></div>
+          <div class="char-full-bar"><div id="charFullFill" class="char-full-fill"></div></div>
+        </div>
+        <p id="charFeed" class="char-feed"></p>
+        <div class="char-actions">
+          <span id="charSnack" class="snack-chip">🍪 0</span>
+          <span id="charAffection" class="snack-chip heart">❤ 0</span>
+          <button id="charFeedBtn" class="pixel-btn small feed-btn">🍖 밥주기</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="daynav panel">
+      <button id="prevDay" class="pixel-btn nav">◀</button>
+      <div class="daynav-center">
+        <h2 id="dayTitle" class="day-title">오늘</h2>
+        <p id="daySub" class="day-sub"></p>
+      </div>
+      <button id="nextDay" class="pixel-btn nav">▶</button>
+      <button id="todayBtn" class="pixel-btn small today-btn">오늘로</button>
+    </div>
+
+    <div class="planner-grid">
+      <!-- left: timeline -->
+      <div class="panel timeline-panel">
+        <div class="mode-row">
+          <span id="modeHint" class="mode-hint">색을 골라 칸을 칠해 계획하고, 칸의 네모(☐)를 눌러 완료 체크하세요</span>
+          <div class="plan-tools">
+            <button id="copyYesterday" class="pixel-btn tiny ghost" title="어제 계획 복사">📋 어제 복사</button>
+            <button id="tplApply" class="pixel-btn tiny ghost" title="이 요일 템플릿 적용">⭐ 템플릿 적용</button>
+            <button id="tplSave" class="pixel-btn tiny ghost" title="현재 계획을 이 요일 템플릿으로 저장">💾 템플릿 저장</button>
+          </div>
+        </div>
+
+        <div id="brushBar" class="brush-bar"><!-- category brushes injected --></div>
+
+        <div id="timeGrid" class="time-grid"><!-- slots injected --></div>
+      </div>
+
+      <!-- right: today summary -->
+      <aside class="panel summary-panel">
+        <h3 class="panel-h">오늘의 전투 결과</h3>
+
+        <div class="completion-ring">
+          <div id="ringPct" class="ring-pct">0%</div>
+          <div class="ring-sub">계획 달성률</div>
+        </div>
+
+        <div class="mini-stats">
+          <div class="mini"><span id="sumPlanned" class="mini-v">0</span><span class="mini-l">계획 칸</span></div>
+          <div class="mini"><span id="sumDone" class="mini-v">0</span><span class="mini-l">완료 칸</span></div>
+          <div class="mini"><span id="sumHours" class="mini-v">0h</span><span class="mini-l">실천 시간</span></div>
+        </div>
+
+        <h4 class="panel-h sm">카테고리별 (계획 vs 실천)</h4>
+        <div id="catBars" class="cat-bars"><!-- per-category bars --></div>
+
+        <div id="dayBadge" class="day-badge"></div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ===================== STATS VIEW ===================== -->
+  <section id="view-stats" class="view">
+    <div class="daynav panel">
+      <div class="period-toggle" role="group" aria-label="기간">
+        <button class="pixel-btn period active" data-period="day">일</button>
+        <button class="pixel-btn period" data-period="week">주</button>
+        <button class="pixel-btn period" data-period="month">월</button>
+      </div>
+      <button id="prevPeriod" class="pixel-btn nav">◀</button>
+      <div class="daynav-center">
+        <h2 id="periodTitle" class="day-title">이번 주</h2>
+        <p id="periodSub" class="day-sub"></p>
+      </div>
+      <button id="nextPeriod" class="pixel-btn nav">▶</button>
+    </div>
+
+    <div class="char-mini panel">
+      <div id="charMiniArt" class="char-mini-art"></div>
+      <div class="char-mini-info">
+        <div class="char-namerow"><b id="charMiniName" class="char-mini-name">퀘스토</b> <span id="charMiniBadge" class="char-stage-badge">Lv.1 · 알</span></div>
+        <p id="charMiniInfo" class="hint"></p>
+      </div>
+    </div>
+
+    <div class="panel insights-panel">
+      <h3 class="panel-h">인사이트 <button id="csvBtn" class="pixel-btn tiny ghost csv-btn">⬇ CSV 내보내기</button></h3>
+      <div id="insights" class="insights"></div>
+    </div>
+
+    <div class="stats-grid">
+      <div class="panel">
+        <h3 class="panel-h">달성률 추이</h3>
+        <div id="trendChart" class="trend-chart"></div>
+      </div>
+      <div class="panel">
+        <h3 class="panel-h">카테고리별 시간 (계획 vs 실천)</h3>
+        <div id="catChart" class="cat-chart"></div>
+      </div>
+      <div class="panel wide">
+        <h3 class="panel-h">출석 히트맵 <span class="panel-h-note">(최근 활동)</span></h3>
+        <div id="heatmap" class="heatmap"></div>
+        <div class="heat-legend">
+          <span>적음</span>
+          <i class="heat-cell l0"></i><i class="heat-cell l1"></i><i class="heat-cell l2"></i><i class="heat-cell l3"></i><i class="heat-cell l4"></i>
+          <span>많음</span>
+        </div>
+      </div>
+      <div class="panel wide">
+        <h3 class="panel-h">획득 업적</h3>
+        <div id="achievements" class="achievements"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== CODEX VIEW ===================== -->
+  <section id="view-codex" class="view">
+    <div class="codex-hero panel">
+      <div class="tama-screen codex-screen">
+        <div id="codexArt" class="char-art codex-art" title="쓰다듬기"></div>
+      </div>
+      <div class="codex-hero-info">
+        <h2 class="char-name"><span id="codexName">퀘스토</span></h2>
+        <p id="codexStat" class="hint"></p>
+        <div class="species-switch">
+          <span class="species-switch-label">친구 종류</span>
+          <button id="codexCat" class="pixel-btn small">🐱 고양이</button>
+          <button id="codexDog" class="pixel-btn small">🐶 강아지</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3 class="panel-h">내 친구들 <span id="petsCount" class="panel-h-note"></span></h3>
+      <p class="hint">레벨이 오르면 새 친구를 입양할 수 있어요 (Lv.5 / Lv.12 / Lv.20). 친구를 눌러 메인 화면에 표시하세요.</p>
+      <div id="petsList" class="pets-list"></div>
+    </div>
+
+    <div class="panel">
+      <h3 class="panel-h">진화 도감 <span id="codexEvoCount" class="panel-h-note"></span></h3>
+      <div id="evoDex" class="evo-dex"></div>
+    </div>
+
+    <div class="panel">
+      <h3 class="panel-h">장식 아이템 <span id="codexDecoCount" class="panel-h-note"></span></h3>
+      <p class="hint">잠금 해제한 아이템을 눌러 캐릭터에게 장착하세요. (모자 1개 + 손 1개)</p>
+      <div id="decoDex" class="deco-dex"></div>
+    </div>
+
+    <div class="panel">
+      <h3 class="panel-h">배경 테마 <span id="codexThemeCount" class="panel-h-note"></span></h3>
+      <p class="hint">잠금 해제한 배경을 눌러 적용하세요.</p>
+      <div id="themeDex" class="theme-dex"></div>
+    </div>
+  </section>
+
+  <!-- ===================== SETTINGS VIEW ===================== -->
+  <section id="view-settings" class="view">
+    <div class="settings-grid">
+
+      <div class="panel">
+        <h3 class="panel-h">카테고리 (스킬)</h3>
+        <div id="catList" class="cat-list"></div>
+        <button id="addCatBtn" class="pixel-btn small">＋ 카테고리 추가</button>
+      </div>
+
+      <div class="panel">
+        <h3 class="panel-h">하루 설정</h3>
+        <label class="field">
+          <span>시작 시각</span>
+          <select id="setStart"></select>
+        </label>
+        <label class="field">
+          <span>종료 시각</span>
+          <select id="setEnd"></select>
+        </label>
+        <label class="field">
+          <span>칸 단위</span>
+          <select id="setSlot">
+            <option value="30">30분</option>
+            <option value="60">60분</option>
+            <option value="15">15분</option>
+          </select>
+        </label>
+        <label class="field">
+          <span>"성공한 날" 기준 달성률</span>
+          <select id="setTarget">
+            <option value="50">50%</option>
+            <option value="60">60%</option>
+            <option value="70">70%</option>
+            <option value="80">80%</option>
+          </select>
+        </label>
+        <label class="field">
+          <span>주 시작 요일</span>
+          <select id="setWeekStart">
+            <option value="1">월요일</option>
+            <option value="0">일요일</option>
+          </select>
+        </label>
+        <label class="field row">
+          <span>촘촘한 보기 (작은 칸)</span>
+          <input type="checkbox" id="setCompact" />
+        </label>
+        <label class="field row">
+          <span>레트로 픽셀 모드 🕹️</span>
+          <input type="checkbox" id="setPixel" />
+        </label>
+        <label class="field row">
+          <span>요일 템플릿 자동 적용 ⭐</span>
+          <input type="checkbox" id="setAutoTpl" />
+        </label>
+        <label class="field row">
+          <span>하루 알림 ⏰ <small>(앱이 열려 있을 때)</small></span>
+          <input type="checkbox" id="setReminder" />
+        </label>
+        <label class="field">
+          <span>알림 시각</span>
+          <input type="time" id="setReminderTime" value="21:00" />
+        </label>
+        <label class="field row">
+          <span>완료 효과음 (8비트)</span>
+          <input type="checkbox" id="setSound" />
+        </label>
+      </div>
+
+      <div class="panel">
+        <h3 class="panel-h">☁️ 클라우드 동기화</h3>
+        <p class="hint">Supabase 무료 프로젝트의 URL과 anon key를 넣으면 기기 간 동기화됩니다. (설정 방법은 README 참고)</p>
+        <label class="field"><span>Supabase URL</span><input type="text" id="sbUrl" placeholder="https://xxxx.supabase.co" /></label>
+        <label class="field"><span>anon key</span><input type="password" id="sbKey" placeholder="eyJ..." /></label>
+        <button id="sbSaveCfg" class="pixel-btn small">설정 저장</button>
+
+        <hr class="divider" />
+        <div id="authBox">
+          <label class="field"><span>이메일</span><input type="email" id="sbEmail" placeholder="you@example.com" /></label>
+          <label class="field"><span>비밀번호</span><input type="password" id="sbPass" placeholder="••••••" /></label>
+          <div class="btn-row">
+            <button id="sbSignIn" class="pixel-btn small">로그인</button>
+            <button id="sbSignUp" class="pixel-btn small ghost">회원가입</button>
+          </div>
+        </div>
+        <div id="authedBox" class="hidden">
+          <p class="hint">로그인됨: <b id="sbWho"></b></p>
+          <div class="btn-row">
+            <button id="sbPush" class="pixel-btn small">⬆ 올리기</button>
+            <button id="sbPull" class="pixel-btn small">⬇ 내려받기</button>
+            <button id="sbSignOut" class="pixel-btn small ghost">로그아웃</button>
+          </div>
+          <p id="sbSyncInfo" class="hint"></p>
+        </div>
+        <p id="sbMsg" class="sb-msg"></p>
+      </div>
+
+      <div class="panel">
+        <h3 class="panel-h">데이터 백업</h3>
+        <p class="hint">로컬 데이터를 파일로 내보내거나 불러옵니다.</p>
+        <div class="btn-row">
+          <button id="exportBtn" class="pixel-btn small">내보내기 (JSON)</button>
+          <button id="importBtn" class="pixel-btn small">가져오기</button>
+          <input type="file" id="importFile" accept="application/json" class="hidden" />
+        </div>
+        <hr class="divider" />
+        <button id="resetBtn" class="pixel-btn small danger">전체 초기화</button>
+      </div>
+
+    </div>
+  </section>
+</main>
+
+<!-- ===================== MODALS ===================== -->
+<div id="modalRoot" class="modal-root hidden">
+  <div class="modal-backdrop"></div>
+
+  <!-- block edit modal -->
+  <div id="blockModal" class="modal panel hidden">
+    <h3 class="panel-h" id="blockModalTitle">칸 편집</h3>
+    <div id="blockCatPick" class="brush-bar in-modal"></div>
+    <label class="field"><span>메모</span><input type="text" id="blockNote" placeholder="예: BTC 차트 복기" maxlength="40" /></label>
+    <label class="field row"><span>완료(계획 지킴)</span><input type="checkbox" id="blockDone" /></label>
+    <label class="field"><span>실제로 한 활동 <small>(계획과 다르면 선택 — 완료 시 반영)</small></span></label>
+    <div id="blockActualPick" class="brush-bar in-modal"></div>
+    <div class="btn-row end">
+      <button id="blockDelete" class="pixel-btn small danger">비우기</button>
+      <button id="blockSave" class="pixel-btn small">저장</button>
+    </div>
+  </div>
+
+  <!-- rename modal -->
+  <div id="renameModal" class="modal panel hidden">
+    <h3 class="panel-h">이름 짓기 ✏️</h3>
+    <label class="field"><span>캐릭터 이름 (최대 8자)</span><input type="text" id="renameInput" maxlength="8" placeholder="퀘스토" /></label>
+    <div class="btn-row end"><button id="renameSave" class="pixel-btn small">저장</button></div>
+  </div>
+
+  <!-- species pick modal -->
+  <div id="speciesModal" class="modal panel hidden">
+    <h3 class="panel-h" style="text-align:center">어떤 친구를 키울까요? 🐣</h3>
+    <p class="hint" style="text-align:center">알에서 태어날 친구를 골라주세요. (도감에서 언제든 바꿀 수 있어요)</p>
+    <div class="species-pick">
+      <button id="spCat" class="species-opt">
+        <div id="spCatPrev" class="species-prev"></div>
+        <span class="species-opt-name">🐱 고양이</span>
+      </button>
+      <button id="spDog" class="species-opt">
+        <div id="spDogPrev" class="species-prev"></div>
+        <span class="species-opt-name">🐶 강아지</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- category edit modal -->
+  <div id="catModal" class="modal panel hidden">
+    <h3 class="panel-h" id="catModalTitle">카테고리</h3>
+    <label class="field"><span>이름</span><input type="text" id="catName" maxlength="12" placeholder="예: 주식공부" /></label>
+    <label class="field"><span>이모지</span><input type="text" id="catEmoji" maxlength="4" placeholder="📈" /></label>
+    <label class="field"><span>색상</span>
+      <div id="catColorPick" class="color-pick"></div>
+    </label>
+    <label class="field"><span>하루 목표(분, 0=없음)</span><input type="number" id="catTarget" min="0" step="15" value="0" /></label>
+    <div class="btn-row end">
+      <button id="catModalDelete" class="pixel-btn small danger">삭제</button>
+      <button id="catModalSave" class="pixel-btn small">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- level-up / toast overlay -->
+<div id="toastRoot" class="toast-root"></div>
+<canvas id="fxCanvas" class="fx-canvas" aria-hidden="true"></canvas>
+
+<!-- Supabase JS (loaded lazily by sync.js when configured) -->
+<script src="js/state.js"></script>
+<script src="js/charts.js"></script>
+<script src="js/gamify.js"></script>
+<script src="js/character.js"></script>
+<script src="js/planner.js"></script>
+<script src="js/analytics.js"></script>
+<script src="js/sync.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

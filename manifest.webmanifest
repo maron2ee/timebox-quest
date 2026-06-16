@@ -1,0 +1,15 @@
+{
+  "name": "TamaBox — 하루를 키우는 타임박스",
+  "short_name": "TamaBox",
+  "description": "타임박스 계획 + 카테고리별 성과 트래킹 + 다마고찌 친구 키우기",
+  "lang": "ko",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#05071a",
+  "theme_color": "#05071a",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
