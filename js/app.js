@@ -377,6 +377,8 @@
     initTabs();
     initSettings();
     initModalClose();
+    document.getElementById("helpBtn").onclick = () => App.ui.openModal("helpModal");
+    document.getElementById("helpClose").onclick = () => App.ui.closeModals();
     App.planner.init();
     App.analytics.init();
     App.character.init();
