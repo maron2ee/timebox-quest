@@ -57,6 +57,7 @@
     updateHud();
     if (App.character) App.character.render(true);
     App.planner.renderSummary();
+    if (App.pomodoro) App.pomodoro.render();
     if (document.getElementById("view-stats").classList.contains("active")) App.analytics.render();
     if (document.getElementById("view-settings").classList.contains("active")) renderSettings();
     if (!skipPush && App.sync && App.sync.isSignedIn()) App.sync.schedulePush();
@@ -146,6 +147,20 @@
       App.store.save();
     };
 
+    // pomodoro durations
+    const pf = document.getElementById("setPomoFocus");
+    const pb = document.getElementById("setPomoBreak");
+    const pl = document.getElementById("setPomoLong");
+    if (pf) { pf.value = s.pomoFocus; pb.value = s.pomoBreak; pl.value = s.pomoLongBreak; }
+    const onPomo = () => {
+      s.pomoFocus = Math.min(90, Math.max(5, +pf.value || 25));
+      s.pomoBreak = Math.min(30, Math.max(1, +pb.value || 5));
+      s.pomoLongBreak = Math.min(60, Math.max(5, +pl.value || 15));
+      App.store.save();
+      if (App.pomodoro) App.pomodoro.render();
+    };
+    if (pf) { pf.onchange = onPomo; pb.onchange = onPomo; pl.onchange = onPomo; }
+
     document.getElementById("addCatBtn").onclick = () => openCatModal(null);
     document.getElementById("catModalSave").onclick = saveCatModal;
     document.getElementById("catModalDelete").onclick = deleteCatModal;
@@ -188,6 +203,8 @@
       document.getElementById("setAutoTpl").checked = s.autoTemplate;
       document.getElementById("setReminder").checked = s.reminderEnabled;
       document.getElementById("setReminderTime").value = s.reminderTime;
+      const pf = document.getElementById("setPomoFocus");
+      if (pf) { pf.value = s.pomoFocus; document.getElementById("setPomoBreak").value = s.pomoBreak; document.getElementById("setPomoLong").value = s.pomoLongBreak; }
     }
 
     const list = document.getElementById("catList");
@@ -382,6 +399,7 @@
     App.planner.init();
     App.analytics.init();
     App.character.init();
+    if (App.pomodoro) App.pomodoro.init();
     App.planner.render();
     renderSettings();
     updateHud();

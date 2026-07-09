@@ -87,8 +87,11 @@ C.render(false);
 ok("charArt rendered svg", /<svg/.test(captured.charArt));
 ok("--app-bg applied", true); // applyThemeNow ran without throwing
 
-// --- species selectable ---
-ok("needsSpecies true on fresh", (function () { App.store.reset(); return C.needsSpecies(); })());
+// --- default character is 머니몽키 (monkey), so no species prompt on fresh ---
+App.store.reset();
+eq("fresh default species", App.state.game.pets[0].species, "monkey");
+eq("fresh default name", App.state.game.pets[0].name, "머니몽키");
+ok("needsSpecies false on fresh", !C.needsSpecies());
 
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

@@ -37,6 +37,11 @@
         reminderEnabled: false,    // daily reminder
         reminderTime: "21:00",
         reminderLastShown: "",     // ymd of last reminder fired
+        pomoFocus: 25,             // 뽀모도로 집중 길이(분)
+        pomoBreak: 5,              // 짧은 휴식(분)
+        pomoLongBreak: 15,         // 긴 휴식(분, 4세션마다)
+        pomoAutofill: true,        // 집중 완료 시 타임박스 자동 반영
+        pomoCat: null,             // 마지막으로 고른 뽀모도로 카테고리
       },
       categories: [
         { id: cid(), name: "주식공부", emoji: "📈", color: "#ffec27", target: 120 },
@@ -56,7 +61,8 @@
     return { id: cid(), species: null, name: name || "퀘스토", equip: { hat: null, hand: null }, fed: 0, lastFed: 0 };
   }
   function gameDefaults() {
-    const p = newPet("퀘스토");
+    const p = newPet("머니몽키");
+    p.species = "monkey"; // 기본 캐릭터 = 머니몽키 🐵
     return { xp: 0, achievements: [], lastStage: 0, theme: "navy", pets: [p], activePet: p.id };
   }
   App.newPet = newPet;

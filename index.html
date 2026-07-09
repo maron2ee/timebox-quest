@@ -135,6 +135,36 @@
       <button id="todayBtn" class="pixel-btn small today-btn">오늘로</button>
     </div>
 
+    <!-- pomodoro focus timer (auto-reflects into the timebox) -->
+    <div class="pomo-card panel">
+      <div class="pomo-main">
+        <div id="pomoTimer" class="pomo-timer focus">
+          <div class="pomo-face">
+            <div id="pomoPhase" class="pomo-phase">🍅 집중</div>
+            <div id="pomoClock" class="pomo-clock">25:00</div>
+          </div>
+        </div>
+        <div class="pomo-side">
+          <div class="pomo-titlerow">
+            <span class="pomo-title">🍅 뽀모도로</span>
+            <span id="pomoCount" class="snack-chip">오늘 🍅 0</span>
+          </div>
+          <label class="field pomo-catfield"><span>집중할 카테고리</span>
+            <select id="pomoCat"></select>
+          </label>
+          <div class="pomo-controls">
+            <button id="pomoStart" class="pixel-btn small">▶ 시작</button>
+            <button id="pomoReset" class="pixel-btn small ghost">↺ 리셋</button>
+            <button id="pomoSkip" class="pixel-btn tiny ghost" title="다음 단계로">⏭ 건너뛰기</button>
+          </div>
+          <label class="field row pomo-autorow">
+            <span>완료 시 타임박스 자동 반영 ✅</span>
+            <input type="checkbox" id="pomoAutofill" checked />
+          </label>
+        </div>
+      </div>
+    </div>
+
     <div class="planner-grid">
       <!-- left: timeline -->
       <div class="panel timeline-panel">
@@ -240,6 +270,7 @@
         <p id="codexStat" class="hint"></p>
         <div class="species-switch">
           <span class="species-switch-label">친구 종류</span>
+          <button id="codexMonkey" class="pixel-btn small">🐵 머니몽키</button>
           <button id="codexCat" class="pixel-btn small">🐱 고양이</button>
           <button id="codexDog" class="pixel-btn small">🐶 강아지</button>
         </div>
@@ -338,6 +369,14 @@
           <span>완료 효과음 (8비트)</span>
           <input type="checkbox" id="setSound" />
         </label>
+
+        <hr class="divider" />
+        <label class="field"><span>🍅 뽀모도로 집중 (분)</span>
+          <input type="number" id="setPomoFocus" min="5" max="90" step="5" value="25" /></label>
+        <label class="field"><span>☕ 짧은 휴식 (분)</span>
+          <input type="number" id="setPomoBreak" min="1" max="30" step="1" value="5" /></label>
+        <label class="field"><span>🌴 긴 휴식 (분, 4세션마다)</span>
+          <input type="number" id="setPomoLong" min="5" max="60" step="5" value="15" /></label>
       </div>
 
       <div class="panel">
@@ -394,8 +433,10 @@
     <div class="help-body">
       <h4>🗓️ 오늘 — 계획 &amp; 체크</h4>
       <p>① 색(카테고리) 고르기 → ② 칸을 <b>탭</b>(PC는 드래그)해서 칠하면 계획 완성 → ③ 칠한 칸을 <b>다시 탭</b>하면 ☐→☑ 완료 체크. 칸의 <b>⋯</b> 로 메모·카테고리 변경·"실제 한 활동"·비우기. 📋 어제 복사 · ⭐ 템플릿도 있어요.</p>
-      <h4>🐾 캐릭터 키우기</h4>
-      <p>칸을 완료할수록 <b>XP·간식🍪</b>이 쌓여 레벨업하면 진화해요(알→마스터). 화면 아래 버튼: <b>♥ 쓰다듬기 · 🍖 밥주기 · ≡ 도감</b>. 밥을 주면 친밀도❤가 오르고, 포만감은 시간이 지나면 줄어요.</p>
+      <h4>🐾 캐릭터 키우기 (머니몽키 🐵)</h4>
+      <p>칸을 완료할수록 <b>XP·간식🍪</b>이 쌓여 레벨업하면 진화해요(알→마스터). 화면 아래 버튼: <b>♥ 쓰다듬기 · 🍖 밥주기 · ≡ 도감</b>. 밥을 주면 친밀도❤가 오르고, 포만감은 시간이 지나면 줄어요. 도감에서 머니몽키·고양이·강아지로 바꿀 수 있어요.</p>
+      <h4>🍅 뽀모도로</h4>
+      <p>카테고리를 고르고 <b>시작</b>을 누르면 집중 타이머(기본 25분)가 돌아가요. 집중이 끝나면 <b>그 시간에 해당하는 타임박스 칸이 자동으로 완료</b>로 반영돼요(설정에서 끄기 가능). 4세션마다 긴 휴식! 집중 길이는 ⚙️ 설정에서 바꿀 수 있어요.</p>
       <h4>📊 성과</h4>
       <p>일/주/월 달성률 추이 · 카테고리별 시간 · 출석 히트맵 · 인사이트 · CSV 내보내기.</p>
       <h4>🗂️ 도감</h4>
@@ -436,6 +477,10 @@
     <h3 class="panel-h" style="text-align:center">어떤 친구를 키울까요? 🐣</h3>
     <p class="hint" style="text-align:center">알에서 태어날 친구를 골라주세요. (도감에서 언제든 바꿀 수 있어요)</p>
     <div class="species-pick">
+      <button id="spMonkey" class="species-opt">
+        <div id="spMonkeyPrev" class="species-prev"></div>
+        <span class="species-opt-name">🐵 머니몽키</span>
+      </button>
       <button id="spCat" class="species-opt">
         <div id="spCatPrev" class="species-prev"></div>
         <span class="species-opt-name">🐱 고양이</span>
@@ -473,6 +518,7 @@
 <script src="js/gamify.js"></script>
 <script src="js/character.js"></script>
 <script src="js/planner.js"></script>
+<script src="js/pomodoro.js"></script>
 <script src="js/analytics.js"></script>
 <script src="js/sync.js"></script>
 <script src="js/app.js"></script>

@@ -414,6 +414,43 @@
   function setDate(ds) { curDate = ds; render(); }
   function shift(n) { curDate = U.ymd(U.addDays(U.parseYmd(curDate), n)); render(); }
 
+  /* ---------- pomodoro → timebox reflection ----------
+     Mark every of TODAY's slots that overlaps [startMs, endMs) as done.
+     Empty slots are created (planned=actual=categoryId); already-planned
+     slots are just completed (recording a different actual if it differs). */
+  function reflectRange(categoryId, startMs, endMs) {
+    if (!categoryId || !(endMs > startMs)) return 0;
+    const s = App.state;
+    const ds = U.today();
+    if (!s.days[ds]) s.days[ds] = { blocks: {} };
+    if (!s.days[ds].blocks) s.days[ds].blocks = {};
+    const blocks = s.days[ds].blocks;
+    const slotLen = s.settings.slotMinutes;
+    const dayBase = U.parseYmd(ds).getTime();
+    let n = 0;
+    U.slotsFor(s.settings).forEach((sl) => {
+      const [h, m] = sl.time.split(":").map(Number);
+      const slotStart = dayBase + (h * 60 + m) * 60000;
+      const slotEnd = slotStart + slotLen * 60000;
+      if (slotStart < endMs && slotEnd > startMs) { // any overlap
+        const ex = blocks[sl.time];
+        if (!ex) blocks[sl.time] = { categoryId, note: "🍅 집중", done: true };
+        else {
+          if (ex.categoryId !== categoryId && !ex.actual) ex.actual = categoryId;
+          ex.done = true;
+        }
+        n++;
+      }
+    });
+    if (n) {
+      s.days[ds].mtime = Date.now();
+      App.store.save();
+      if (curDate === ds) render();
+      App.refreshAll();
+    }
+    return n;
+  }
+
   /* ---------- init ---------- */
   function init() {
     bindGrid();
@@ -429,5 +466,5 @@
     const ts = document.getElementById("tplSave"); if (ts) ts.onclick = tplSave;
   }
 
-  App.planner = { init, render, setDate, getDate: () => curDate, renderSummary };
+  App.planner = { init, render, setDate, getDate: () => curDate, renderSummary, reflectRange };
 })();

@@ -232,6 +232,17 @@
         `<path d="M69 ${ht + 2} L75 ${ht - 7} L65 ${ht - 1} Z" fill="#ff9ec4"/>`
       );
     }
+    if (sp === "monkey") {
+      // round ears on the sides of the head (money monkey 🐵)
+      const r = 33 + idx;
+      const lx = 60 - r + 3, rx = 60 + r - 3, ey = 70;
+      return (
+        `<circle cx="${lx}" cy="${ey}" r="10" fill="${c}" stroke="${dark}" stroke-width="2"/>` +
+        `<circle cx="${lx}" cy="${ey}" r="5" fill="${shade(c, -22)}"/>` +
+        `<circle cx="${rx}" cy="${ey}" r="10" fill="${c}" stroke="${dark}" stroke-width="2"/>` +
+        `<circle cx="${rx}" cy="${ey}" r="5" fill="${shade(c, -22)}"/>`
+      );
+    }
     // dog: floppy ears at sides
     const r = 33 + idx;
     const lx = 60 - r + 5, rx = 60 + r - 5, ey = 76 - r + 20;
@@ -245,6 +256,9 @@
     const r = 33 + idx;
     if (sp === "cat")
       return `<path d="M${60 + r - 6} 94 q28 8 24 -20 q-3 -16 -13 -13" fill="none" stroke="${c}" stroke-width="9" stroke-linecap="round"/>`;
+    if (sp === "monkey")
+      // long curly monkey tail
+      return `<path d="M${60 + r - 6} 96 q30 4 26 -22 q-3 -15 -14 -9 q9 -1 10 8 q1 12 -12 12" fill="none" stroke="${c}" stroke-width="8" stroke-linecap="round"/>`;
     return `<path d="M${60 + r - 8} 98 q20 4 22 -14" fill="none" stroke="${c}" stroke-width="10" stroke-linecap="round"/>`;
   }
 
@@ -255,6 +269,13 @@
         '<g stroke="#c7b8e6" stroke-width="1.6" stroke-linecap="round" opacity=".9">' +
         '<line x1="33" y1="79" x2="45" y2="82"/><line x1="33" y1="86" x2="45" y2="84"/>' +
         '<line x1="87" y1="79" x2="75" y2="82"/><line x1="87" y1="86" x2="75" y2="84"/></g>'
+      );
+    if (sp === "monkey")
+      // lighter muzzle framing the mouth + two nostrils
+      return (
+        '<ellipse cx="60" cy="90" rx="15.5" ry="11" fill="#fff3d2" opacity=".5"/>' +
+        '<ellipse cx="55" cy="85" rx="2" ry="2.7" fill="#8a6636"/>' +
+        '<ellipse cx="65" cy="85" rx="2" ry="2.7" fill="#8a6636"/>'
       );
     return '<ellipse cx="60" cy="81" rx="5" ry="3.6" fill="#3a2b52"/>';
   }
@@ -517,7 +538,7 @@
       card.className = "pet-cell" + (isActive ? " active" : "");
       card.innerHTML =
         `<div class="pet-art">${creature(curIdx, m, p.equip, p.species || "cat")}</div>` +
-        `<div class="pet-name">${p.species === "dog" ? "🐶" : "🐱"} ${escapeName(p.name)}</div>` +
+        `<div class="pet-name">${p.species === "dog" ? "🐶" : p.species === "monkey" ? "🐵" : "🐱"} ${escapeName(p.name)}</div>` +
         `<div class="dex-sub">${isActive ? '<span class="pet-badge">메인 ✓</span>' : "눌러서 메인으로"} · 🍖${fullness(p)}%</div>`;
       card.onclick = () => setActivePet(p.id);
       list.appendChild(card);
@@ -657,15 +678,16 @@
     App.ui.openModal("speciesModal");
   }
 
+  const SP_LABEL = { monkey: "머니몽키", dog: "강아지", cat: "고양이" };
   function chooseSpecies(sp) {
-    sp = sp === "dog" ? "dog" : "cat";
+    sp = sp === "dog" ? "dog" : sp === "monkey" ? "monkey" : "cat";
     if (adoptMode) {
       const p = App.newPet("친구 " + (pets().length + 1));
       p.species = sp;
       pets().push(p);
       game().activePet = p.id;
       adoptMode = false;
-      App.gamify.toast(`🐣 새 친구를 입양했어요! (${sp === "dog" ? "강아지" : "고양이"})`);
+      App.gamify.toast(`🐣 새 친구를 입양했어요! (${SP_LABEL[sp]})`);
     } else {
       activePet().species = sp;
     }
@@ -680,13 +702,16 @@
   }
 
   function fillSpeciesPreviews() {
+    setHTML("spMonkeyPrev", creature(2, "happy", null, "monkey"));
     setHTML("spCatPrev", creature(2, "happy", null, "cat"));
     setHTML("spDogPrev", creature(2, "happy", null, "dog"));
   }
   function updateSpeciesButtons() {
-    const cat = document.getElementById("codexCat"), dog = document.getElementById("codexDog");
-    if (cat) cat.classList.toggle("active", species() === "cat");
-    if (dog) dog.classList.toggle("active", species() === "dog");
+    const map = { codexMonkey: "monkey", codexCat: "cat", codexDog: "dog" };
+    for (const id in map) {
+      const el = document.getElementById(id);
+      if (el) el.classList.toggle("active", species() === map[id]);
+    }
   }
 
   function init() {
@@ -710,8 +735,10 @@
     bindClick("tamaC", () => { const t = document.querySelector('.tab[data-view="codex"]'); if (t) t.click(); });
 
     fillSpeciesPreviews();
+    bindClick("spMonkey", () => chooseSpecies("monkey"));
     bindClick("spCat", () => chooseSpecies("cat"));
     bindClick("spDog", () => chooseSpecies("dog"));
+    bindClick("codexMonkey", () => chooseSpecies("monkey"));
     bindClick("codexCat", () => chooseSpecies("cat"));
     bindClick("codexDog", () => chooseSpecies("dog"));
     updateSpeciesButtons();
