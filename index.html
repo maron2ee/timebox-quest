@@ -182,25 +182,42 @@
         <div id="timeGrid" class="time-grid"><!-- slots injected --></div>
       </div>
 
-      <!-- right: today summary -->
-      <aside class="panel summary-panel">
-        <h3 class="panel-h">오늘의 전투 결과</h3>
+      <!-- right: todo / top3 / today summary -->
+      <aside class="summary-col">
 
-        <div class="completion-ring">
-          <div id="ringPct" class="ring-pct">0%</div>
-          <div class="ring-sub">계획 달성률</div>
+        <div class="panel todo-panel">
+          <h3 class="panel-h">📝 오늘 할 일 <span class="panel-h-note">드래그해서 왼쪽 칸에 넣기</span></h3>
+          <div class="todo-add-row">
+            <input type="text" id="todoInput" placeholder="할 일을 입력하세요" maxlength="60" />
+            <button id="todoAddBtn" class="pixel-btn small">＋ 추가</button>
+          </div>
+          <div id="todoList" class="todo-list"><!-- items injected --></div>
         </div>
 
-        <div class="mini-stats">
-          <div class="mini"><span id="sumPlanned" class="mini-v">0</span><span class="mini-l">계획 칸</span></div>
-          <div class="mini"><span id="sumDone" class="mini-v">0</span><span class="mini-l">완료 칸</span></div>
-          <div class="mini"><span id="sumHours" class="mini-v">0h</span><span class="mini-l">실천 시간</span></div>
+        <div class="panel top3-panel">
+          <h3 class="panel-h">🏆 오늘의 TOP 3</h3>
+          <div id="top3List" class="top3-list"><!-- 3 fixed rows injected --></div>
         </div>
 
-        <h4 class="panel-h sm">카테고리별 (계획 vs 실천)</h4>
-        <div id="catBars" class="cat-bars"><!-- per-category bars --></div>
+        <div class="panel summary-panel">
+          <h3 class="panel-h">오늘의 전투 결과</h3>
 
-        <div id="dayBadge" class="day-badge"></div>
+          <div class="completion-ring">
+            <div id="ringPct" class="ring-pct">0%</div>
+            <div class="ring-sub">계획 달성률</div>
+          </div>
+
+          <div class="mini-stats">
+            <div class="mini"><span id="sumPlanned" class="mini-v">0</span><span class="mini-l">계획 칸</span></div>
+            <div class="mini"><span id="sumDone" class="mini-v">0</span><span class="mini-l">완료 칸</span></div>
+            <div class="mini"><span id="sumHours" class="mini-v">0h</span><span class="mini-l">실천 시간</span></div>
+          </div>
+
+          <h4 class="panel-h sm">카테고리별 (계획 vs 실천)</h4>
+          <div id="catBars" class="cat-bars"><!-- per-category bars --></div>
+
+          <div id="dayBadge" class="day-badge"></div>
+        </div>
       </aside>
     </div>
   </section>
@@ -433,6 +450,8 @@
     <div class="help-body">
       <h4>🗓️ 오늘 — 계획 &amp; 체크</h4>
       <p>① 색(카테고리) 고르기 → ② 칸을 <b>탭</b>(PC는 드래그)해서 칠하면 계획 완성 → ③ 칠한 칸을 <b>다시 탭</b>하면 ☐→☑ 완료 체크. 칸의 <b>⋯</b> 로 메모·카테고리 변경·"실제 한 활동"·비우기. 📋 어제 복사 · ⭐ 템플릿도 있어요.</p>
+      <h4>📝 할 일 목록 &amp; TOP 3</h4>
+      <p>오른쪽 <b>오늘 할 일</b>에 하고 싶은 일을 적어 두고, <b>TOP 3</b>에는 오늘 가장 중요한 3가지를 적어보세요. 각 항목을 <b>왼쪽 시간표 칸으로 드래그</b>하면 그 시간에 계획으로 바로 들어가요! 동그란 점을 눌러 카테고리(색)를 바꿀 수 있어요.</p>
       <h4>🐾 캐릭터 키우기 (머니몽키 🐵)</h4>
       <p>칸을 완료할수록 <b>XP·간식🍪</b>이 쌓여 레벨업하면 진화해요(알→마스터). 화면 아래 버튼: <b>♥ 쓰다듬기 · 🍖 밥주기 · ≡ 도감</b>. 밥을 주면 친밀도❤가 오르고, 포만감은 시간이 지나면 줄어요. 도감에서 머니몽키·고양이·강아지로 바꿀 수 있어요.</p>
       <h4>🍅 뽀모도로</h4>
@@ -518,6 +537,7 @@
 <script src="js/gamify.js"></script>
 <script src="js/character.js"></script>
 <script src="js/planner.js"></script>
+<script src="js/todos.js"></script>
 <script src="js/pomodoro.js"></script>
 <script src="js/analytics.js"></script>
 <script src="js/sync.js"></script>

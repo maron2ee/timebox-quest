@@ -30,6 +30,19 @@
     else day.blocks[time] = data;
   }
 
+  // place a plan into a slot from an external source (e.g. dragged todo/top3 item)
+  function placeAt(time, categoryId, note) {
+    if (!categoryId || !time) return false;
+    const cat = App.catById(categoryId);
+    if (!cat) return false;
+    App.history.snapshot();
+    setBlock(time, { categoryId, note: (note || "").trim().slice(0, 40), done: false });
+    updateCell(time);
+    App.gamify.sfx.paint();
+    commit();
+    return true;
+  }
+
   function commit(sfx) {
     if (App.state.days[curDate]) App.state.days[curDate].mtime = Date.now(); // for day-level sync merge
     App.store.save();
@@ -221,6 +234,30 @@
     window.addEventListener("pointerup", endGesture);
     window.addEventListener("pointercancel", () => { gesture = null; if (painting) { painting = false; commit(); } });
 
+    // --- drop target for dragged todo / top3 items ---
+    grid.addEventListener("dragover", (e) => {
+      const cell = e.target.closest(".cell");
+      if (!cell) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "copy";
+      cell.classList.add("drag-over");
+    });
+    grid.addEventListener("dragleave", (e) => {
+      const cell = e.target.closest(".cell");
+      if (cell) cell.classList.remove("drag-over");
+    });
+    grid.addEventListener("drop", (e) => {
+      const cell = e.target.closest(".cell");
+      if (!cell) return;
+      e.preventDefault();
+      cell.classList.remove("drag-over");
+      const raw = e.dataTransfer.getData("text/plain");
+      if (!raw) return;
+      let payload;
+      try { payload = JSON.parse(raw); } catch (err) { return; }
+      if (payload && payload.tbqDrag && App.todos) App.todos.handleDrop(payload, cell.dataset.time);
+    });
+
     // --- keyboard operability (roving tabindex) ---
     function focusCell(time) {
       if (!time) return;
@@ -409,6 +446,7 @@
     renderGrid();
     renderSummary();
     scrollToNow();
+    if (App.todos) App.todos.render();
   }
 
   function setDate(ds) { curDate = ds; render(); }
@@ -466,5 +504,5 @@
     const ts = document.getElementById("tplSave"); if (ts) ts.onclick = tplSave;
   }
 
-  App.planner = { init, render, setDate, getDate: () => curDate, renderSummary, reflectRange };
+  App.planner = { init, render, setDate, getDate: () => curDate, renderSummary, reflectRange, placeAt };
 })();

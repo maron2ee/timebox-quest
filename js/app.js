@@ -57,6 +57,7 @@
     updateHud();
     if (App.character) App.character.render(true);
     App.planner.renderSummary();
+    if (App.todos) App.todos.render();
     if (App.pomodoro) App.pomodoro.render();
     if (document.getElementById("view-stats").classList.contains("active")) App.analytics.render();
     if (document.getElementById("view-settings").classList.contains("active")) renderSettings();
@@ -399,6 +400,7 @@
     App.planner.init();
     App.analytics.init();
     App.character.init();
+    if (App.todos) App.todos.init();
     if (App.pomodoro) App.pomodoro.init();
     App.planner.render();
     renderSettings();

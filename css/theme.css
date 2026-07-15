@@ -303,6 +303,52 @@ input, select { font-family: var(--sans); }
 .planner-grid { display: grid; grid-template-columns: 1fr 330px; gap: 18px; align-items: start; }
 @media (max-width: 880px) { .planner-grid { grid-template-columns: 1fr; } }
 
+.summary-col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+
+/* ---------- todo list / top3 ---------- */
+.todo-add-row { display: flex; gap: 8px; margin-bottom: 12px; }
+.todo-add-row input[type=text] {
+  flex: 1; min-width: 0; background: var(--surface-2); border: 1px solid var(--line-strong); color: var(--ink);
+  padding: 9px 12px; font-size: 13px; border-radius: var(--r-sm);
+}
+.todo-add-row input[type=text]:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-soft); }
+
+.todo-list, .top3-list { display: flex; flex-direction: column; gap: 7px; }
+.todo-empty { margin: 0; }
+
+.todo-item, .top3-item {
+  display: flex; align-items: center; gap: 8px; padding: 8px 10px;
+  background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-sm);
+  cursor: grab; transition: opacity 0.15s, box-shadow 0.15s;
+}
+.todo-item:active, .top3-item:active { cursor: grabbing; }
+.todo-item.dragging, .top3-item.dragging { opacity: 0.35; }
+.todo-item.done .todo-text, .top3-item.done .top3-input { text-decoration: line-through; opacity: 0.55; }
+
+.todo-check { cursor: pointer; font-size: 15px; flex: 0 0 auto; line-height: 1; user-select: none; }
+.todo-dot { width: 16px; height: 16px; border-radius: 50%; border: 2px solid rgba(0, 0, 0, 0.15); flex: 0 0 auto; padding: 0; cursor: pointer; }
+.todo-text { flex: 1; min-width: 0; font-size: 12.5px; font-weight: 500; overflow-wrap: anywhere; }
+.todo-placed { font-size: 10px; color: var(--ink-faint); flex: 0 0 auto; }
+.todo-del {
+  background: none; border: none; color: var(--ink-faint); font-size: 13px; cursor: pointer;
+  padding: 2px 4px; flex: 0 0 auto; line-height: 1;
+}
+.todo-del:hover { color: var(--red); }
+
+.top3-rank { font-size: 15px; flex: 0 0 auto; line-height: 1; }
+.top3-input {
+  flex: 1; min-width: 0; border: none; background: transparent; font-size: 12.5px; font-weight: 500;
+  color: var(--ink); outline: none; padding: 0;
+}
+.top3-input::placeholder { color: var(--ink-faint); }
+
+/* drop target highlight on the timebox grid */
+.cell.drag-over { box-shadow: inset 0 0 0 3px var(--primary); }
+
+body.pixel .todo-item, body.pixel .top3-item { border-color: var(--line-strong); }
+body.pixel .todo-add-row input[type=text] { background: var(--surface-2); }
+body.pixel .cell.drag-over { box-shadow: inset 0 0 0 3px var(--neon-yellow, #ffec27); }
+
 .mode-row { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
 .mode-toggle { display: flex; gap: 6px; background: var(--surface-2); padding: 4px; border-radius: var(--pill); }
 .mode-toggle .mode { box-shadow: none; border: none; background: transparent; }

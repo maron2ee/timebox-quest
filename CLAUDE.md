@@ -35,6 +35,7 @@ js/gamify.js            XP/레벨/업적/토스트/8비트효과음/색종이
 js/character.js         캐릭터 육성(SVG·진화·종[머니몽키/고양이/강아지]·밥주기·도감·테마·여러마리)
 js/planner.js           타임박스 그리드(칠하기/인셀 체크박스/키보드/복사·템플릿) + reflectRange(뽀모도로 반영)
 js/pomodoro.js          뽀모도로 집중 타이머(집중 완료 시 해당 시간대 칸 자동 완료 반영)
+js/todos.js              오늘 할 일 목록 + TOP3(day.todos/day.top3), 타임박스로 드래그&드롭
 js/analytics.js         성과 탭(일/주/월)+인사이트+CSV
 js/sync.js              Supabase 동기화(일 단위 병합)
 js/app.js               부트스트랩·탭·HUD·설정·모달·Undo·알림
