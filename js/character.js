@@ -160,6 +160,12 @@
   }
   function moodInfo() { return moodForPet(activePet()); }
 
+  /* ---------- current activity (what today's timebox says you're doing right now) ---------- */
+  function currentActivityCat() {
+    const id = App.stats.currentCategory && App.stats.currentCategory();
+    return id ? App.catById(id) : null;
+  }
+
   /* ---------- SVG ---------- */
   let uid = 0;
 
@@ -271,11 +277,10 @@
         '<line x1="87" y1="79" x2="75" y2="82"/><line x1="87" y1="86" x2="75" y2="84"/></g>'
       );
     if (sp === "monkey")
-      // lighter muzzle framing the mouth + two nostrils
+      // 콧구멍만 (하트 얼굴 패치는 creature에서 그림)
       return (
-        '<ellipse cx="60" cy="90" rx="15.5" ry="11" fill="#fff3d2" opacity=".5"/>' +
-        '<ellipse cx="55" cy="85" rx="2" ry="2.7" fill="#8a6636"/>' +
-        '<ellipse cx="65" cy="85" rx="2" ry="2.7" fill="#8a6636"/>'
+        '<ellipse cx="55" cy="85" rx="2" ry="2.7" fill="#7a5518"/>' +
+        '<ellipse cx="65" cy="85" rx="2" ry="2.7" fill="#7a5518"/>'
       );
     return '<ellipse cx="60" cy="81" rx="5" ry="3.6" fill="#3a2b52"/>';
   }
@@ -296,9 +301,72 @@
     return s;
   }
 
-  function creature(idx, mood, equip, sp) {
+  /* ---------- activity pose: literally act out today's "right now" category ---------- */
+  function activityKind(name) {
+    name = name || "";
+    if (/운동|헬스|요가|러닝|스쿼트|필라테스|홈트/.test(name)) return "exercise";
+    if (/독서|책|리딩/.test(name)) return "reading";
+    if (/공부|언어|주식|스터디|학습|암기|강의|리서치|조사|분석/.test(name)) return "study";
+    if (/휴식|힐링|수면|잠|낮잠|티타임|명상/.test(name)) return "rest";
+    return null;
+  }
+
+  function activityPose(kind, idx, c, dark) {
+    const r = 33 + idx;
+    const lx = 60 - r + 6, rx = 60 + r - 6, sy = 76 + r * 0.15;
+    if (kind === "exercise") {
+      const hy = 76 - r - 4;
+      return (
+        `<path d="M${lx} ${sy} Q${lx - 5} ${sy - r * 0.7} 51 ${hy}" stroke="${c}" stroke-width="7" fill="none" stroke-linecap="round"/>` +
+        `<path d="M${rx} ${sy} Q${rx + 5} ${sy - r * 0.7} 69 ${hy}" stroke="${c}" stroke-width="7" fill="none" stroke-linecap="round"/>` +
+        `<rect x="49" y="${hy - 2}" width="22" height="4" rx="2" fill="${dark}"/>` +
+        `<circle cx="48" cy="${hy}" r="6.5" fill="#6b7280" stroke="#33383f" stroke-width="1.5"/>` +
+        `<circle cx="72" cy="${hy}" r="6.5" fill="#6b7280" stroke="#33383f" stroke-width="1.5"/>`
+      );
+    }
+    if (kind === "reading") {
+      const by = 101;
+      return (
+        `<path d="M${lx} ${sy} Q${lx + 7} ${by - 7} 49 ${by}" stroke="${c}" stroke-width="7" fill="none" stroke-linecap="round"/>` +
+        `<path d="M${rx} ${sy} Q${rx - 7} ${by - 7} 71 ${by}" stroke="${c}" stroke-width="7" fill="none" stroke-linecap="round"/>` +
+        `<rect x="46" y="${by - 9}" width="28" height="17" rx="2" fill="#fffaf0" stroke="${dark}" stroke-width="2"/>` +
+        `<line x1="60" y1="${by - 9}" x2="60" y2="${by + 8}" stroke="${dark}" stroke-width="1.5"/>` +
+        `<line x1="50" y1="${by - 4}" x2="57" y2="${by - 4}" stroke="${dark}" stroke-width="1" opacity=".5"/>` +
+        `<line x1="63" y1="${by - 4}" x2="70" y2="${by - 4}" stroke="${dark}" stroke-width="1" opacity=".5"/>`
+      );
+    }
+    if (kind === "study") {
+      const by = 103;
+      return (
+        `<path d="M${lx} ${sy} Q${lx + 7} ${by - 6} 51 ${by - 2}" stroke="${c}" stroke-width="7" fill="none" stroke-linecap="round"/>` +
+        `<path d="M${rx} ${sy} Q${rx - 9} ${by - 12} 76 ${by - 12}" stroke="${c}" stroke-width="7" fill="none" stroke-linecap="round"/>` +
+        `<rect x="43" y="${by - 6}" width="20" height="12" rx="1.5" fill="#fffaf0" stroke="${dark}" stroke-width="1.5"/>` +
+        `<path d="M76 ${by - 12} l7 -7 3.3 3.3 -7 7 -4.3 1z" fill="#ffd21f" stroke="${dark}" stroke-width="1"/>`
+      );
+    }
+    if (kind === "rest") {
+      return (
+        `<path d="M${lx} ${sy} Q60 ${sy + 8} ${rx} ${sy}" stroke="${c}" stroke-width="7" fill="none" stroke-linecap="round"/>` +
+        `<text x="${rx + 4}" y="${sy - 16}" font-size="12" fill="#9a93c4">z</text>` +
+        `<text x="${rx + 12}" y="${sy - 25}" font-size="8" fill="#9a93c4">z</text>`
+      );
+    }
+    return "";
+  }
+
+  // 머니몽키(monkey)는 로고 그대로 골드 고정 — 진화해도 색 대신 크기·왕관으로 성장
+  const MONKEY_GOLD = "#f0a91a";
+  function monkeyHeartFace() {
+    // 로고의 하트형 얼굴 패치 (크림색), face(mood)의 눈/입 좌표에 맞춤
+    return '<path d="M60,64 C60,56 53,52 47,52 C38,52 34,60 34,67 C34,78 47,90 60,99 C73,90 86,78 86,67 C86,60 82,52 73,52 C67,52 60,56 60,64 Z" fill="#fff2c4" stroke="#eab308" stroke-width="1.4"/>';
+  }
+  function monkeyCrown() {
+    return '<path d="M45,44 l4,-11 6,7 5,-9 5,9 6,-7 4,11 z" fill="#ffd21f" stroke="#e0a800" stroke-width="1.4" stroke-linejoin="round"/><circle cx="60" cy="33" r="2" fill="#ff5da2"/>';
+  }
+
+  function creature(idx, mood, equip, sp, activityCat) {
     sp = sp || species();
-    const c = STAGES[idx].color;
+    const c = sp === "monkey" ? MONKEY_GOLD : STAGES[idx].color;
     const id = ++uid;
     const light = shade(c, 50), dark = shade(c, -42);
     let s = '<svg viewBox="0 0 120 132" xmlns="http://www.w3.org/2000/svg">';
@@ -316,6 +384,7 @@
     }
 
     const r = 33 + idx;
+    if (activityCat) s += `<circle cx="60" cy="76" r="${r + 15}" fill="${activityCat.color}" opacity=".16"/>`;
     s += `<defs><radialGradient id="g${id}" cx="42%" cy="30%" r="78%"><stop offset="0" stop-color="${light}"/><stop offset="1" stop-color="${c}"/></radialGradient></defs>`;
     s += tail(idx, c, dark, sp);          // behind body
     s += ears(idx, c, dark, sp);          // behind/around head
@@ -327,10 +396,25 @@
     s += `<ellipse cx="71" cy="${76 + r - 5}" rx="9" ry="6" fill="${dark}"/>`;
     s += `<ellipse cx="60" cy="76" rx="${r}" ry="${r - 2}" fill="url(#g${id})" stroke="${dark}" stroke-width="2.5"/>`;
     s += '<ellipse cx="49" cy="61" rx="12" ry="9" fill="#fff" opacity=".22"/>';
-    if (idx !== 5) s += face(mood);
-    s += speciesFace(sp);
-    s += accessories(idx);
+    if (sp === "monkey") {
+      s += monkeyHeartFace();       // 로고 하트 얼굴 (눈/입 뒤)
+      s += face(mood);              // 표정
+      s += speciesFace(sp);         // 콧구멍
+      if (idx >= 5) s += monkeyCrown(); // 최종 진화 왕관
+    } else {
+      if (idx !== 5) s += face(mood);
+      s += speciesFace(sp);
+      s += accessories(idx);
+    }
     s += decoLayer(idx, equip);
+    // acting out what you're scheduled to do right now: real arm pose for known activities,
+    // a simple held emoji badge as a fallback for custom categories we can't recognize
+    if (activityCat) {
+      const kind = activityKind(activityCat.name);
+      s += kind
+        ? activityPose(kind, idx, c, dark)
+        : `<text x="${60 - r - 3}" y="102" font-size="20" text-anchor="middle">${activityCat.emoji}</text>`;
+    }
     return s + "</svg>";
   }
 
@@ -377,11 +461,13 @@
     game().lastStage = idx;
     announceUnlocks();
 
-    setHTML("charArt", creature(idx, mood, activePet().equip));
+    const activityCat = currentActivityCat();
+    setHTML("charArt", creature(idx, mood, activePet().equip, null, activityCat));
     setText("tamaName", name());
     setText("charName", name());
     setText("charStage", `Lv.${info.level} · ${stage.name}`);
     setText("charMood", text);
+    setText("charActivity", activityCat ? `${activityCat.emoji} 지금은 ${activityCat.name} 시간이에요!` : "");
 
     const evoFill = document.getElementById("charEvoFill");
     const next = STAGES[idx + 1];
@@ -446,7 +532,7 @@
     const idx = stageForLevel(info.level);
     stage = stage || STAGES[idx];
     const { mood } = moodInfo();
-    setHTML("charMiniArt", creature(idx, mood, activePet().equip));
+    setHTML("charMiniArt", creature(idx, mood, activePet().equip, null, currentActivityCat()));
     setText("charMiniName", name());
     setText("charMiniBadge", `Lv.${info.level} · ${stage.name}`);
     const d7 = App.stats.deriveRange(U.ymd(U.addDays(new Date(), -6)), U.today());
@@ -459,7 +545,7 @@
     const curIdx = stageForLevel(info.level);
     const { mood } = moodInfo();
 
-    setHTML("codexArt", creature(curIdx, mood, activePet().equip));
+    setHTML("codexArt", creature(curIdx, mood, activePet().equip, null, currentActivityCat()));
     setText("codexName", name());
     setText("codexStat",
       `Lv.${info.level} · ${STAGES[curIdx].name} · 🍪 간식 ${snacksLeft()} · ❤ 친밀도 ${affection()} · 🍖 밥 ${totalFed()}번`);

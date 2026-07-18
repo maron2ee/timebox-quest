@@ -61,8 +61,76 @@
     // heatmap (always last ~18 weeks regardless of period)
     App.charts.heatmap(document.getElementById("heatmap"), 18);
 
+    renderFocus(r);
     renderInsights(r, data);
     renderAchievements();
+  }
+
+  /* ---------- focus category (default: 주식공부) daily-hours tracker ---------- */
+  function resolveFocusCat() {
+    const cats = App.state.categories;
+    const saved = App.state.settings.focusCat;
+    if (saved && cats.some((c) => c.id === saved)) return saved;
+    const stock = cats.find((c) => /주식/.test(c.name));
+    return (stock || cats[0] || {}).id || null;
+  }
+
+  function fillFocusSelect() {
+    const sel = document.getElementById("focusCatSel");
+    if (!sel) return;
+    const cats = App.state.categories;
+    const cur = resolveFocusCat();
+    sel.innerHTML = "";
+    cats.forEach((c) => sel.add(new Option(`${c.emoji} ${c.name}`, c.id)));
+    if (cats.some((c) => c.id === cur)) sel.value = cur;
+  }
+
+  function renderFocus(r) {
+    const chart = document.getElementById("focusChart");
+    if (!chart) return;
+    fillFocusSelect();
+    const catId = resolveFocusCat();
+    const cat = catId ? App.catById(catId) : null;
+
+    const series = catId ? App.stats.categorySeries(catId, r.start, r.end) : [];
+    const total = series.reduce((a, d) => a + d.doneMin, 0);
+    const activeDays = series.filter((d) => d.doneMin > 0).length;
+    const maxMin = series.reduce((a, d) => Math.max(a, d.doneMin), 0);
+    const avg = activeDays ? Math.round(total / activeDays) : 0;
+    const todayMin = catId ? (App.stats.deriveDay(U.today()).perCat[catId] || {}).done * (App.state.settings.slotMinutes) || 0 : 0;
+
+    document.getElementById("focusToday").textContent = U.minToH(todayMin);
+    document.getElementById("focusAvg").textContent = U.minToH(avg);
+    document.getElementById("focusTotal").textContent = U.minToH(total);
+    document.getElementById("focusMax").textContent = U.minToH(maxMin);
+
+    App.charts.focusBars(chart, buildFocusItems(series), cat ? cat.color : null);
+
+    const note = document.getElementById("focusNote");
+    if (note) {
+      const targetTxt = cat && cat.target > 0 ? ` · 하루 목표 ${U.minToH(cat.target)}` : "";
+      note.textContent = cat
+        ? `${cat.emoji} ${cat.name} — 활동한 ${activeDays}일 기준 하루 평균 ${U.minToH(avg)}${targetTxt}`
+        : "카테고리를 먼저 만들어 주세요";
+    }
+  }
+
+  // day/week -> per-day bars; month -> weekly-summed bars (mirrors the trend chart)
+  function buildFocusItems(series) {
+    if (period === "month") {
+      const weeks = [];
+      let bucket = null, wkIdx = 0;
+      series.forEach((d) => {
+        const dow = (U.parseYmd(d.date).getDay() + 6) % 7; // Mon=0
+        if (dow === 0 || !bucket) { wkIdx++; bucket = { label: "W" + wkIdx, min: 0 }; weeks.push(bucket); }
+        bucket.min += d.doneMin;
+      });
+      return weeks;
+    }
+    return series.map((d) => {
+      const dd = U.parseYmd(d.date);
+      return { label: U.KDOW[dd.getDay()], min: d.doneMin, title: `${d.date} · ${U.minToH(d.doneMin)}` };
+    });
   }
 
   /* ---------- insights ---------- */
@@ -197,6 +265,8 @@
     document.getElementById("nextPeriod").onclick = () => shift(1);
     const csv = document.getElementById("csvBtn");
     if (csv) csv.onclick = exportCsv;
+    const fsel = document.getElementById("focusCatSel");
+    if (fsel) fsel.onchange = () => { App.state.settings.focusCat = fsel.value; App.store.save(); render(); };
   }
 
   App.analytics = { init, render };

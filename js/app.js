@@ -5,6 +5,14 @@
   const App = (window.App = window.App || {});
   const U = App.util;
 
+  /* ---------- UI skin (modern-mode variants; retro pixel mode overrides all of these) ---------- */
+  const SKINS = ["soft", "glass", "pastel", "editorial"];
+  function applySkin() {
+    const skin = App.state.settings.skin || "default";
+    SKINS.forEach((s) => document.body.classList.remove("skin-" + s));
+    if (skin !== "default") document.body.classList.add("skin-" + skin);
+  }
+
   /* ---------- modal infra (with focus trap) ---------- */
   let lastFocused = null;
   App.ui = {
@@ -60,6 +68,7 @@
     if (App.todos) App.todos.render();
     if (App.pomodoro) App.pomodoro.render();
     if (document.getElementById("view-stats").classList.contains("active")) App.analytics.render();
+    if (document.getElementById("view-calendar").classList.contains("active")) App.calendar.render();
     if (document.getElementById("view-settings").classList.contains("active")) renderSettings();
     if (!skipPush && App.sync && App.sync.isSignedIn()) App.sync.schedulePush();
   };
@@ -80,6 +89,7 @@
         if (view === "codex") App.character.renderCollection();
         if (view === "settings") renderSettings();
         if (view === "planner") App.planner.render();
+        if (view === "calendar") App.calendar.render();
       };
     });
   }
@@ -133,6 +143,20 @@
       document.body.classList.toggle("pixel", s.pixel);
       App.store.save();
       App.gamify.toast(s.pixel ? "🕹️ 레트로 픽셀 모드 ON" : "✨ 모던 모드 ON");
+    };
+    const skinSel = document.getElementById("setSkin");
+    const SKIN_NAMES = { default: "기본", soft: "소프트 모던", glass: "다크 트레이더 글래스", pastel: "파스텔 플레이풀", editorial: "미니멀 에디토리얼" };
+    skinSel.value = s.skin || "default";
+    skinSel.onchange = () => {
+      s.skin = skinSel.value;
+      if (s.skin !== "default" && s.pixel) {
+        s.pixel = false;
+        document.getElementById("setPixel").checked = false;
+        document.body.classList.remove("pixel");
+      }
+      applySkin();
+      App.store.save();
+      App.gamify.toast(`🎨 스킨 적용: ${SKIN_NAMES[s.skin]}`);
     };
     document.getElementById("setReminder").checked = s.reminderEnabled;
     document.getElementById("setReminderTime").value = s.reminderTime;
@@ -201,6 +225,7 @@
       document.getElementById("setWeekStart").value = s.weekStart;
       document.getElementById("setCompact").checked = s.compact;
       document.getElementById("setPixel").checked = s.pixel;
+      document.getElementById("setSkin").value = s.skin || "default";
       document.getElementById("setAutoTpl").checked = s.autoTemplate;
       document.getElementById("setReminder").checked = s.reminderEnabled;
       document.getElementById("setReminderTime").value = s.reminderTime;
@@ -392,6 +417,7 @@
   /* ---------- boot ---------- */
   function boot() {
     document.body.classList.toggle("pixel", App.state.settings.pixel !== false);
+    applySkin();
     initTabs();
     initSettings();
     initModalClose();
@@ -399,6 +425,7 @@
     document.getElementById("helpClose").onclick = () => App.ui.closeModals();
     App.planner.init();
     App.analytics.init();
+    App.calendar.init();
     App.character.init();
     if (App.todos) App.todos.init();
     if (App.pomodoro) App.pomodoro.init();
@@ -420,10 +447,11 @@
     if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
       navigator.serviceWorker.register("sw.js").catch(() => {});
     }
-    // re-mark "now" slot + check daily reminder every minute
+    // re-mark "now" slot + refresh character's current-activity look + check daily reminder every minute
     setInterval(() => {
       if (document.getElementById("view-planner").classList.contains("active") &&
           App.planner.getDate() === U.today()) App.planner.render();
+      if (App.character) App.character.render(false);
       checkReminder();
     }, 60000);
     setTimeout(checkReminder, 6000);

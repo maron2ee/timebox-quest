@@ -32,6 +32,7 @@
         lastBackup: 0,  // ts of last JSON export
         compact: false, // denser planner rows
         pixel: true,    // retro pixel skin
+        skin: "default", // modern UI skin (applies when pixel is off): default|soft|glass|pastel|editorial
         autoTemplate: false, // auto-apply weekday template to empty today/future days
         seenTip: false, // shown the first-run usage tip
         reminderEnabled: false,    // daily reminder
@@ -42,6 +43,7 @@
         pomoLongBreak: 15,         // 긴 휴식(분, 4세션마다)
         pomoAutofill: true,        // 집중 완료 시 타임박스 자동 반영
         pomoCat: null,             // 마지막으로 고른 뽀모도로 카테고리
+        focusCat: null,            // 성과 탭 "집중 시간 추이"에서 볼 카테고리 (기본 주식공부)
       },
       categories: [
         { id: cid(), name: "주식공부", emoji: "📈", color: "#ffec27", target: 120 },
@@ -349,7 +351,37 @@
     return n;
   }
 
+  // per-day done/planned minutes for one category over [startStr, endStr] (inclusive)
+  function categorySeries(catId, startStr, endStr) {
+    const slotMin = state.settings.slotMinutes;
+    let cur = parseYmd(startStr);
+    const end = parseYmd(endStr);
+    const out = [];
+    while (cur <= end) {
+      const ds = ymd(cur);
+      const pc = deriveDay(ds).perCat[catId];
+      out.push({ date: ds, doneMin: pc ? pc.done * slotMin : 0, plannedMin: pc ? pc.planned * slotMin : 0 });
+      cur = addDays(cur, 1);
+    }
+    return out;
+  }
+
+  // categoryId of the block scheduled for "right now" today (null if none planned)
+  function currentCategory() {
+    const ds = today();
+    const blocks = dayBlocks(ds);
+    const slots = slotsFor(state.settings);
+    const mins = new Date().getHours() * 60 + new Date().getMinutes();
+    let best = null;
+    for (const s of slots) {
+      const [h, m] = s.time.split(":").map(Number);
+      if (h * 60 + m <= mins) best = s.time; else break;
+    }
+    const b = best && blocks[best];
+    return b ? b.categoryId : null;
+  }
+
   App.stats = {
-    deriveDay, deriveRange, currentStreak, totalDoneMinutes, totalDoneBlocks, dayBlocks,
+    deriveDay, deriveRange, currentStreak, totalDoneMinutes, totalDoneBlocks, dayBlocks, currentCategory, categorySeries,
   };
 })();

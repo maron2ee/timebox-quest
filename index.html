@@ -76,6 +76,7 @@
 <!-- ===================== TABS ===================== -->
 <nav class="tabs" role="tablist" aria-label="화면 전환">
   <button class="tab active" data-view="planner" role="tab" aria-selected="true">🗓️ 오늘</button>
+  <button class="tab" data-view="calendar" role="tab" aria-selected="false">📅 달력</button>
   <button class="tab" data-view="stats" role="tab" aria-selected="false">📊 성과</button>
   <button class="tab" data-view="codex" role="tab" aria-selected="false">🗂️ 도감</button>
   <button class="tab" data-view="settings" role="tab" aria-selected="false">⚙️ 설정</button>
@@ -108,6 +109,7 @@
           <span id="charStage" class="char-stage-badge">Lv.1 · 알</span>
         </div>
         <p id="charMood" class="char-mood">기분 좋아요!</p>
+        <p id="charActivity" class="char-activity"></p>
         <div class="char-evo">
           <div class="char-evo-head"><span id="charEvoText">다음 진화까지</span></div>
           <div class="char-evo-bar"><div id="charEvoFill" class="char-evo-fill"></div></div>
@@ -191,12 +193,8 @@
             <input type="text" id="todoInput" placeholder="할 일을 입력하세요" maxlength="60" />
             <button id="todoAddBtn" class="pixel-btn small">＋ 추가</button>
           </div>
+          <p class="hint todo-hint">☆를 눌러 오늘의 TOP3 우선순위(🥇🥈🥉)를 정해보세요</p>
           <div id="todoList" class="todo-list"><!-- items injected --></div>
-        </div>
-
-        <div class="panel top3-panel">
-          <h3 class="panel-h">🏆 오늘의 TOP 3</h3>
-          <div id="top3List" class="top3-list"><!-- 3 fixed rows injected --></div>
         </div>
 
         <div class="panel summary-panel">
@@ -222,6 +220,29 @@
     </div>
   </section>
 
+  <!-- ===================== CALENDAR VIEW ===================== -->
+  <section id="view-calendar" class="view">
+    <div class="daynav panel">
+      <button id="calPrev" class="pixel-btn nav">◀</button>
+      <div class="daynav-center">
+        <h2 id="calTitle" class="day-title">이번 달</h2>
+        <p id="calSub" class="day-sub"></p>
+      </div>
+      <button id="calNext" class="pixel-btn nav">▶</button>
+      <button id="calTodayBtn" class="pixel-btn small today-btn">이번달</button>
+    </div>
+
+    <div class="panel">
+      <div id="calDow" class="cal-dow-row"></div>
+      <div id="calGrid" class="cal-grid"></div>
+      <div class="heat-legend cal-legend">
+        <span>적음</span>
+        <i class="heat-cell l0"></i><i class="heat-cell l1"></i><i class="heat-cell l2"></i><i class="heat-cell l3"></i><i class="heat-cell l4"></i>
+        <span>많음</span>
+      </div>
+    </div>
+  </section>
+
   <!-- ===================== STATS VIEW ===================== -->
   <section id="view-stats" class="view">
     <div class="daynav panel">
@@ -244,6 +265,20 @@
         <div class="char-namerow"><b id="charMiniName" class="char-mini-name">퀘스토</b> <span id="charMiniBadge" class="char-stage-badge">Lv.1 · 알</span></div>
         <p id="charMiniInfo" class="hint"></p>
       </div>
+    </div>
+
+    <div class="panel focus-panel">
+      <h3 class="panel-h focus-h">🎯 집중 시간 추이
+        <select id="focusCatSel" class="focus-sel"></select>
+      </h3>
+      <div class="focus-stats">
+        <div class="mini"><span id="focusToday" class="mini-v">0h</span><span class="mini-l">오늘</span></div>
+        <div class="mini"><span id="focusAvg" class="mini-v">0h</span><span class="mini-l">하루 평균</span></div>
+        <div class="mini"><span id="focusTotal" class="mini-v">0h</span><span class="mini-l">기간 합계</span></div>
+        <div class="mini"><span id="focusMax" class="mini-v">0h</span><span class="mini-l">최고 기록</span></div>
+      </div>
+      <div id="focusChart" class="focus-chart"></div>
+      <p id="focusNote" class="hint focus-note"></p>
     </div>
 
     <div class="panel insights-panel">
@@ -370,6 +405,16 @@
           <span>레트로 픽셀 모드 🕹️</span>
           <input type="checkbox" id="setPixel" />
         </label>
+        <label class="field">
+          <span>UI 스킨 🎨 <small>(레트로 모드를 끄면 적용돼요)</small></span>
+          <select id="setSkin">
+            <option value="default">기본 (모던 라이트)</option>
+            <option value="soft">A · 소프트 모던</option>
+            <option value="glass">B · 다크 트레이더 글래스</option>
+            <option value="pastel">C · 파스텔 플레이풀</option>
+            <option value="editorial">D · 미니멀 에디토리얼</option>
+          </select>
+        </label>
         <label class="field row">
           <span>요일 템플릿 자동 적용 ⭐</span>
           <input type="checkbox" id="setAutoTpl" />
@@ -451,17 +496,19 @@
       <h4>🗓️ 오늘 — 계획 &amp; 체크</h4>
       <p>① 색(카테고리) 고르기 → ② 칸을 <b>탭</b>(PC는 드래그)해서 칠하면 계획 완성 → ③ 칠한 칸을 <b>다시 탭</b>하면 ☐→☑ 완료 체크. 칸의 <b>⋯</b> 로 메모·카테고리 변경·"실제 한 활동"·비우기. 📋 어제 복사 · ⭐ 템플릿도 있어요.</p>
       <h4>📝 할 일 목록 &amp; TOP 3</h4>
-      <p>오른쪽 <b>오늘 할 일</b>에 하고 싶은 일을 적어 두고, <b>TOP 3</b>에는 오늘 가장 중요한 3가지를 적어보세요. 각 항목을 <b>왼쪽 시간표 칸으로 드래그</b>하면 그 시간에 계획으로 바로 들어가요! 동그란 점을 눌러 카테고리(색)를 바꿀 수 있어요.</p>
+      <p>오른쪽 <b>오늘 할 일</b>에 하고 싶은 일을 적어보세요. 앞의 <b>☆</b>을 누르면 🥇→🥈→🥉 순서로 오늘의 TOP3 우선순위가 매겨지고 목록 맨 위로 올라와요. 각 항목을 <b>왼쪽 시간표 칸으로 드래그</b>하면 그 시간에 계획으로 바로 들어가요! 동그란 점을 눌러 카테고리(색)를 바꿀 수 있어요.</p>
       <h4>🐾 캐릭터 키우기 (머니몽키 🐵)</h4>
       <p>칸을 완료할수록 <b>XP·간식🍪</b>이 쌓여 레벨업하면 진화해요(알→마스터). 화면 아래 버튼: <b>♥ 쓰다듬기 · 🍖 밥주기 · ≡ 도감</b>. 밥을 주면 친밀도❤가 오르고, 포만감은 시간이 지나면 줄어요. 도감에서 머니몽키·고양이·강아지로 바꿀 수 있어요.</p>
       <h4>🍅 뽀모도로</h4>
       <p>카테고리를 고르고 <b>시작</b>을 누르면 집중 타이머(기본 25분)가 돌아가요. 집중이 끝나면 <b>그 시간에 해당하는 타임박스 칸이 자동으로 완료</b>로 반영돼요(설정에서 끄기 가능). 4세션마다 긴 휴식! 집중 길이는 ⚙️ 설정에서 바꿀 수 있어요.</p>
+      <h4>📅 달력</h4>
+      <p>월간 캘린더로 하루하루 달성률을 색으로 한눈에 보고, 날짜 칸을 누르면 그날의 오늘 탭으로 바로 이동해요.</p>
       <h4>📊 성과</h4>
-      <p>일/주/월 달성률 추이 · 카테고리별 시간 · 출석 히트맵 · 인사이트 · CSV 내보내기.</p>
+      <p>맨 위 <b>🎯 집중 시간 추이</b>에서 카테고리(기본 주식공부)를 골라 <b>하루에 몇 시간 했는지</b>를 오늘·하루 평균·기간 합계·최고 기록과 일별 막대로 확인해요. 그 아래 일/주/월 달성률 추이 · 카테고리별 시간 · 출석 히트맵 · 인사이트 · CSV 내보내기.</p>
       <h4>🗂️ 도감</h4>
       <p>진화 단계 모아보기, 장식 아이템·배경 테마 잠금해제·장착, 친구 입양/전환(고양이·강아지).</p>
       <h4>⚙️ 설정</h4>
-      <p>카테고리 추가/편집, 하루 시간·칸 단위·성공 기준, 픽셀 모드, 알림, 클라우드 동기화, 백업.</p>
+      <p>카테고리 추가/편집, 하루 시간·칸 단위·성공 기준, 픽셀 모드, <b>UI 스킨</b>(레트로를 끄면 소프트 모던·다크 트레이더 글래스·파스텔 플레이풀·미니멀 에디토리얼 중 선택), 알림, 클라우드 동기화, 백업.</p>
       <h4>⌨️ 단축키 (PC)</h4>
       <p>화살표 = 칸 이동 · Enter/Space = 계획·체크 · Delete = 비우기 · E = 편집 · Ctrl+Z = 되돌리기</p>
       <h4>💡 팁</h4>
@@ -540,6 +587,7 @@
 <script src="js/todos.js"></script>
 <script src="js/pomodoro.js"></script>
 <script src="js/analytics.js"></script>
+<script src="js/calendar.js"></script>
 <script src="js/sync.js"></script>
 <script src="js/app.js"></script>
 </body>

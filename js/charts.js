@@ -128,5 +128,23 @@
     }
   }
 
-  App.charts = { catBars, catChart, trend, heatmap };
+  /* daily hours bars for one focus category: items = [{label, min, title}] */
+  function focusBars(container, items, color) {
+    container.innerHTML = "";
+    if (!items.length) { container.appendChild(el("p", "hint", "데이터 없음")); return; }
+    const max = Math.max(15, ...items.map((it) => it.min)); // at least 15min so tiny bars still show
+    items.forEach((it) => {
+      const col = el("div", "trend-col");
+      col.appendChild(el("span", "trend-v", it.min ? minToH(it.min) : ""));
+      const bar = el("div", "focus-bar");
+      bar.style.height = (it.min ? Math.max(3, (it.min / max) * 100) : 0) + "%";
+      if (color) bar.style.background = color;
+      bar.title = it.title || `${it.label}: ${minToH(it.min)}`;
+      col.appendChild(bar);
+      col.appendChild(el("span", "trend-x", it.label));
+      container.appendChild(col);
+    });
+  }
+
+  App.charts = { catBars, catChart, trend, heatmap, focusBars };
 })();
