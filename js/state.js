@@ -38,6 +38,7 @@
         reminderEnabled: false,    // daily reminder
         reminderTime: "21:00",
         reminderLastShown: "",     // ymd of last reminder fired
+        blockAlert: false,         // 일정(칸) 시작 시각에 팝업 알림
         pomoFocus: 25,             // 뽀모도로 집중 길이(분)
         pomoBreak: 5,              // 짧은 휴식(분)
         pomoLongBreak: 15,         // 긴 휴식(분, 4세션마다)

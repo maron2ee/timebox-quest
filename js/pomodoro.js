@@ -93,12 +93,18 @@
       try { Notification.requestPermission(); } catch (e) {}
     }
     const total = full();
-    if (!remaining || remaining > total) remaining = total;
+    const fresh = !remaining || remaining >= total;
+    if (fresh) remaining = total;
     endAt = Date.now() + remaining;
     if (phase === "focus" && !focusStartMs) focusStartMs = Date.now();
     running = true;
     startTicker();
     render();
+    if (fresh && phase === "focus") {
+      const sel = el("pomoCat");
+      const c = sel && App.catById(sel.value);
+      notify("🍅 집중 시작!", `${c ? c.name + " " : ""}${Math.round(total / 60000)}분 집중 시작! 화이팅 💪`);
+    }
   }
   function pause() {
     if (!running) return;

@@ -440,6 +440,10 @@
           <input type="time" id="setReminderTime" value="21:00" />
         </label>
         <label class="field row">
+          <span>일정 시작 알림 🔔 <small>(칸 시작 시각에 팝업)</small></span>
+          <input type="checkbox" id="setBlockAlert" />
+        </label>
+        <label class="field row">
           <span>완료 효과음 (8비트)</span>
           <input type="checkbox" id="setSound" />
         </label>
@@ -510,7 +514,9 @@
       <h4>🎯 오늘의 다짐 &amp; 🧭 하루 회고</h4>
       <p>오른쪽 위 <b>오늘의 다짐(Goal)</b>에 오늘 지킬 한 줄을 적고, 하루 끝에 아래 <b>하루 회고(K·P·T)</b>에 잘한 것(Keep)·아쉬운 것(Problem)·내일 시도할 것(Try)을 남겨보세요. 날짜별로 저장돼요.</p>
       <h4>📝 할 일 목록 &amp; TOP 3</h4>
-      <p>오른쪽 <b>오늘 할 일</b>에 하고 싶은 일을 적어보세요. 앞의 <b>☆</b>을 누르면 🥇→🥈→🥉 순서로 오늘의 TOP3 우선순위가 매겨지고 목록 맨 위로 올라와요. 각 항목을 <b>왼쪽 시간표 칸으로 드래그</b>하면 그 시간에 계획으로 바로 들어가요! 동그란 점을 눌러 카테고리(색)를 바꿀 수 있어요.</p>
+      <p>오른쪽 <b>오늘 할 일</b>에 하고 싶은 일을 적어보세요. 앞의 <b>☆</b>을 누르면 🥇→🥈→🥉 순서로 오늘의 TOP3 우선순위가 매겨지고 목록 맨 위로 올라와요. 각 항목을 <b>왼쪽 시간표 칸으로 드래그</b>하면 편집창이 떠서 <b>시작 시간·길이(15분~2시간)·메모</b>를 정해 넣을 수 있어요. 동그란 점을 눌러 카테고리(색)를 바꿀 수 있어요.</p>
+      <h4>⭐ 요일 템플릿 &amp; 🔔 알림</h4>
+      <p>자주 쓰는 하루 계획은 <b>💾 템플릿 저장</b>으로 그 요일 템플릿에 저장하고, 다른 날 <b>⭐ 템플릿 적용</b>으로 불러오세요. 설정의 <b>"요일 템플릿 자동 적용"</b>을 켜면 그 요일 아침에 자동으로 채워져요. 설정에서 <b>🔔 일정 시작 알림</b>을 켜면 각 칸의 시작 시각에, 🍅 뽀모도로는 시작·완료 시 팝업 알림이 떠요(앱이 열려 있을 때).</p>
       <h4>🐾 캐릭터 키우기 (머니몽키 🐵)</h4>
       <p>칸을 완료할수록 <b>XP·간식🍪</b>이 쌓여 레벨업하면 진화해요(알→마스터). 화면 아래 버튼: <b>♥ 쓰다듬기 · 🍖 밥주기 · ≡ 도감</b>. 밥을 주면 친밀도❤가 오르고, 포만감은 시간이 지나면 줄어요. 도감에서 머니몽키·고양이·강아지로 바꿀 수 있어요.</p>
       <h4>🍅 뽀모도로</h4>
@@ -534,6 +540,10 @@
   <!-- block edit modal -->
   <div id="blockModal" class="modal panel hidden">
     <h3 class="panel-h" id="blockModalTitle">칸 편집</h3>
+    <div class="field-row2">
+      <label class="field"><span>시작 시간</span><select id="blockTime"></select></label>
+      <label class="field"><span>길이</span><select id="blockLen"></select></label>
+    </div>
     <div id="blockCatPick" class="brush-bar in-modal"></div>
     <label class="field"><span>메모</span><input type="text" id="blockNote" placeholder="예: BTC 차트 복기" maxlength="40" /></label>
     <label class="field row"><span>완료(계획 지킴)</span><input type="checkbox" id="blockDone" /></label>

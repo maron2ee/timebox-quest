@@ -656,6 +656,8 @@ body.pixel .cal-day.today { box-shadow: inset 0 0 0 2px var(--neon-yellow); }
 
 .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 13px; font-size: 12.5px; color: var(--ink-dim); font-weight: 500; }
 .field.row { flex-direction: row; align-items: center; justify-content: space-between; }
+.field-row2 { display: flex; gap: 10px; }
+.field-row2 .field { flex: 1; min-width: 0; }
 .field input[type=text], .field input[type=email], .field input[type=password], .field input[type=number], .field select {
   background: var(--surface-2); border: 1px solid var(--line-strong); color: var(--ink);
   padding: 10px 12px; font-size: 13.5px; border-radius: var(--r-sm); transition: border 0.12s, box-shadow 0.12s;

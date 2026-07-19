@@ -172,6 +172,15 @@
       s.reminderTime = document.getElementById("setReminderTime").value || "21:00";
       App.store.save();
     };
+    document.getElementById("setBlockAlert").checked = s.blockAlert;
+    document.getElementById("setBlockAlert").onchange = () => {
+      s.blockAlert = document.getElementById("setBlockAlert").checked;
+      if (s.blockAlert && window.Notification && Notification.permission === "default") {
+        try { Notification.requestPermission(); } catch (e) {}
+      }
+      App.store.save();
+      App.gamify.toast(s.blockAlert ? "🔔 일정 시작 알림 ON" : "일정 시작 알림 OFF");
+    };
 
     // pomodoro durations
     const pf = document.getElementById("setPomoFocus");
@@ -230,6 +239,7 @@
       document.getElementById("setAutoTpl").checked = s.autoTemplate;
       document.getElementById("setReminder").checked = s.reminderEnabled;
       document.getElementById("setReminderTime").value = s.reminderTime;
+      document.getElementById("setBlockAlert").checked = s.blockAlert;
       const pf = document.getElementById("setPomoFocus");
       if (pf) { pf.value = s.pomoFocus; document.getElementById("setPomoBreak").value = s.pomoBreak; document.getElementById("setPomoLong").value = s.pomoLongBreak; }
     }
@@ -355,6 +365,35 @@
     }
   }
 
+  // schedule alert — when a planned block's start time arrives, pop a notification (once per slot)
+  let lastAlertSlot = null;
+  function fireNotify(title, body, toastPrefix) {
+    if (window.Notification && Notification.permission === "granted") {
+      try { new Notification(title, { body, icon: "icon.svg" }); return; } catch (e) {}
+    }
+    App.gamify.toast(toastPrefix + body);
+  }
+  function checkBlockAlert() {
+    const s = App.state.settings;
+    if (!s.blockAlert) return;
+    const today = U.today();
+    const now = new Date();
+    const cur = U.pad(now.getHours()) + ":" + U.pad(now.getMinutes());
+    const key = today + " " + cur;
+    if (lastAlertSlot === key) return;
+    const blocks = App.stats.dayBlocks(today);
+    const b = blocks[cur];
+    if (!b || !b.categoryId || b.done) { lastAlertSlot = key; return; }
+    // only alert at the START of a run (skip mid-block continuation slots)
+    const slots = U.slotsFor(s).map((x) => x.time);
+    const prev = slots[slots.indexOf(cur) - 1];
+    if (prev && blocks[prev] && blocks[prev].categoryId === b.categoryId && (blocks[prev].note || "") === (b.note || "")) { lastAlertSlot = key; return; }
+    lastAlertSlot = key;
+    const cat = App.catById(b.categoryId);
+    const body = `${cat ? cat.emoji + " " + cat.name : "일정"} 시간이에요${b.note ? " · " + b.note : ""}`;
+    fireNotify("TamaBox 🔔", body, "🔔 ");
+  }
+
   function maybeBackupReminder() {
     setTimeout(() => {
       if (App.sync && App.sync.isSignedIn()) return; // cloud-synced is safe
@@ -455,8 +494,9 @@
           App.planner.getDate() === U.today()) App.planner.render();
       if (App.character) App.character.render(false);
       checkReminder();
+      checkBlockAlert();
     }, 60000);
-    setTimeout(checkReminder, 6000);
+    setTimeout(() => { checkReminder(); checkBlockAlert(); }, 6000);
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);

@@ -311,10 +311,49 @@
     });
   }
 
-  function openBlockModal(time) {
+  let pendingOnSaved = null; // callback fired after a modal save (e.g. todo drop)
+
+  function slotTimes() { return U.slotsFor(App.state.settings).map((s) => s.time); }
+
+  function fillTimeSelect(selected) {
+    const sel = document.getElementById("blockTime");
+    if (!sel) return;
+    sel.innerHTML = "";
+    slotTimes().forEach((t) => { const o = document.createElement("option"); o.value = t; o.textContent = t; sel.appendChild(o); });
+    sel.value = selected;
+  }
+  function fmtLen(v) {
+    if (v < 60) return v + "분";
+    return (v % 60 === 0) ? (v / 60) + "시간" : Math.floor(v / 60) + "시간 " + (v % 60) + "분";
+  }
+  function fillLenSelect(minutes) {
+    const sel = document.getElementById("blockLen");
+    if (!sel) return;
+    const step = App.state.settings.slotMinutes;
+    sel.innerHTML = "";
+    [1, 2, 3, 4, 6, 8].forEach((m) => { const v = step * m; const o = document.createElement("option"); o.value = v; o.textContent = fmtLen(v); sel.appendChild(o); });
+    sel.value = minutes;
+  }
+  // how long a same-category+note run starting at `time` currently spans (minutes)
+  function existingRunLen(time) {
+    const b = block(time);
+    if (!b) return App.state.settings.slotMinutes;
+    const slots = slotTimes();
+    let n = 1;
+    for (let i = slots.indexOf(time) + 1; i < slots.length; i++) {
+      const x = block(slots[i]);
+      if (x && x.categoryId === b.categoryId && (x.note || "") === (b.note || "")) n++; else break;
+    }
+    return n * App.state.settings.slotMinutes;
+  }
+
+  function openBlockModal(time, prefill) {
     modalTime = time;
-    const b = block(time) || { categoryId: (App.state.categories[0] || {}).id, note: "", done: false };
-    document.getElementById("blockModalTitle").textContent = `${time} 칸 편집`;
+    pendingOnSaved = (prefill && prefill.onSaved) || null;
+    const b = block(time) || { categoryId: (prefill && prefill.categoryId) || (App.state.categories[0] || {}).id, note: (prefill && prefill.note) || "", done: false };
+    document.getElementById("blockModalTitle").textContent = prefill ? "일정 추가" : `${time} 일정 편집`;
+    fillTimeSelect(time);
+    fillLenSelect(prefill ? App.state.settings.slotMinutes : existingRunLen(time));
     renderModalPicker("blockCatPick", b.categoryId, false);
     renderModalPicker("blockActualPick", b.actual || b.categoryId, false);
     document.getElementById("blockNote").value = b.note || "";
@@ -327,17 +366,31 @@
     const actualEl = document.querySelector("#blockActualPick .brush.active");
     const catId = planned ? planned.cat : App.state.categories[0].id;
     const actualId = actualEl ? actualEl.dataset.cat : catId;
+    const note = document.getElementById("blockNote").value.trim();
+    const done = document.getElementById("blockDone").checked;
+    const startTime = document.getElementById("blockTime").value || modalTime;
+    const slotMin = App.state.settings.slotMinutes;
+    const lenMin = +document.getElementById("blockLen").value || slotMin;
+    const count = Math.max(1, Math.round(lenMin / slotMin));
+    const slots = slotTimes();
+
     App.history.snapshot();
-    const data = {
-      categoryId: catId,
-      note: document.getElementById("blockNote").value.trim(),
-      done: document.getElementById("blockDone").checked,
-    };
-    if (actualId && actualId !== catId) data.actual = actualId;
-    setBlock(modalTime, data);
+    // if editing an existing block and the start time moved, clear the old run first
+    if (block(modalTime) && startTime !== modalTime) {
+      const oldLen = Math.round(existingRunLen(modalTime) / slotMin);
+      const oi = slots.indexOf(modalTime);
+      for (let i = 0; i < oldLen && oi + i < slots.length; i++) setBlock(slots[oi + i], null);
+    }
+    const startIdx = slots.indexOf(startTime);
+    for (let i = 0; i < count && startIdx + i < slots.length; i++) {
+      const data = { categoryId: catId, note, done };
+      if (actualId && actualId !== catId) data.actual = actualId;
+      setBlock(slots[startIdx + i], data);
+    }
     App.ui.closeModals();
-    updateCell(modalTime);
+    render();
     commit();
+    if (pendingOnSaved) { const cb = pendingOnSaved; pendingOnSaved = null; cb(); }
   }
   function deleteBlockModal() {
     App.history.snapshot();
@@ -505,5 +558,5 @@
     const ts = document.getElementById("tplSave"); if (ts) ts.onclick = tplSave;
   }
 
-  App.planner = { init, render, setDate, getDate: () => curDate, renderSummary, reflectRange, placeAt };
+  App.planner = { init, render, setDate, getDate: () => curDate, renderSummary, reflectRange, placeAt, openBlockModal };
 })();

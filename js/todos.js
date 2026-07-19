@@ -70,13 +70,17 @@
     if (!item) return;
     const cat = catOrFallback(item.categoryId);
     if (!cat) { App.gamify.toast("먼저 설정에서 카테고리를 만들어 주세요"); return; }
-    const ok = App.planner.placeAt(time, cat.id, item.text);
-    if (ok) {
-      item.placed = (item.placed || 0) + 1;
-      App.store.save();
-      App.gamify.toast(`📌 ${time}에 "${item.text}" 를 넣었어요`);
-      render();
-    }
+    // 드롭하면 편집 모달을 열어 시간·메모·길이를 바로 조정할 수 있게
+    App.planner.openBlockModal(time, {
+      categoryId: cat.id,
+      note: item.text,
+      onSaved: () => {
+        item.placed = (item.placed || 0) + 1;
+        App.store.save();
+        App.gamify.toast(`📌 "${item.text}" 를 일정에 넣었어요`);
+        render();
+      },
+    });
   }
 
   /* ---------- render ---------- */
@@ -134,7 +138,8 @@
     const input = document.getElementById("todoInput");
     const add = () => { addTodo(input.value); input.value = ""; input.focus(); };
     document.getElementById("todoAddBtn").onclick = add;
-    input.addEventListener("keydown", (e) => { if (e.key === "Enter") add(); });
+    // e.isComposing: 한글 조합 중 Enter로 마지막 글자만 추가되던 버그 방지
+    input.addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.isComposing) add(); });
 
     render();
   }
