@@ -36,6 +36,7 @@ js/character.js         캐릭터 육성(SVG·진화·종[머니몽키/고양이
 js/planner.js           타임박스 그리드(칠하기/인셀 체크박스/키보드/복사·템플릿) + reflectRange(뽀모도로 반영)
 js/pomodoro.js          뽀모도로 집중 타이머(집중 완료 시 해당 시간대 칸 자동 완료 반영)
 js/todos.js              오늘 할 일 목록(day.todos[], ☆로 TOP3 메달 지정), 타임박스로 드래그&드롭
+js/journal.js            오늘의 다짐(Goal) + 하루 회고(K/P/T) — day.journal{goal, review{k,p,t}}, 날짜별 자동저장
 js/analytics.js         성과 탭(일/주/월)+인사이트+CSV+집중시간추이(카테고리별 일별 시간, 기본 주식공부)
 js/calendar.js           달력 탭: 월간 그리드로 일별 달성률 시각화, 날짜 클릭 시 플래너로 이동
 js/sync.js              Supabase 동기화(일 단위 병합)

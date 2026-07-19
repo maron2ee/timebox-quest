@@ -421,6 +421,29 @@ body.pixel .todo-item { border-color: var(--line-strong); }
 body.pixel .todo-add-row input[type=text] { background: var(--surface-2); }
 body.pixel .cell.drag-over { box-shadow: inset 0 0 0 3px var(--neon-yellow, #ffec27); }
 
+/* ---------- goal (오늘의 다짐) + daily review (K/P/T) ---------- */
+.goal-input {
+  width: 100%; resize: vertical; min-height: 46px; font-family: inherit; font-size: 13px; line-height: 1.5;
+  background: var(--surface-2); border: 1px solid var(--line-strong); color: var(--ink);
+  padding: 10px 12px; border-radius: var(--r-sm);
+}
+.goal-input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-soft); }
+.goal-input::placeholder { color: var(--ink-faint); }
+
+.review-row { display: flex; align-items: center; gap: 9px; margin-bottom: 8px; }
+.review-row:last-child { margin-bottom: 0; }
+.review-k { flex: 0 0 auto; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-size: 11px; font-weight: 700; color: #fff; }
+.review-k.keep { background: var(--green); }
+.review-k.prob { background: var(--orange); }
+.review-k.try { background: var(--sky, #29adff); }
+.review-row input[type=text] {
+  flex: 1; min-width: 0; background: var(--surface-2); border: 1px solid var(--line-strong); color: var(--ink);
+  padding: 8px 11px; font-size: 12.5px; border-radius: var(--r-sm);
+}
+.review-row input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-soft); }
+.review-row input::placeholder { color: var(--ink-faint); }
+body.pixel .review-k { border-radius: 0; }
+
 .mode-row { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
 .mode-toggle { display: flex; gap: 6px; background: var(--surface-2); padding: 4px; border-radius: var(--pill); }
 .mode-toggle .mode { box-shadow: none; border: none; background: transparent; }

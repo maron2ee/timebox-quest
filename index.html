@@ -184,8 +184,13 @@
         <div id="timeGrid" class="time-grid"><!-- slots injected --></div>
       </div>
 
-      <!-- right: todo / top3 / today summary -->
+      <!-- right: goal / todo / summary / review -->
       <aside class="summary-col">
+
+        <div class="panel goal-panel">
+          <h3 class="panel-h">🎯 오늘의 다짐 <span class="panel-h-note">Goal</span></h3>
+          <textarea id="goalInput" class="goal-input" rows="2" maxlength="200" placeholder="오늘 꼭 지킬 한 줄을 적어보세요"></textarea>
+        </div>
 
         <div class="panel todo-panel">
           <h3 class="panel-h">📝 오늘 할 일 <span class="panel-h-note">드래그해서 왼쪽 칸에 넣기</span></h3>
@@ -215,6 +220,13 @@
           <div id="catBars" class="cat-bars"><!-- per-category bars --></div>
 
           <div id="dayBadge" class="day-badge"></div>
+        </div>
+
+        <div class="panel review-panel">
+          <h3 class="panel-h">🧭 하루 회고 <span class="panel-h-note">Daily Review</span></h3>
+          <label class="review-row"><span class="review-k keep">K</span><input type="text" id="reviewK" maxlength="120" placeholder="Keep · 잘한 것, 계속할 것" /></label>
+          <label class="review-row"><span class="review-k prob">P</span><input type="text" id="reviewP" maxlength="120" placeholder="Problem · 아쉬웠던 것" /></label>
+          <label class="review-row"><span class="review-k try">T</span><input type="text" id="reviewT" maxlength="120" placeholder="Try · 내일 시도할 것" /></label>
         </div>
       </aside>
     </div>
@@ -495,6 +507,8 @@
     <div class="help-body">
       <h4>🗓️ 오늘 — 계획 &amp; 체크</h4>
       <p>① 색(카테고리) 고르기 → ② 칸을 <b>탭</b>(PC는 드래그)해서 칠하면 계획 완성 → ③ 칠한 칸을 <b>다시 탭</b>하면 ☐→☑ 완료 체크. 칸의 <b>⋯</b> 로 메모·카테고리 변경·"실제 한 활동"·비우기. 📋 어제 복사 · ⭐ 템플릿도 있어요.</p>
+      <h4>🎯 오늘의 다짐 &amp; 🧭 하루 회고</h4>
+      <p>오른쪽 위 <b>오늘의 다짐(Goal)</b>에 오늘 지킬 한 줄을 적고, 하루 끝에 아래 <b>하루 회고(K·P·T)</b>에 잘한 것(Keep)·아쉬운 것(Problem)·내일 시도할 것(Try)을 남겨보세요. 날짜별로 저장돼요.</p>
       <h4>📝 할 일 목록 &amp; TOP 3</h4>
       <p>오른쪽 <b>오늘 할 일</b>에 하고 싶은 일을 적어보세요. 앞의 <b>☆</b>을 누르면 🥇→🥈→🥉 순서로 오늘의 TOP3 우선순위가 매겨지고 목록 맨 위로 올라와요. 각 항목을 <b>왼쪽 시간표 칸으로 드래그</b>하면 그 시간에 계획으로 바로 들어가요! 동그란 점을 눌러 카테고리(색)를 바꿀 수 있어요.</p>
       <h4>🐾 캐릭터 키우기 (머니몽키 🐵)</h4>
@@ -585,6 +599,7 @@
 <script src="js/character.js"></script>
 <script src="js/planner.js"></script>
 <script src="js/todos.js"></script>
+<script src="js/journal.js"></script>
 <script src="js/pomodoro.js"></script>
 <script src="js/analytics.js"></script>
 <script src="js/calendar.js"></script>

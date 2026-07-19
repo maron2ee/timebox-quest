@@ -447,6 +447,7 @@
     renderSummary();
     scrollToNow();
     if (App.todos) App.todos.render();
+    if (App.journal) App.journal.render();
   }
 
   function setDate(ds) { curDate = ds; render(); }

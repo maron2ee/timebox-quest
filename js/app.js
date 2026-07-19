@@ -66,6 +66,7 @@
     if (App.character) App.character.render(true);
     App.planner.renderSummary();
     if (App.todos) App.todos.render();
+    if (App.journal) App.journal.render();
     if (App.pomodoro) App.pomodoro.render();
     if (document.getElementById("view-stats").classList.contains("active")) App.analytics.render();
     if (document.getElementById("view-calendar").classList.contains("active")) App.calendar.render();
@@ -428,6 +429,7 @@
     App.calendar.init();
     App.character.init();
     if (App.todos) App.todos.init();
+    if (App.journal) App.journal.init();
     if (App.pomodoro) App.pomodoro.init();
     App.planner.render();
     renderSettings();
