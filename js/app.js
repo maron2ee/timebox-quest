@@ -204,6 +204,23 @@
     document.getElementById("exportBtn").onclick = exportData;
     document.getElementById("importBtn").onclick = () => document.getElementById("importFile").click();
     document.getElementById("importFile").onchange = importData;
+    const updBtn = document.getElementById("updateBtn");
+    if (updBtn) updBtn.onclick = async () => {
+      App.gamify.toast("🔄 최신 버전을 받아오는 중…");
+      try {
+        if ("serviceWorker" in navigator) {
+          const regs = await navigator.serviceWorker.getRegistrations();
+          await Promise.all(regs.map((r) => r.unregister()));
+        }
+        if (window.caches) {
+          const keys = await caches.keys();
+          await Promise.all(keys.map((k) => caches.delete(k)));
+        }
+      } catch (e) { /* ignore */ }
+      // cache-bust the navigation so the browser HTTP cache is bypassed too
+      const url = location.pathname + "?v=" + Date.now();
+      location.replace(url);
+    };
     document.getElementById("resetBtn").onclick = () => {
       if (confirm("정말 모든 데이터를 초기화할까요? (Ctrl+Z로 되돌릴 수 있어요)")) {
         App.history.snapshot();
