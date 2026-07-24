@@ -91,6 +91,7 @@
         if (view === "settings") renderSettings();
         if (view === "planner") App.planner.render();
         if (view === "calendar") App.calendar.render();
+        if (view === "habits") App.habits.render();
       };
     });
   }
@@ -483,6 +484,7 @@
     App.planner.init();
     App.analytics.init();
     App.calendar.init();
+    if (App.habits) App.habits.init();
     App.character.init();
     if (App.todos) App.todos.init();
     if (App.journal) App.journal.init();

@@ -54,9 +54,13 @@
         { id: cid(), name: "리서치", emoji: "🔍", color: "#c77dff", target: 0 },
         { id: cid(), name: "휴식", emoji: "☕", color: "#ffa300", target: 0 },
       ],
-      days: {}, // 'YYYY-MM-DD' -> { blocks: { 'HH:MM': {categoryId, note, done, actual} } }
+      days: {}, // 'YYYY-MM-DD' -> { blocks: { 'HH:MM': {categoryId, note, done, actual} }, habitDone: {habitId:true} }
       templates: {}, // weekday(0-6) -> { 'HH:MM': {categoryId, note} }
       recurring: [], // 매일 반복 할 일 정의: [{id, text, categoryId, tags[]}]
+      habits: [ // 습관 트래커 (매일 체크): [{id, name, emoji}]
+        { id: cid(), name: "물 마시기", emoji: "💧" },
+        { id: cid(), name: "스트레칭", emoji: "🧘" },
+      ],
       game: gameDefaults(),
     };
   }
@@ -102,6 +106,7 @@
     s.days = s.days || {};
     s.templates = s.templates && typeof s.templates === "object" ? s.templates : {};
     s.recurring = Array.isArray(s.recurring) ? s.recurring : [];
+    s.habits = Array.isArray(s.habits) ? s.habits : [];
     s.game = migrateGame(s.game || {});
     if (fromV < 4) s.game.theme = "navy"; // v4: dark navy background by default
     if (fromV < 5) {

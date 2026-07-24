@@ -77,6 +77,7 @@
 <nav class="tabs" role="tablist" aria-label="화면 전환">
   <button class="tab active" data-view="planner" role="tab" aria-selected="true">🗓️ 오늘</button>
   <button class="tab" data-view="calendar" role="tab" aria-selected="false">📅 달력</button>
+  <button class="tab" data-view="habits" role="tab" aria-selected="false">🌱 습관</button>
   <button class="tab" data-view="stats" role="tab" aria-selected="false">📊 성과</button>
   <button class="tab" data-view="codex" role="tab" aria-selected="false">🗂️ 도감</button>
   <button class="tab" data-view="settings" role="tab" aria-selected="false">⚙️ 설정</button>
@@ -254,6 +255,20 @@
         <i class="heat-cell l0"></i><i class="heat-cell l1"></i><i class="heat-cell l2"></i><i class="heat-cell l3"></i><i class="heat-cell l4"></i>
         <span>많음</span>
       </div>
+    </div>
+  </section>
+
+  <!-- ===================== HABITS VIEW ===================== -->
+  <section id="view-habits" class="view">
+    <div class="panel">
+      <h3 class="panel-h">🌱 오늘의 습관 <span id="habitDate" class="panel-h-note"></span></h3>
+      <p class="hint">매일 체크하면 🔥연속 스트릭이 쌓여요. 습관을 눌러 이름을 바꾸거나 ✕로 삭제할 수 있어요.</p>
+      <div class="habit-add-row">
+        <input id="habitEmoji" class="habit-emoji-in" maxlength="2" placeholder="💪" aria-label="이모지" />
+        <input id="habitName" type="text" placeholder="새 습관 (예: 운동)" maxlength="20" />
+        <button id="habitAddBtn" class="pixel-btn small">＋ 추가</button>
+      </div>
+      <div id="habitList" class="habit-list"><!-- habits injected --></div>
     </div>
   </section>
 
@@ -528,6 +543,8 @@
       <p>카테고리를 고르고 <b>시작</b>을 누르면 집중 타이머(기본 25분)가 돌아가요. 집중이 끝나면 <b>그 시간에 해당하는 타임박스 칸이 자동으로 완료</b>로 반영돼요(설정에서 끄기 가능). 4세션마다 긴 휴식! <b>🔒 집중 잠금</b>을 누르면 전체화면 집중 모드로 들어가고, 이때 <b>다른 앱·탭으로 나가면 집중이 깨져서 세션이 무효</b>가 돼요(머니몽키가 시무룩해요 😢). 스스로를 가두는 집중 도구예요. <small>(웹앱이라 다른 앱을 강제로 막진 못하고, "나가면 실패" 방식이에요.)</small></p>
       <h4>📅 달력</h4>
       <p>월간 캘린더로 하루하루 달성률을 색으로 한눈에 보고, 날짜 칸을 누르면 그날의 오늘 탭으로 바로 이동해요.</p>
+      <h4>🌱 습관</h4>
+      <p>매일 반복할 습관(운동·물 마시기 등)을 추가하고 하루 한 번 체크하세요. <b>🔥연속 스트릭</b>과 <b>최근 7일·30일 달성률</b>이 쌓여요. 이름을 눌러 수정, ✕로 삭제.</p>
       <h4>📊 성과</h4>
       <p>맨 위 <b>🎯 집중 시간 추이</b>에서 카테고리(기본 주식공부)를 골라 <b>하루에 몇 시간 했는지</b>를 오늘·하루 평균·기간 합계·최고 기록과 일별 막대로 확인해요. 그 아래 일/주/월 달성률 추이 · 카테고리별 시간 · 출석 히트맵 · 인사이트 · CSV 내보내기.</p>
       <h4>🗂️ 도감</h4>
@@ -634,6 +651,7 @@
 <script src="js/pomodoro.js"></script>
 <script src="js/analytics.js"></script>
 <script src="js/calendar.js"></script>
+<script src="js/habits.js"></script>
 <script src="js/sync.js"></script>
 <script src="js/app.js"></script>
 </body>

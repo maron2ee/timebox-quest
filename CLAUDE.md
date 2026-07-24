@@ -39,6 +39,7 @@ js/todos.js              오늘 할 일 목록(day.todos[], ☆로 TOP3 메달 �
 js/journal.js            오늘의 다짐(Goal) + 하루 회고(K/P/T) — day.journal{goal, review{k,p,t}}, 날짜별 자동저장
 js/analytics.js         성과 탭(일/주/월)+인사이트+CSV+집중시간추이(카테고리별 일별 시간, 기본 주식공부)
 js/calendar.js           달력 탭: 월간 그리드로 일별 달성률 시각화, 날짜 클릭 시 플래너로 이동
+js/habits.js             습관 트래커 탭: state.habits[] 정의 + days[ds].habitDone{} 완료, 스트릭·7일·30일 통계
 js/sync.js              Supabase 동기화(일 단위 병합)
 js/app.js               부트스트랩·탭·HUD·설정·모달·Undo·알림
 manifest.webmanifest, sw.js, icon.svg   PWA(설치형/오프라인)

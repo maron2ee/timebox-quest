@@ -988,3 +988,26 @@ body.pixel .pomo-clock { font-family: "Press Start 2P", monospace; font-size: 17
 .fl-hint { font-size: 11.5px; color: #6b7aa8; margin: 0; line-height: 1.5; }
 body.pixel .fl-clock { font-family: "Press Start 2P", monospace; font-size: 40px; }
 @media (max-width: 480px) { .fl-clock { font-size: 54px; } .fl-art { width: 140px; height: 140px; } }
+
+/* ===================== HABIT TRACKER ===================== */
+.habit-add-row { display: flex; gap: 8px; margin-bottom: 14px; }
+.habit-emoji-in { width: 52px; flex: 0 0 auto; text-align: center; font-size: 16px; background: var(--surface-2); border: 1px solid var(--line-strong); color: var(--ink); padding: 9px 6px; border-radius: var(--r-sm); }
+.habit-add-row input[type=text] { flex: 1; min-width: 0; background: var(--surface-2); border: 1px solid var(--line-strong); color: var(--ink); padding: 9px 12px; font-size: 13px; border-radius: var(--r-sm); }
+.habit-add-row input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-soft); }
+.habit-list { display: flex; flex-direction: column; gap: 8px; }
+.habit-item { display: flex; align-items: center; gap: 12px; padding: 12px 14px; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r); }
+.habit-item.done { border-color: var(--green); }
+.habit-check { flex: 0 0 auto; width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--line-strong); background: transparent; color: #fff; font-size: 15px; font-weight: 700; cursor: pointer; display: grid; place-items: center; transition: background 0.12s, border-color 0.12s; }
+.habit-check.on { background: var(--green); border-color: var(--green); }
+.habit-emoji { font-size: 22px; flex: 0 0 auto; }
+.habit-main { flex: 1; min-width: 0; }
+.habit-name { font-size: 14px; font-weight: 600; color: var(--ink); cursor: pointer; overflow-wrap: anywhere; }
+.habit-dots { display: flex; gap: 4px; margin-top: 6px; }
+.habit-dots .hd { width: 10px; height: 10px; border-radius: 50%; background: var(--line-strong); }
+.habit-dots .hd.on { background: var(--green); }
+.habit-stat { text-align: right; flex: 0 0 auto; display: flex; flex-direction: column; gap: 2px; }
+.habit-streak { font-size: 13px; font-weight: 700; color: var(--orange); }
+.habit-rate { font-size: 11px; color: var(--ink-faint); font-weight: 500; }
+.habit-del { background: none; border: none; color: var(--ink-faint); font-size: 14px; cursor: pointer; padding: 2px 4px; flex: 0 0 auto; }
+.habit-del:hover { color: var(--red); }
+body.pixel .habit-check, body.pixel .habit-dots .hd { border-radius: 0; }
