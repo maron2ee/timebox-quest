@@ -16,6 +16,15 @@
   let cycle = 0;         // completed focus sessions (every 4th → long break)
   let ticker = null;
 
+  /* ---------- focus lock (distraction-free; leaving the app breaks the session) ---------- */
+  let locked = false;
+  let awayStart = 0;     // when the user left the app (0 = present)
+  let leaveCount = 0;
+  let wakeLock = null;
+  let warnTimer = null;
+  const AWAY_FAIL_MS = 12000; // 한 번에 12초 넘게 나가면 실패
+  const MAX_LEAVES = 3;       // 3번 나가면 실패
+
   const META = {
     focus: { label: "🍅 집중", cls: "focus" },
     break: { label: "☕ 휴식", cls: "rest" },
@@ -75,7 +84,86 @@
     el("pomoCount").textContent = `오늘 🍅 ${todayPomos()}`;
     const auto = el("pomoAutofill");
     if (auto) auto.checked = S().pomoAutofill !== false;
+    if (locked) renderLock();
   }
+
+  /* ---------- lock overlay ---------- */
+  function renderLock() {
+    const clock = el("flClock");
+    if (!clock) return;
+    const total = full();
+    const rem = running ? endAt - Date.now() : (remaining || total);
+    clock.textContent = fmt(rem);
+    const sel = el("pomoCat");
+    const c = sel && App.catById(sel.value);
+    el("flCat").textContent = c ? `${c.emoji} ${c.name}` : "집중";
+    if (el("flPhase").textContent.indexOf("실패") === -1) el("flPhase").textContent = running ? "🔒 집중 중" : "⏸ 일시정지됨";
+    const pb = el("flPause"); if (pb) pb.textContent = running ? "⏸ 일시정지" : "▶ 계속";
+  }
+  function flashWarn(msg) {
+    const w = el("flWarn"); if (!w) return;
+    w.textContent = msg;
+    clearTimeout(warnTimer);
+    warnTimer = setTimeout(() => { if (locked) w.textContent = ""; }, 4000);
+  }
+  async function acquireWake() {
+    try { if (navigator.wakeLock && document.visibilityState === "visible") wakeLock = await navigator.wakeLock.request("screen"); } catch (e) {}
+  }
+  function releaseWake() { try { if (wakeLock) { wakeLock.release(); wakeLock = null; } } catch (e) {} }
+
+  function enterLock() {
+    locked = true; leaveCount = 0; awayStart = 0;
+    const ov = el("focusLock"); if (!ov) return;
+    ov.classList.remove("hidden", "failed"); ov.setAttribute("aria-hidden", "false");
+    el("flWarn").textContent = "";
+    el("flPhase").textContent = "🔒 집중 중";
+    if (App.character && App.character.heroSprite) el("flArt").innerHTML = App.character.heroSprite("happy");
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("blur", onAway);
+    window.addEventListener("focus", onBack);
+    acquireWake();
+    renderLock();
+  }
+  function exitLock() {
+    locked = false;
+    const ov = el("focusLock"); if (ov) { ov.classList.add("hidden"); ov.setAttribute("aria-hidden", "true"); }
+    document.removeEventListener("visibilitychange", onVisibility);
+    window.removeEventListener("blur", onAway);
+    window.removeEventListener("focus", onBack);
+    releaseWake();
+  }
+  function onVisibility() { if (document.hidden) onAway(); else onBack(); }
+  function onAway() { if (locked && running && !awayStart) awayStart = Date.now(); }
+  function onBack() {
+    if (!locked || !awayStart) return;
+    const away = Date.now() - awayStart; awayStart = 0;
+    if (!running) return; // paused → no penalty
+    if (away >= AWAY_FAIL_MS) { failSession(`${Math.round(away / 1000)}초 동안 자리를 비웠어요`); return; }
+    if (away >= 1500) {
+      leaveCount++;
+      if (leaveCount >= MAX_LEAVES) { failSession(`너무 자주 나갔어요 (${leaveCount}회)`); return; }
+      flashWarn(`앗! 나갔다 왔어요 (${leaveCount}/${MAX_LEAVES}) — 계속 집중해요! 🔒`);
+    }
+    acquireWake(); // wake lock auto-releases when the page was hidden
+    renderLock();
+  }
+  function failSession(reason) {
+    running = false; remaining = full(); focusStartMs = 0;
+    if (App.gamify.sfx && App.gamify.sfx.uncheck) App.gamify.sfx.uncheck();
+    const ov = el("focusLock"); if (ov) ov.classList.add("failed");
+    el("flPhase").textContent = "집중 실패 😢";
+    el("flWarn").textContent = reason + " · 이번 집중은 무효예요";
+    el("flClock").textContent = fmt(full());
+    if (App.character && App.character.heroSprite) el("flArt").innerHTML = App.character.heroSprite("sleepy");
+    releaseWake();
+    setTimeout(() => { exitLock(); render(); App.gamify.toast("😢 집중이 깨졌어요 — 다시 도전!"); }, 2600);
+  }
+  function startLock() {
+    phase = "focus"; remaining = full(); focusStartMs = 0; running = false;
+    enterLock();
+    start();
+  }
+  function giveup() { exitLock(); reset(); render(); App.gamify.toast("집중을 종료했어요"); }
 
   /* ---------- transport ---------- */
   function startTicker() {
@@ -142,6 +230,7 @@
     running = false;
     remaining = 0;
     if (phase === "focus") {
+      if (locked) exitLock();
       const sel = el("pomoCat");
       const cat = (sel && sel.value) || S().pomoCat || (App.state.categories[0] && App.state.categories[0].id);
       const from = focusStartMs || (Date.now() - full());
@@ -171,8 +260,11 @@
   /* ---------- init ---------- */
   function init() {
     const startBtn = el("pomoStart"); if (startBtn) startBtn.onclick = start;
+    const lockBtn = el("pomoLock"); if (lockBtn) lockBtn.onclick = startLock;
     const resetBtn = el("pomoReset"); if (resetBtn) resetBtn.onclick = reset;
     const skipBtn = el("pomoSkip"); if (skipBtn) skipBtn.onclick = skip;
+    const flPause = el("flPause"); if (flPause) flPause.onclick = start; // toggles pause/resume
+    const flGiveup = el("flGiveup"); if (flGiveup) flGiveup.onclick = giveup;
     const sel = el("pomoCat");
     if (sel) sel.onchange = () => { S().pomoCat = sel.value; App.store.save(); };
     const auto = el("pomoAutofill");

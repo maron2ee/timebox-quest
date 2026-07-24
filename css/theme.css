@@ -940,3 +940,26 @@ body.pixel .pomo-timer { --pomo-track: #10204a; box-shadow: 5px 5px 0 var(--shad
 body.pixel .pomo-timer.focus { --pomo-c: #ff5a4d; }
 body.pixel .pomo-timer::after { background: var(--surface-2); box-shadow: inset 2px 2px 0 #000; }
 body.pixel .pomo-clock { font-family: "Press Start 2P", monospace; font-size: 17px; color: var(--neon-yellow, #ffec27); }
+
+/* ===================== FOCUS LOCK (distraction-free full-screen) ===================== */
+.focus-lock {
+  position: fixed; inset: 0; z-index: 9800;
+  background:
+    radial-gradient(900px 500px at 50% -10%, #17235a 0%, transparent 60%),
+    linear-gradient(180deg, #0c1436, #05081c);
+  display: flex; align-items: center; justify-content: center; padding: 24px;
+  -webkit-user-select: none; user-select: none;
+}
+.focus-lock.hidden { display: none; }
+.focus-lock.failed { background: radial-gradient(900px 500px at 50% -10%, #4a1230 0%, transparent 60%), linear-gradient(180deg, #2a0a1c, #12040c); }
+.fl-inner { text-align: center; max-width: 420px; width: 100%; }
+.fl-cat { font-size: 15px; font-weight: 700; color: #cfe0ff; margin-bottom: 4px; letter-spacing: 0.5px; }
+.fl-art { width: 180px; height: 180px; margin: 0 auto; }
+.fl-art svg { width: 100%; height: 100%; }
+.fl-clock { font-family: var(--display); font-size: 68px; font-weight: 700; color: #ffd21f; letter-spacing: 2px; font-variant-numeric: tabular-nums; line-height: 1; margin: 6px 0 2px; }
+.fl-phase { font-size: 14px; font-weight: 600; color: #9fb2e0; margin-bottom: 14px; }
+.fl-warn { min-height: 24px; font-size: 13.5px; font-weight: 700; color: #ff8fa3; margin-bottom: 12px; }
+.fl-controls { display: flex; gap: 10px; justify-content: center; margin-bottom: 16px; }
+.fl-hint { font-size: 11.5px; color: #6b7aa8; margin: 0; line-height: 1.5; }
+body.pixel .fl-clock { font-family: "Press Start 2P", monospace; font-size: 40px; }
+@media (max-width: 480px) { .fl-clock { font-size: 54px; } .fl-art { width: 140px; height: 140px; } }

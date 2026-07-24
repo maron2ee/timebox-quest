@@ -831,5 +831,12 @@
   }
   function bindClick(id, fn) { const e = document.getElementById(id); if (e) e.addEventListener("click", fn); }
 
-  App.character = { init, render, renderCollection, renderMini, needsSpecies, chooseSpecies, STAGES, DECOS };
+  // 현재 캐릭터의 SVG (집중 잠금 화면 등에서 크게 보여줄 때 사용). mood 지정 가능.
+  function heroSprite(mood) {
+    const info = App.gamify.levelInfo(game().xp || 0);
+    const idx = stageForLevel(info.level);
+    return creature(idx, mood || moodInfo().mood, activePet().equip, activePet().species || "monkey", null);
+  }
+
+  App.character = { init, render, renderCollection, renderMini, needsSpecies, chooseSpecies, heroSprite, STAGES, DECOS };
 })();

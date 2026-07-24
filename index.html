@@ -156,6 +156,7 @@
           </label>
           <div class="pomo-controls">
             <button id="pomoStart" class="pixel-btn small">▶ 시작</button>
+            <button id="pomoLock" class="pixel-btn small" title="전체화면 집중 — 나가면 세션이 깨져요">🔒 집중 잠금</button>
             <button id="pomoReset" class="pixel-btn small ghost">↺ 리셋</button>
             <button id="pomoSkip" class="pixel-btn tiny ghost" title="다음 단계로">⏭ 건너뛰기</button>
           </div>
@@ -522,8 +523,8 @@
       <p>자주 쓰는 하루 계획은 <b>💾 템플릿 저장</b>으로 그 요일 템플릿에 저장하고, 다른 날 <b>⭐ 템플릿 적용</b>으로 불러오세요. 설정의 <b>"요일 템플릿 자동 적용"</b>을 켜면 그 요일 아침에 자동으로 채워져요. 설정에서 <b>🔔 일정 시작 알림</b>을 켜면 각 칸의 시작 시각에, 🍅 뽀모도로는 시작·완료 시 팝업 알림이 떠요(앱이 열려 있을 때).</p>
       <h4>🐾 캐릭터 키우기 (머니몽키 🐵)</h4>
       <p>칸을 완료할수록 <b>XP·간식🍪</b>이 쌓여 레벨업하면 진화해요(알→마스터). 화면 아래 버튼: <b>♥ 쓰다듬기 · 🍖 밥주기 · ≡ 도감</b>. 밥을 주면 친밀도❤가 오르고, 포만감은 시간이 지나면 줄어요. 도감에서 머니몽키·고양이·강아지로 바꿀 수 있어요.</p>
-      <h4>🍅 뽀모도로</h4>
-      <p>카테고리를 고르고 <b>시작</b>을 누르면 집중 타이머(기본 25분)가 돌아가요. 집중이 끝나면 <b>그 시간에 해당하는 타임박스 칸이 자동으로 완료</b>로 반영돼요(설정에서 끄기 가능). 4세션마다 긴 휴식! 집중 길이는 ⚙️ 설정에서 바꿀 수 있어요.</p>
+      <h4>🍅 뽀모도로 &amp; 🔒 집중 잠금</h4>
+      <p>카테고리를 고르고 <b>시작</b>을 누르면 집중 타이머(기본 25분)가 돌아가요. 집중이 끝나면 <b>그 시간에 해당하는 타임박스 칸이 자동으로 완료</b>로 반영돼요(설정에서 끄기 가능). 4세션마다 긴 휴식! <b>🔒 집중 잠금</b>을 누르면 전체화면 집중 모드로 들어가고, 이때 <b>다른 앱·탭으로 나가면 집중이 깨져서 세션이 무효</b>가 돼요(머니몽키가 시무룩해요 😢). 스스로를 가두는 집중 도구예요. <small>(웹앱이라 다른 앱을 강제로 막진 못하고, "나가면 실패" 방식이에요.)</small></p>
       <h4>📅 달력</h4>
       <p>월간 캘린더로 하루하루 달성률을 색으로 한눈에 보고, 날짜 칸을 누르면 그날의 오늘 탭으로 바로 이동해요.</p>
       <h4>📊 성과</h4>
@@ -598,6 +599,22 @@
       <button id="catModalDelete" class="pixel-btn small danger">삭제</button>
       <button id="catModalSave" class="pixel-btn small">저장</button>
     </div>
+  </div>
+</div>
+
+<!-- focus lock (distraction-free full-screen focus) -->
+<div id="focusLock" class="focus-lock hidden" aria-hidden="true">
+  <div class="fl-inner">
+    <div id="flCat" class="fl-cat"></div>
+    <div id="flArt" class="fl-art"></div>
+    <div id="flClock" class="fl-clock">25:00</div>
+    <div id="flPhase" class="fl-phase">🔒 집중 중</div>
+    <div id="flWarn" class="fl-warn"></div>
+    <div class="fl-controls">
+      <button id="flPause" class="pixel-btn small">⏸ 일시정지</button>
+      <button id="flGiveup" class="pixel-btn small ghost">집중 종료</button>
+    </div>
+    <p class="fl-hint">다른 앱·탭으로 나가면 집중이 깨져요. 화면을 떠나지 마세요 🔒</p>
   </div>
 </div>
 
