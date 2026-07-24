@@ -390,16 +390,17 @@ input, select { font-family: var(--sans); }
 .todo-empty { margin: 0; }
 
 .todo-item {
-  display: flex; align-items: center; gap: 7px; padding: 8px 10px;
   background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-sm);
-  cursor: grab; transition: opacity 0.15s, box-shadow 0.15s, border-color 0.15s;
+  transition: opacity 0.15s, box-shadow 0.15s, border-color 0.15s; overflow: hidden;
 }
-.todo-item:active { cursor: grabbing; }
 .todo-item.dragging { opacity: 0.35; }
 .todo-item.done .todo-text { text-decoration: line-through; opacity: 0.55; }
 .todo-item.medal-1 { border-color: #e0b400; box-shadow: inset 2px 0 0 0 #ffd54a; }
 .todo-item.medal-2 { border-color: #98a2b3; box-shadow: inset 2px 0 0 0 #c9d3e0; }
 .todo-item.medal-3 { border-color: #b5762f; box-shadow: inset 2px 0 0 0 #e5b085; }
+
+.todo-row { display: flex; align-items: center; gap: 7px; padding: 8px 10px; cursor: grab; }
+.todo-row:active { cursor: grabbing; }
 
 .todo-medal { background: none; border: none; font-size: 15px; cursor: pointer; padding: 2px 3px; flex: 0 0 auto; line-height: 1; opacity: 0.45; }
 .todo-medal.set { opacity: 1; }
@@ -408,11 +409,35 @@ input, select { font-family: var(--sans); }
 .todo-dot { width: 16px; height: 16px; border-radius: 50%; border: 2px solid rgba(0, 0, 0, 0.15); flex: 0 0 auto; padding: 0; cursor: pointer; }
 .todo-text { flex: 1; min-width: 0; font-size: 12.5px; font-weight: 500; overflow-wrap: anywhere; }
 .todo-placed { font-size: 10px; color: var(--ink-faint); flex: 0 0 auto; }
+.todo-mini { background: none; border: none; font-size: 12.5px; cursor: pointer; padding: 2px 3px; flex: 0 0 auto; line-height: 1; opacity: 0.4; color: var(--ink-dim); white-space: nowrap; }
+.todo-mini.on { opacity: 1; }
+.todo-mini:hover { opacity: 0.9; }
 .todo-del {
   background: none; border: none; color: var(--ink-faint); font-size: 13px; cursor: pointer;
   padding: 2px 4px; flex: 0 0 auto; line-height: 1;
 }
 .todo-del:hover { color: var(--red); }
+
+/* tags + filter */
+.tag-chip { display: inline-block; font-size: 10px; font-weight: 600; padding: 1px 7px; border-radius: 999px; background: var(--primary-soft); color: var(--primary-d); border: none; line-height: 1.5; }
+.tag-chip.in-todo { margin-left: 5px; vertical-align: middle; }
+.tag-chip.filter { cursor: pointer; background: var(--surface-2); color: var(--ink-dim); border: 1px solid var(--line); }
+.tag-chip.filter.active { background: var(--primary); color: #fff; border-color: transparent; }
+.todo-filters { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.todo-filters:empty { display: none; }
+body.pixel .tag-chip { border-radius: 0; }
+
+/* subtasks */
+.todo-subs { padding: 4px 10px 9px 32px; display: flex; flex-direction: column; gap: 5px; border-top: 1px solid var(--line); }
+.sub-item { display: flex; align-items: center; gap: 7px; font-size: 12px; }
+.sub-item.done .sub-text { text-decoration: line-through; opacity: 0.55; }
+.sub-check { cursor: pointer; flex: 0 0 auto; user-select: none; }
+.sub-text { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.sub-del { background: none; border: none; color: var(--ink-faint); cursor: pointer; font-size: 11px; padding: 0 3px; }
+.sub-del:hover { color: var(--red); }
+.sub-add { display: flex; gap: 6px; margin-top: 2px; }
+.sub-add-input { flex: 1; min-width: 0; font-size: 12px; padding: 5px 8px; background: var(--surface); border: 1px solid var(--line-strong); color: var(--ink); border-radius: var(--r-sm); }
+.sub-add-input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 2px var(--primary-soft); }
 
 /* drop target highlight on the timebox grid */
 .cell.drag-over { box-shadow: inset 0 0 0 3px var(--primary); }

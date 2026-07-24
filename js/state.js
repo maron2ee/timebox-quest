@@ -56,6 +56,7 @@
       ],
       days: {}, // 'YYYY-MM-DD' -> { blocks: { 'HH:MM': {categoryId, note, done, actual} } }
       templates: {}, // weekday(0-6) -> { 'HH:MM': {categoryId, note} }
+      recurring: [], // 매일 반복 할 일 정의: [{id, text, categoryId, tags[]}]
       game: gameDefaults(),
     };
   }
@@ -100,6 +101,7 @@
       s.categories = defaultState().categories;
     s.days = s.days || {};
     s.templates = s.templates && typeof s.templates === "object" ? s.templates : {};
+    s.recurring = Array.isArray(s.recurring) ? s.recurring : [];
     s.game = migrateGame(s.game || {});
     if (fromV < 4) s.game.theme = "navy"; // v4: dark navy background by default
     if (fromV < 5) {
