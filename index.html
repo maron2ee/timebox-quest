@@ -75,9 +75,9 @@
 
 <!-- ===================== TABS ===================== -->
 <nav class="tabs axis-tabs" role="tablist" aria-label="영역 전환">
-  <button class="tab axis" data-axis="tama" role="tab" aria-selected="false">🐵 다마고치</button>
   <button class="tab axis active" data-axis="timebox" role="tab" aria-selected="true">🗓️ 타임박스</button>
   <button class="tab axis" data-axis="pomo" role="tab" aria-selected="false">🍅 뽀모도로</button>
+  <button class="tab axis" data-axis="tama" role="tab" aria-selected="false">🐵 다마고치</button>
   <button class="tab axis" data-axis="settings" role="tab" aria-selected="false">⚙️ 설정</button>
 </nav>
 <nav class="subtabs" id="subtabs" role="tablist" aria-label="하위 화면"><!-- injected per axis --></nav>
@@ -200,6 +200,25 @@
           <label class="review-row"><span class="review-k try">T</span><input type="text" id="reviewT" maxlength="120" placeholder="Try · 내일 시도할 것" /></label>
         </div>
       </aside>
+    </div>
+  </section>
+
+  <!-- ===================== LISTS VIEW ===================== -->
+  <section id="view-lists" class="view">
+    <div class="panel">
+      <div id="listChips" class="list-chips"><!-- list chips injected --></div>
+      <div id="listHead" class="list-head">
+        <h3 class="panel-h" id="listTitle">📋 할 일</h3>
+        <div class="list-head-actions">
+          <button id="listRename" class="pixel-btn tiny ghost">✎ 이름</button>
+          <button id="listDelete" class="pixel-btn tiny ghost">🗑 삭제</button>
+        </div>
+      </div>
+      <div id="listAddRow" class="todo-add-row">
+        <input id="listTaskInput" type="text" placeholder="할 일 추가 (#태그 가능)" maxlength="80" />
+        <button id="listTaskAdd" class="pixel-btn small">＋ 추가</button>
+      </div>
+      <div id="listTasks" class="todo-list"><!-- tasks injected --></div>
     </div>
   </section>
 
@@ -656,6 +675,7 @@
 <script src="js/character.js"></script>
 <script src="js/planner.js"></script>
 <script src="js/todos.js"></script>
+<script src="js/lists.js"></script>
 <script src="js/journal.js"></script>
 <script src="js/pomodoro.js"></script>
 <script src="js/analytics.js"></script>

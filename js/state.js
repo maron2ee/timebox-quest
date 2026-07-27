@@ -61,6 +61,10 @@
         { id: cid(), name: "물 마시기", emoji: "💧" },
         { id: cid(), name: "스트레칭", emoji: "🧘" },
       ],
+      lists: [ // 프로젝트 리스트(날짜 무관, 지속): [{id, name, emoji, tasks:[{id,text,done,tags,subs}]}]
+        { id: cid(), name: "할 일", emoji: "📋", tasks: [] },
+        { id: cid(), name: "주식 리서치", emoji: "📈", tasks: [] },
+      ],
       game: gameDefaults(),
     };
   }
@@ -107,6 +111,7 @@
     s.templates = s.templates && typeof s.templates === "object" ? s.templates : {};
     s.recurring = Array.isArray(s.recurring) ? s.recurring : [];
     s.habits = Array.isArray(s.habits) ? s.habits : [];
+    s.lists = Array.isArray(s.lists) ? s.lists : [];
     s.game = migrateGame(s.game || {});
     if (fromV < 4) s.game.theme = "navy"; // v4: dark navy background by default
     if (fromV < 5) {

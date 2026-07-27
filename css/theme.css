@@ -440,6 +440,17 @@ body.pixel .subtab.active { background: var(--surface-2); color: var(--neon-yell
 .todo-filters:empty { display: none; }
 body.pixel .tag-chip { border-radius: 0; }
 
+/* ---------- project lists ---------- */
+.list-chips { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 14px; }
+.list-chip { background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--pill); padding: 6px 13px; font-size: 12.5px; font-weight: 600; color: var(--ink-dim); cursor: pointer; }
+.list-chip.active { background: var(--primary); color: #fff; border-color: transparent; }
+.list-chip .list-count { font-size: 10.5px; opacity: 0.75; margin-left: 3px; }
+.list-chip.add { border-style: dashed; color: var(--ink-faint); }
+.list-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+.list-head .panel-h { margin: 0; }
+.list-head-actions { display: flex; gap: 6px; flex: 0 0 auto; }
+body.pixel .list-chip { border-radius: 0; }
+
 /* subtasks */
 .todo-subs { padding: 4px 10px 9px 32px; display: flex; flex-direction: column; gap: 5px; border-top: 1px solid var(--line); }
 .sub-item { display: flex; align-items: center; gap: 7px; font-size: 12px; }

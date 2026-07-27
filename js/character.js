@@ -381,13 +381,16 @@
     s += '<ellipse cx="60" cy="124" rx="28" ry="6" fill="#000" opacity=".16"/>';
 
     if (idx === 0) {
-      // egg — species not visible until it hatches
-      s += `<defs><radialGradient id="e${id}" cx="42%" cy="30%" r="82%"><stop offset="0" stop-color="#fffaf0"/><stop offset="1" stop-color="#ffe2a6"/></radialGradient></defs>`;
-      s += `<path d="M60 24 C38 24 32 64 32 82 a28 28 0 0 0 56 0 C88 64 82 24 60 24 Z" fill="url(#e${id})" stroke="#f0cf84" stroke-width="2.5"/>`;
-      s += '<path d="M44 72 l7 -6 7 7 7 -7 7 6" stroke="#e9c573" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>';
+      // egg — cute golden tamagotchi egg (species not visible until it hatches)
+      s += `<defs><radialGradient id="e${id}" cx="40%" cy="26%" r="88%"><stop offset="0" stop-color="#fff8e0"/><stop offset=".55" stop-color="#ffe08f"/><stop offset="1" stop-color="#f3b53e"/></radialGradient></defs>`;
+      s += `<path d="M60 26 C40 26 32 52 32 72 C32 95 45 110 60 110 C75 110 88 95 88 72 C88 52 80 26 60 26 Z" fill="url(#e${id})" stroke="#e0a94a" stroke-width="2.5"/>`;
+      s += '<ellipse cx="60" cy="99" rx="22" ry="9" fill="#e0a94a" opacity=".14"/>';                       // bottom depth
+      s += '<path d="M38 92 l7 -7 7 7 7 -7 7 7 7 -7 7 7" fill="none" stroke="#fff3cf" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" opacity=".85"/>'; // zigzag belt
+      s += '<circle cx="47" cy="82" r="1.8" fill="#fff3cf"/><circle cx="60" cy="84" r="1.8" fill="#fff3cf"/><circle cx="73" cy="82" r="1.8" fill="#fff3cf"/>'; // dots
+      s += '<ellipse cx="50" cy="54" rx="9" ry="13" fill="#fff" opacity=".45" transform="rotate(-16 50 54)"/>'; // glossy highlight
       s += face(mood);
       s += decoLayer(idx, equip);
-      s += '<text x="25" y="44" font-size="12">✨</text>';
+      s += '<text x="22" y="46" font-size="13">✨</text><text x="88" y="58" font-size="9">✨</text>';
       return s + "</svg>";
     }
 

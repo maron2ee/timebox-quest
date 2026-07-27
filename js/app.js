@@ -77,7 +77,7 @@
   /* ---------- two-level navigation: 3 축(다마고치/타임박스/뽀모도로) + 설정 ---------- */
   const AXES = [
     { id: "tama",     views: [["codex", "🗂️ 도감"], ["habits", "🌱 습관"], ["stats", "📊 성과"]] },
-    { id: "timebox",  views: [["planner", "🗓️ 오늘"], ["calendar", "📅 달력"]] },
+    { id: "timebox",  views: [["planner", "🗓️ 오늘"], ["lists", "📋 리스트"], ["calendar", "📅 달력"]] },
     { id: "pomo",     views: [["pomodoro", "🍅 집중"]] },
     { id: "settings", views: [["settings", "⚙️ 설정"]] },
   ];
@@ -91,6 +91,7 @@
     else if (view === "planner") App.planner.render();
     else if (view === "calendar") App.calendar.render();
     else if (view === "habits") App.habits.render();
+    else if (view === "lists" && App.lists) App.lists.render();
     else if (view === "pomodoro" && App.pomodoro) App.pomodoro.render();
   }
 
@@ -536,6 +537,7 @@
     if (App.habits) App.habits.init();
     App.character.init();
     if (App.todos) App.todos.init();
+    if (App.lists) App.lists.init();
     if (App.journal) App.journal.init();
     if (App.pomodoro) App.pomodoro.init();
     renderSettings();
