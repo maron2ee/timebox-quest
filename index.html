@@ -624,8 +624,15 @@
 <div id="focusLock" class="focus-lock hidden" aria-hidden="true">
   <div class="fl-inner">
     <div id="flCat" class="fl-cat"></div>
-    <div id="flArt" class="fl-art"></div>
     <div id="flClock" class="fl-clock">25:00</div>
+    <div id="flDial" class="fl-dial">
+      <svg class="fl-dial-svg" viewBox="0 0 240 240" aria-hidden="true">
+        <g id="flTicks"></g>
+        <circle class="fl-track" cx="120" cy="120" r="95"></circle>
+        <circle id="flArc" class="fl-arc" cx="120" cy="120" r="95" transform="rotate(-90 120 120)"></circle>
+      </svg>
+      <div id="flArt" class="fl-art"></div>
+    </div>
     <div id="flPhase" class="fl-phase">🔒 집중 중</div>
     <div id="flWarn" class="fl-warn"></div>
     <div class="fl-controls">

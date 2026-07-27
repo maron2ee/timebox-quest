@@ -788,9 +788,13 @@ body.pixel .cal-day.today { box-shadow: inset 0 0 0 2px var(--neon-yellow); }
 .char-art:hover { transform: translateY(-3px) rotate(-1deg); }
 .char-art.pet { animation: petbounce 0.55s cubic-bezier(0.34, 1.56, 0.64, 1); }
 @keyframes petbounce { 0%, 100% { transform: translateY(0) rotate(0); } 30% { transform: translateY(-14px) rotate(-5deg) scale(1.04); } 60% { transform: translateY(0) rotate(4deg); } }
-/* 2-frame retro sprite bob on the LCD screen */
+/* idle motion — smooth "breathing" so the character feels alive */
 @keyframes idleBob { 0%, 49% { transform: translateY(0); } 50%, 100% { transform: translateY(-3px); } }
-.tama-screen .char-art svg, .codex-screen .char-art svg { animation: idleBob 1.4s steps(1) infinite alternate; }
+@keyframes idleBreathe { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-3px) scale(1.035); } }
+.tama-screen .char-art svg, .codex-screen .char-art svg { animation: idleBreathe 3s ease-in-out infinite; transform-origin: 50% 92%; }
+/* retro pixel skin keeps the 2-frame stepped bob */
+body.pixel .tama-screen .char-art svg, body.pixel .codex-screen .char-art svg { animation: idleBob 1.4s steps(1) infinite alternate; }
+@media (prefers-reduced-motion: reduce) { .tama-screen .char-art svg, .codex-screen .char-art svg { animation: none; } }
 
 .char-info { flex: 1; min-width: 0; }
 .char-namerow { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; margin-bottom: 4px; }
@@ -979,15 +983,24 @@ body.pixel .pomo-clock { font-family: "Press Start 2P", monospace; font-size: 17
 .focus-lock.failed { background: radial-gradient(900px 500px at 50% -10%, #4a1230 0%, transparent 60%), linear-gradient(180deg, #2a0a1c, #12040c); }
 .fl-inner { text-align: center; max-width: 420px; width: 100%; }
 .fl-cat { font-size: 15px; font-weight: 700; color: #cfe0ff; margin-bottom: 4px; letter-spacing: 0.5px; }
-.fl-art { width: 180px; height: 180px; margin: 0 auto; }
+.fl-clock { font-family: var(--display); font-size: 56px; font-weight: 700; color: #ffd21f; letter-spacing: 2px; font-variant-numeric: tabular-nums; line-height: 1; margin: 2px 0 8px; }
+/* circular timer dial (ticks + shrinking arc) with the character in the center */
+.fl-dial { position: relative; width: 268px; height: 268px; margin: 2px auto 8px; }
+.fl-dial-svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.fl-track { fill: none; stroke: rgba(255, 255, 255, 0.10); stroke-width: 9; }
+.fl-arc { fill: none; stroke: #ff4d6d; stroke-width: 9; stroke-linecap: round; transition: stroke-dashoffset 0.5s linear; }
+.fl-tick { stroke: rgba(255, 255, 255, 0.28); stroke-width: 1.5; }
+.fl-tick.maj { stroke: rgba(255, 255, 255, 0.6); stroke-width: 2.5; }
+.fl-num { fill: #8fa0cc; font-size: 11px; font-family: var(--display); }
+.fl-art { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 138px; height: 138px; }
 .fl-art svg { width: 100%; height: 100%; }
-.fl-clock { font-family: var(--display); font-size: 68px; font-weight: 700; color: #ffd21f; letter-spacing: 2px; font-variant-numeric: tabular-nums; line-height: 1; margin: 6px 0 2px; }
 .fl-phase { font-size: 14px; font-weight: 600; color: #9fb2e0; margin-bottom: 14px; }
 .fl-warn { min-height: 24px; font-size: 13.5px; font-weight: 700; color: #ff8fa3; margin-bottom: 12px; }
 .fl-controls { display: flex; gap: 10px; justify-content: center; margin-bottom: 16px; }
 .fl-hint { font-size: 11.5px; color: #6b7aa8; margin: 0; line-height: 1.5; }
-body.pixel .fl-clock { font-family: "Press Start 2P", monospace; font-size: 40px; }
-@media (max-width: 480px) { .fl-clock { font-size: 54px; } .fl-art { width: 140px; height: 140px; } }
+body.pixel .fl-clock { font-family: "Press Start 2P", monospace; font-size: 34px; }
+body.pixel .fl-num { font-family: "Galmuri11", monospace; }
+@media (max-width: 480px) { .fl-clock { font-size: 44px; } .fl-dial { width: 240px; height: 240px; } .fl-art { width: 120px; height: 120px; } }
 
 /* ===================== HABIT TRACKER ===================== */
 .habit-add-row { display: flex; gap: 8px; margin-bottom: 14px; }

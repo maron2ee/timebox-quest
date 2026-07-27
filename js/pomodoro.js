@@ -88,12 +88,41 @@
   }
 
   /* ---------- lock overlay ---------- */
+  const DIAL_C = 2 * Math.PI * 95; // circumference of the arc circle (r=95)
+  function buildDialTicks() {
+    const g = el("flTicks");
+    if (!g || g.dataset.built) return;
+    const cx = 120, cy = 120;
+    let s = "";
+    for (let i = 0; i < 60; i++) {
+      const major = i % 5 === 0;
+      const ang = (i * 6 - 90) * Math.PI / 180;
+      const rOut = 100, rIn = major ? 88 : 94;
+      const x1 = cx + rOut * Math.cos(ang), y1 = cy + rOut * Math.sin(ang);
+      const x2 = cx + rIn * Math.cos(ang), y2 = cy + rIn * Math.sin(ang);
+      s += `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" class="fl-tick${major ? " maj" : ""}"/>`;
+      if (major && i !== 0) {
+        const rn = 76, xn = cx + rn * Math.cos(ang), yn = cy + rn * Math.sin(ang);
+        s += `<text x="${xn.toFixed(1)}" y="${(yn + 4).toFixed(1)}" class="fl-num" text-anchor="middle">${i}</text>`;
+      }
+    }
+    g.innerHTML = s;
+    g.dataset.built = "1";
+  }
+
   function renderLock() {
     const clock = el("flClock");
     if (!clock) return;
     const total = full();
     const rem = running ? endAt - Date.now() : (remaining || total);
     clock.textContent = fmt(rem);
+    // dial arc = remaining minutes on a 60-min face (like a kitchen timer)
+    const arc = el("flArc");
+    if (arc) {
+      const frac = Math.max(0, Math.min(1, Math.max(0, rem) / 3600000));
+      arc.style.strokeDasharray = DIAL_C.toFixed(1);
+      arc.style.strokeDashoffset = (DIAL_C * (1 - frac)).toFixed(1);
+    }
     const sel = el("pomoCat");
     const c = sel && App.catById(sel.value);
     el("flCat").textContent = c ? `${c.emoji} ${c.name}` : "집중";
@@ -115,6 +144,7 @@
     locked = true; leaveCount = 0; awayStart = 0;
     const ov = el("focusLock"); if (!ov) return;
     ov.classList.remove("hidden", "failed"); ov.setAttribute("aria-hidden", "false");
+    buildDialTicks();
     el("flWarn").textContent = "";
     el("flPhase").textContent = "🔒 집중 중";
     // 캐릭터가 선택한 집중 카테고리에 맞춰 같이 활동(공부·운동·독서 등)하는 모습

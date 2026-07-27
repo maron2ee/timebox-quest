@@ -32,6 +32,10 @@
     { id: "crownDeco",name: "왕관",     emoji: "👑", slot: "hat",  cond: { level: 12 },     hint: "Lv.12 달성" },
     { id: "chart",    name: "차트판",   emoji: "📈", slot: "hand", cond: { hours: 30 },     hint: "누적 30시간 실천" },
     { id: "trophy",   name: "트로피",   emoji: "🏆", slot: "hand", cond: { streak: 14 },    hint: "14일 연속 달성" },
+    { id: "shades",   name: "선글라스", emoji: "🕶️", slot: "hat",  cond: { level: 8 },      hint: "Lv.8 달성" },
+    { id: "tophat",   name: "실크햇",   emoji: "🎩", slot: "hat",  cond: { hours: 50 },     hint: "누적 50시간 실천" },
+    { id: "diamond",  name: "다이아",   emoji: "💎", slot: "hand", cond: { stockHours: 10 },hint: "주식공부 10시간" },
+    { id: "rocket",   name: "로켓",     emoji: "🚀", slot: "hand", cond: { level: 15 },     hint: "Lv.15 달성" },
   ];
 
   const xpAt = (L) => 50 * L * (L - 1); // cumulative XP to reach level L
@@ -192,12 +196,16 @@
       const st = (cx) => `<path d="M${cx} 62 l2.1 5.6 5.9.4 -4.6 3.9 1.5 5.7 -4.9 -3.2 -4.9 3.2 1.5 -5.7 -4.6 -3.9 5.9 -.4z" fill="#ffd21f" stroke="#f5a800" stroke-width="1"/>`;
       eyes = st(49) + st(71);
     } else {
-      // big sparkly kawaii eyes
+      // big sparkly kawaii eyes (glossy, extra gleam)
       eyes =
-        '<ellipse cx="48" cy="75" rx="8.4" ry="10" fill="#3a2b52"/>' +
-        '<ellipse cx="72" cy="75" rx="8.4" ry="10" fill="#3a2b52"/>' +
-        '<circle cx="44.6" cy="71" r="3.4" fill="#fff"/><circle cx="68.6" cy="71" r="3.4" fill="#fff"/>' +
-        '<circle cx="51" cy="79" r="1.7" fill="#fff" opacity=".9"/><circle cx="75" cy="79" r="1.7" fill="#fff" opacity=".9"/>';
+        '<ellipse cx="48" cy="75" rx="8.8" ry="10.6" fill="#2e2340"/>' +
+        '<ellipse cx="72" cy="75" rx="8.8" ry="10.6" fill="#2e2340"/>' +
+        '<ellipse cx="48" cy="79" rx="7" ry="7.4" fill="#4a3a6e" opacity=".55"/>' +
+        '<ellipse cx="72" cy="79" rx="7" ry="7.4" fill="#4a3a6e" opacity=".55"/>' +
+        '<circle cx="44.4" cy="70.5" r="3.9" fill="#fff"/><circle cx="68.4" cy="70.5" r="3.9" fill="#fff"/>' +
+        '<circle cx="51.6" cy="79" r="1.9" fill="#fff" opacity=".92"/><circle cx="75.6" cy="79" r="1.9" fill="#fff" opacity=".92"/>' +
+        '<path d="M42.5 81 q5.5 3.6 11 0" stroke="#fff" stroke-width="1.3" fill="none" opacity=".35" stroke-linecap="round"/>' +
+        '<path d="M66.5 81 q5.5 3.6 11 0" stroke="#fff" stroke-width="1.3" fill="none" opacity=".35" stroke-linecap="round"/>';
     }
     if (mood === "star") mouth = '<path d="M55 87 q5 6 10 0 z" fill="#ff5274"/>';
     else if (mood === "sleepy") mouth = '<path d="M57.5 88 q2.5 3 5 0" stroke="#3a2b52" stroke-width="2.6" fill="none" stroke-linecap="round"/>';
@@ -395,7 +403,9 @@
     s += `<ellipse cx="49" cy="${76 + r - 5}" rx="9" ry="6" fill="${dark}"/>`;
     s += `<ellipse cx="71" cy="${76 + r - 5}" rx="9" ry="6" fill="${dark}"/>`;
     s += `<ellipse cx="60" cy="76" rx="${r}" ry="${r - 2}" fill="url(#g${id})" stroke="${dark}" stroke-width="2.5"/>`;
-    s += '<ellipse cx="49" cy="61" rx="12" ry="9" fill="#fff" opacity=".22"/>';
+    s += `<ellipse cx="60" cy="${76 + (r - 2) * 0.5}" rx="${(r * 0.72).toFixed(1)}" ry="${((r - 2) * 0.4).toFixed(1)}" fill="${dark}" opacity=".10"/>`; // bottom depth shadow
+    s += '<ellipse cx="49" cy="61" rx="13" ry="9.5" fill="#fff" opacity=".26"/>'; // glossy top-left highlight
+    s += '<circle cx="70" cy="58" r="3.4" fill="#fff" opacity=".18"/>'; // small secondary gloss
     if (sp === "monkey") {
       s += monkeyHeartFace();       // 로고 하트 얼굴 (눈/입 뒤)
       s += face(mood);              // 표정
