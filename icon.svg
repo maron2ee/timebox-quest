@@ -4,51 +4,49 @@
       <stop offset="0" stop-color="#1a2150"/>
       <stop offset="1" stop-color="#05071a"/>
     </linearGradient>
-    <radialGradient id="face" cx="42%" cy="32%" r="75%">
-      <stop offset="0" stop-color="#fffaf0"/>
-      <stop offset="1" stop-color="#ffe9c9"/>
-    </radialGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffe27a"/>
+      <stop offset=".55" stop-color="#f5aa08"/>
+      <stop offset="1" stop-color="#e08e00"/>
+    </linearGradient>
   </defs>
   <rect width="512" height="512" rx="112" fill="url(#bg)"/>
   <!-- sparkles -->
-  <circle cx="96" cy="110" r="6" fill="#ffd21f"/>
-  <circle cx="420" cy="150" r="7" fill="#ff6f91"/>
-  <circle cx="120" cy="410" r="5" fill="#5cc4ff"/>
+  <circle cx="98" cy="120" r="6" fill="#ffd21f"/>
+  <circle cx="416" cy="150" r="7" fill="#ffd21f" opacity=".9"/>
+  <circle cx="120" cy="410" r="5" fill="#ffd21f" opacity=".7"/>
 
-  <!-- bells -->
-  <g fill="#2c4a8f" stroke="#16264f" stroke-width="8" stroke-linejoin="round">
-    <path d="M150 150 q-44 -54 -8 -86 q40 -8 56 40 z"/>
-    <path d="M362 150 q44 -54 8 -86 q-40 -8 -56 40 z"/>
+  <!-- rising money arrow behind (growth) -->
+  <g fill="none" stroke="#ffce3a" stroke-width="16" stroke-linecap="round" stroke-linejoin="round" opacity=".9">
+    <polyline points="120,392 190,340 236,372 320,300"/>
   </g>
-  <!-- legs -->
-  <g fill="#16264f">
-    <rect x="150" y="430" width="34" height="46" rx="14" transform="rotate(20 167 453)"/>
-    <rect x="328" y="430" width="34" height="46" rx="14" transform="rotate(-20 345 453)"/>
-  </g>
+  <path d="M320 300 l-30 -2 12 22 z" fill="#ffce3a" opacity=".9"/>
 
-  <!-- clock body -->
-  <circle cx="256" cy="276" r="166" fill="#2c4a8f"/>
-  <circle cx="256" cy="276" r="150" fill="url(#face)" stroke="#ffce3a" stroke-width="6"/>
-  <circle cx="256" cy="276" r="150" fill="none" stroke="#e7cfa0" stroke-width="6" opacity=".5"/>
+  <!-- ears -->
+  <circle cx="150" cy="180" r="46" fill="url(#gold)" stroke="#c8860a" stroke-width="8"/>
+  <circle cx="150" cy="180" r="22" fill="#e39c1a"/>
+  <circle cx="362" cy="180" r="46" fill="url(#gold)" stroke="#c8860a" stroke-width="8"/>
+  <circle cx="362" cy="180" r="22" fill="#e39c1a"/>
 
-  <!-- ticks -->
-  <g fill="#b9a06a">
-    <rect x="250" y="138" width="12" height="22" rx="5"/>
-    <rect x="250" y="392" width="12" height="22" rx="5"/>
-    <rect x="118" y="270" width="22" height="12" rx="5"/>
-    <rect x="372" y="270" width="22" height="12" rx="5"/>
-  </g>
+  <!-- head -->
+  <circle cx="256" cy="216" r="132" fill="url(#gold)" stroke="#c8860a" stroke-width="8"/>
+  <ellipse cx="212" cy="176" rx="34" ry="24" fill="#fff" opacity=".28"/>
 
-  <!-- kawaii face -->
-  <ellipse cx="212" cy="266" rx="13" ry="16" fill="#3a2b52"/>
-  <ellipse cx="300" cy="266" rx="13" ry="16" fill="#3a2b52"/>
-  <circle cx="208" cy="260" r="4.5" fill="#fff"/><circle cx="296" cy="260" r="4.5" fill="#fff"/>
-  <ellipse cx="186" cy="292" rx="15" ry="9" fill="#ff7eb0" opacity=".6"/>
-  <ellipse cx="326" cy="292" rx="15" ry="9" fill="#ff7eb0" opacity=".6"/>
-  <path d="M238 296 q18 16 36 0" fill="none" stroke="#3a2b52" stroke-width="8" stroke-linecap="round"/>
+  <!-- heart face -->
+  <path d="M256 202 C256 168 220 152 192 152 C148 152 126 186 126 218 C126 268 188 320 256 360 C324 320 386 268 386 218 C386 186 364 152 320 152 C292 152 256 168 256 202 Z" fill="#fff2c4" stroke="#eab308" stroke-width="4"/>
 
-  <!-- hands -->
-  <line x1="256" y1="276" x2="256" y2="196" stroke="#1b2c70" stroke-width="13" stroke-linecap="round"/>
-  <line x1="256" y1="276" x2="318" y2="312" stroke="#ffce3a" stroke-width="11" stroke-linecap="round"/>
-  <circle cx="256" cy="276" r="13" fill="#3a2b52"/>
+  <!-- cheeks -->
+  <ellipse cx="178" cy="264" rx="20" ry="13" fill="#ff7eb0" opacity=".5"/>
+  <ellipse cx="334" cy="264" rx="20" ry="13" fill="#ff7eb0" opacity=".5"/>
+
+  <!-- eyes -->
+  <ellipse cx="210" cy="222" rx="22" ry="27" fill="#2b2440"/>
+  <ellipse cx="302" cy="222" rx="22" ry="27" fill="#2b2440"/>
+  <circle cx="202" cy="212" r="8" fill="#fff"/>
+  <circle cx="294" cy="212" r="8" fill="#fff"/>
+
+  <!-- nose -->
+  <ellipse cx="242" cy="284" rx="5" ry="7" fill="#8a6636"/>
+  <ellipse cx="270" cy="284" rx="5" ry="7" fill="#8a6636"/>
+  <path d="M228 300 q28 20 56 0" fill="none" stroke="#5a3d12" stroke-width="7" stroke-linecap="round"/>
 </svg>
