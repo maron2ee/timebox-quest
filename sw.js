@@ -1,5 +1,5 @@
 /* TIMEBOX QUEST service worker — offline app shell + CDN font caching */
-const CACHE = "tbq-v18";
+const CACHE = "tbq-v19";
 const SHELL = [
   "./", "./index.html", "./css/theme.css",
   "./js/state.js", "./js/charts.js", "./js/gamify.js", "./js/character.js",
@@ -27,14 +27,15 @@ self.addEventListener("fetch", (e) => {
   if (url.hostname.endsWith("supabase.co")) return;
 
   if (url.origin === location.origin) {
-    // app shell: cache-first, fall back to index for navigations
+    // app shell: NETWORK-FIRST so code updates apply immediately; cache is the
+    // offline fallback. (cache-first left users stuck on stale JS after deploys.)
     e.respondWith(
-      caches.match(req).then((hit) =>
-        hit || fetch(req).then((resp) => {
-          const cp = resp.clone();
-          caches.open(CACHE).then((c) => c.put(req, cp));
-          return resp;
-        }).catch(() => (req.mode === "navigate" ? caches.match("./index.html") : undefined))
+      fetch(req).then((resp) => {
+        const cp = resp.clone();
+        caches.open(CACHE).then((c) => c.put(req, cp));
+        return resp;
+      }).catch(() =>
+        caches.match(req).then((hit) => hit || (req.mode === "navigate" ? caches.match("./index.html") : undefined))
       )
     );
   } else {
