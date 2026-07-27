@@ -4,6 +4,7 @@
 (function () {
   const App = (window.App = window.App || {});
   const U = App.util;
+  const APP_VERSION = "v27"; // sw.js CACHE와 함께 올릴 것 — 설정에 표시되어 캐시 확인용
 
   /* ---------- UI skin (modern-mode variants; retro pixel mode overrides all of these) ---------- */
   const SKINS = ["soft", "glass", "pastel", "editorial"];
@@ -543,6 +544,7 @@
     renderSettings();
     updateHud();
     App.character.render(false);
+    const vEl = document.getElementById("appVersion"); if (vEl) vEl.textContent = APP_VERSION;
     showAxis("timebox"); // 시작 화면 = 타임박스 > 오늘
     if (App.character.needsSpecies()) App.ui.openModal("speciesModal");
     App.sync.init();

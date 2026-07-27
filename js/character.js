@@ -247,14 +247,14 @@
       );
     }
     if (sp === "monkey") {
-      // round ears on the sides of the head (money monkey 🐵)
+      // round ears on the sides of the head — cute cartoon: thick outline + soft peach inner
       const r = 33 + idx;
       const lx = 60 - r + 3, rx = 60 + r - 3, ey = 70;
       return (
-        `<circle cx="${lx}" cy="${ey}" r="10" fill="${c}" stroke="${dark}" stroke-width="2"/>` +
-        `<circle cx="${lx}" cy="${ey}" r="5" fill="${shade(c, -22)}"/>` +
-        `<circle cx="${rx}" cy="${ey}" r="10" fill="${c}" stroke="${dark}" stroke-width="2"/>` +
-        `<circle cx="${rx}" cy="${ey}" r="5" fill="${shade(c, -22)}"/>`
+        `<circle cx="${lx}" cy="${ey}" r="10.5" fill="${c}" stroke="${dark}" stroke-width="3"/>` +
+        `<circle cx="${lx}" cy="${ey}" r="5.2" fill="#ffdcc4"/>` +
+        `<circle cx="${rx}" cy="${ey}" r="10.5" fill="${c}" stroke="${dark}" stroke-width="3"/>` +
+        `<circle cx="${rx}" cy="${ey}" r="5.2" fill="#ffdcc4"/>`
       );
     }
     // dog: floppy ears at sides
@@ -314,6 +314,7 @@
     name = name || "";
     if (/운동|헬스|요가|러닝|스쿼트|필라테스|홈트/.test(name)) return "exercise";
     if (/독서|책|리딩/.test(name)) return "reading";
+    if (/사이드잡|노트북|작업|업무|부업|코딩|개발|디자인|블로그|영상편집|사이드/.test(name)) return "work";
     if (/공부|언어|주식|스터디|학습|암기|강의|리서치|조사|분석/.test(name)) return "study";
     if (/휴식|힐링|수면|잠|낮잠|티타임|명상/.test(name)) return "rest";
     return null;
@@ -352,6 +353,17 @@
         `<path d="M76 ${by - 12} l7 -7 3.3 3.3 -7 7 -4.3 1z" fill="#ffd21f" stroke="${dark}" stroke-width="1"/>`
       );
     }
+    if (kind === "work") {
+      // 노트북으로 작업하는 모습 (사이드잡 등)
+      const kb = 109;
+      return (
+        `<path d="M${lx} ${sy} Q${lx + 7} ${kb - 10} 50 ${kb - 3}" stroke="${c}" stroke-width="7" fill="none" stroke-linecap="round"/>` +
+        `<path d="M${rx} ${sy} Q${rx - 7} ${kb - 10} 70 ${kb - 3}" stroke="${c}" stroke-width="7" fill="none" stroke-linecap="round"/>` +
+        `<rect x="48" y="93" width="24" height="16" rx="1.5" fill="#2c3a58" stroke="${dark}" stroke-width="1.6"/>` +
+        `<rect x="50.5" y="95.5" width="19" height="11" rx="1" fill="#5b8fd6"/>` +
+        `<path d="M42 ${kb} l36 0 5 6 -46 0 z" fill="#b9c2d2" stroke="${dark}" stroke-width="1.6" stroke-linejoin="round"/>`
+      );
+    }
     if (kind === "rest") {
       return (
         `<path d="M${lx} ${sy} Q60 ${sy + 8} ${rx} ${sy}" stroke="${c}" stroke-width="7" fill="none" stroke-linecap="round"/>` +
@@ -376,21 +388,29 @@
     sp = sp || species();
     const c = sp === "monkey" ? MONKEY_GOLD : STAGES[idx].color;
     const id = ++uid;
-    const light = shade(c, 50), dark = shade(c, -42);
+    const light = shade(c, 50);
+    // 원숭이는 귀여운 만화 느낌을 위해 진한 브라운 외곽선 사용
+    const dark = sp === "monkey" ? "#7a5320" : shade(c, -42);
+    const bodySW = sp === "monkey" ? 3.4 : 2.5;
     let s = '<svg viewBox="0 0 120 132" xmlns="http://www.w3.org/2000/svg">';
     s += '<ellipse cx="60" cy="124" rx="28" ry="6" fill="#000" opacity=".16"/>';
 
     if (idx === 0) {
-      // egg — cute golden tamagotchi egg (species not visible until it hatches)
-      s += `<defs><radialGradient id="e${id}" cx="40%" cy="26%" r="88%"><stop offset="0" stop-color="#fff8e0"/><stop offset=".55" stop-color="#ffe08f"/><stop offset="1" stop-color="#f3b53e"/></radialGradient></defs>`;
-      s += `<path d="M60 26 C40 26 32 52 32 72 C32 95 45 110 60 110 C75 110 88 95 88 72 C88 52 80 26 60 26 Z" fill="url(#e${id})" stroke="#e0a94a" stroke-width="2.5"/>`;
-      s += '<ellipse cx="60" cy="99" rx="22" ry="9" fill="#e0a94a" opacity=".14"/>';                       // bottom depth
-      s += '<path d="M38 92 l7 -7 7 7 7 -7 7 7 7 -7 7 7" fill="none" stroke="#fff3cf" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" opacity=".85"/>'; // zigzag belt
-      s += '<circle cx="47" cy="82" r="1.8" fill="#fff3cf"/><circle cx="60" cy="84" r="1.8" fill="#fff3cf"/><circle cx="73" cy="82" r="1.8" fill="#fff3cf"/>'; // dots
-      s += '<ellipse cx="50" cy="54" rx="9" ry="13" fill="#fff" opacity=".45" transform="rotate(-16 50 54)"/>'; // glossy highlight
+      // egg — cute pastel tamagotchi egg with polka dots (species hidden until it hatches)
+      if (activityCat) s += `<circle cx="60" cy="70" r="46" fill="${activityCat.color}" opacity=".14"/>`; // 집중 카테고리 오라
+      s += `<defs><linearGradient id="e${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fffdf9"/><stop offset=".6" stop-color="#fff2f5"/><stop offset="1" stop-color="#ffe0ea"/></linearGradient></defs>`;
+      s += '<path d="M60 30 q-3 -10 5 -13 q-1 7 -5 13" fill="#9fe0c0"/>';                                    // little sprout on top
+      s += `<path d="M60 26 C40 26 32 52 32 72 C32 95 45 110 60 110 C75 110 88 95 88 72 C88 52 80 26 60 26 Z" fill="url(#e${id})" stroke="#f3c0d2" stroke-width="2.5"/>`;
+      s += '<ellipse cx="60" cy="99" rx="22" ry="9" fill="#f0b0c6" opacity=".18"/>';                        // bottom depth
+      // pastel polka dots
+      s += '<circle cx="45" cy="60" r="3.2" fill="#8fd9c4"/><circle cx="75" cy="52" r="2.6" fill="#ffd76b"/>' +
+           '<circle cx="72" cy="72" r="3.4" fill="#a7c8ff"/><circle cx="47" cy="83" r="2.8" fill="#ffb0c8"/>' +
+           '<circle cx="62" cy="94" r="2.4" fill="#ffd76b"/>';
+      s += '<ellipse cx="49" cy="52" rx="8.5" ry="12.5" fill="#fff" opacity=".6" transform="rotate(-16 49 52)"/>'; // glossy highlight
       s += face(mood);
       s += decoLayer(idx, equip);
-      s += '<text x="22" y="46" font-size="13">✨</text><text x="88" y="58" font-size="9">✨</text>';
+      if (activityCat) s += `<text x="60" y="107" font-size="15" text-anchor="middle">${activityCat.emoji}</text>`; // 지금 집중 활동
+      s += '<text x="21" y="46" font-size="13">✨</text><text x="90" y="60" font-size="9">✨</text>';
       return s + "</svg>";
     }
 
@@ -405,7 +425,7 @@
     }
     s += `<ellipse cx="49" cy="${76 + r - 5}" rx="9" ry="6" fill="${dark}"/>`;
     s += `<ellipse cx="71" cy="${76 + r - 5}" rx="9" ry="6" fill="${dark}"/>`;
-    s += `<ellipse cx="60" cy="76" rx="${r}" ry="${r - 2}" fill="url(#g${id})" stroke="${dark}" stroke-width="2.5"/>`;
+    s += `<ellipse cx="60" cy="76" rx="${r}" ry="${r - 2}" fill="url(#g${id})" stroke="${dark}" stroke-width="${bodySW}"/>`;
     s += `<ellipse cx="60" cy="${76 + (r - 2) * 0.5}" rx="${(r * 0.72).toFixed(1)}" ry="${((r - 2) * 0.4).toFixed(1)}" fill="${dark}" opacity=".10"/>`; // bottom depth shadow
     s += '<ellipse cx="49" cy="61" rx="13" ry="9.5" fill="#fff" opacity=".26"/>'; // glossy top-left highlight
     s += '<circle cx="70" cy="58" r="3.4" fill="#fff" opacity=".18"/>'; // small secondary gloss
