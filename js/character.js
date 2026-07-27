@@ -828,7 +828,7 @@
     // tamagotchi device buttons: A=쓰다듬기 B=밥주기 C=도감
     bindClick("tamaA", (e) => pet(e));
     bindClick("tamaB", () => feed());
-    bindClick("tamaC", () => { const t = document.querySelector('.tab[data-view="codex"]'); if (t) t.click(); });
+    bindClick("tamaC", () => { if (App.nav) App.nav.goView("codex"); });
 
     fillSpeciesPreviews();
     bindClick("spMonkey", () => chooseSpecies("monkey"));

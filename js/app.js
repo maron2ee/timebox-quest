@@ -74,27 +74,78 @@
     if (!skipPush && App.sync && App.sync.isSignedIn()) App.sync.schedulePush();
   };
 
-  /* ---------- tabs ---------- */
-  function initTabs() {
-    document.querySelectorAll(".tab").forEach((tab) => {
-      tab.onclick = () => {
-        const view = tab.dataset.view;
-        document.querySelectorAll(".tab").forEach((t) => {
-          const on = t === tab;
-          t.classList.toggle("active", on);
-          t.setAttribute("aria-selected", on ? "true" : "false");
-        });
-        document.querySelectorAll(".view").forEach((v) => v.classList.remove("active"));
-        document.getElementById("view-" + view).classList.add("active");
-        if (view === "stats") { App.analytics.render(); App.character.renderMini(); }
-        if (view === "codex") App.character.renderCollection();
-        if (view === "settings") renderSettings();
-        if (view === "planner") App.planner.render();
-        if (view === "calendar") App.calendar.render();
-        if (view === "habits") App.habits.render();
-      };
+  /* ---------- two-level navigation: 3 축(다마고치/타임박스/뽀모도로) + 설정 ---------- */
+  const AXES = [
+    { id: "tama",     views: [["codex", "🗂️ 도감"], ["habits", "🌱 습관"], ["stats", "📊 성과"]] },
+    { id: "timebox",  views: [["planner", "🗓️ 오늘"], ["calendar", "📅 달력"]] },
+    { id: "pomo",     views: [["pomodoro", "🍅 집중"]] },
+    { id: "settings", views: [["settings", "⚙️ 설정"]] },
+  ];
+  let curAxis = "timebox";
+  const axisLastView = {};
+
+  function renderView(view) {
+    if (view === "stats") { App.analytics.render(); App.character.renderMini(); }
+    else if (view === "codex") App.character.renderCollection();
+    else if (view === "settings") renderSettings();
+    else if (view === "planner") App.planner.render();
+    else if (view === "calendar") App.calendar.render();
+    else if (view === "habits") App.habits.render();
+    else if (view === "pomodoro" && App.pomodoro) App.pomodoro.render();
+  }
+
+  function showView(view) {
+    document.querySelectorAll(".view").forEach((v) => v.classList.remove("active"));
+    const sec = document.getElementById("view-" + view);
+    if (sec) sec.classList.add("active");
+    document.querySelectorAll("#subtabs .subtab").forEach((b) => {
+      const on = b.dataset.view === view;
+      b.classList.toggle("active", on);
+      b.setAttribute("aria-selected", on ? "true" : "false");
+    });
+    axisLastView[curAxis] = view;
+    renderView(view);
+    window.scrollTo(0, 0);
+  }
+
+  function renderSubtabs() {
+    const bar = document.getElementById("subtabs");
+    const axis = AXES.find((a) => a.id === curAxis);
+    bar.innerHTML = "";
+    if (!axis || axis.views.length <= 1) { bar.classList.add("hidden"); return; }
+    bar.classList.remove("hidden");
+    axis.views.forEach(([v, label]) => {
+      const b = document.createElement("button");
+      b.className = "subtab";
+      b.dataset.view = v;
+      b.textContent = label;
+      b.setAttribute("role", "tab");
+      b.onclick = () => showView(v);
+      bar.appendChild(b);
     });
   }
+
+  function showAxis(axisId) {
+    curAxis = axisId;
+    document.querySelectorAll(".axis-tabs .axis").forEach((t) => {
+      const on = t.dataset.axis === axisId;
+      t.classList.toggle("active", on);
+      t.setAttribute("aria-selected", on ? "true" : "false");
+    });
+    renderSubtabs();
+    const axis = AXES.find((a) => a.id === axisId);
+    const view = axisLastView[axisId] || (axis.views[0] && axis.views[0][0]);
+    showView(view);
+  }
+
+  function initTabs() {
+    document.querySelectorAll(".axis-tabs .axis").forEach((t) => { t.onclick = () => showAxis(t.dataset.axis); });
+  }
+  // programmatic navigation for other modules
+  App.nav = { showAxis, showView, goView: (view) => {
+    const axis = AXES.find((a) => a.views.some(([v]) => v === view));
+    if (axis) { curAxis = axis.id; document.querySelectorAll(".axis-tabs .axis").forEach((t) => { const on = t.dataset.axis === axis.id; t.classList.toggle("active", on); t.setAttribute("aria-selected", on ? "true" : "false"); }); renderSubtabs(); showView(view); }
+  } };
 
   /* ---------- settings: day options ---------- */
   function initSettings() {
@@ -233,10 +284,8 @@
       }
     };
 
-    // sync chip → settings tab
-    document.getElementById("syncBtn").onclick = () => {
-      document.querySelector('.tab[data-view="settings"]').click();
-    };
+    // sync chip → settings
+    document.getElementById("syncBtn").onclick = () => App.nav.showAxis("settings");
   }
 
   function renderSettings() {
@@ -489,10 +538,10 @@
     if (App.todos) App.todos.init();
     if (App.journal) App.journal.init();
     if (App.pomodoro) App.pomodoro.init();
-    App.planner.render();
     renderSettings();
     updateHud();
     App.character.render(false);
+    showAxis("timebox"); // 시작 화면 = 타임박스 > 오늘
     if (App.character.needsSpecies()) App.ui.openModal("speciesModal");
     App.sync.init();
     maybeBackupReminder();

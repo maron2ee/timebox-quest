@@ -68,8 +68,7 @@
       cell.setAttribute("aria-label", cell.title);
       cell.onclick = () => {
         App.planner.setDate(ds);
-        const tab = document.querySelector('.tab[data-view="planner"]');
-        if (tab) tab.click();
+        if (App.nav) App.nav.goView("planner");
       };
       wrap.appendChild(cell);
     });

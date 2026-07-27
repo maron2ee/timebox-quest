@@ -354,6 +354,19 @@ input, select { font-family: var(--sans); }
 .tab:hover { color: var(--ink); transform: translateY(-1px); }
 .tab.active { background: linear-gradient(135deg, var(--primary), var(--purple)); color: #fff; border-color: transparent; box-shadow: var(--glow-primary); }
 
+/* second-level sub navigation (within an axis) */
+.subtabs { display: flex; gap: 6px; padding: 12px 22px 0; max-width: 1180px; margin: 0 auto; flex-wrap: wrap; }
+.subtabs.hidden { display: none; }
+.subtab {
+  background: transparent; border: 1px solid var(--line); border-radius: var(--pill);
+  padding: 6px 15px; font-size: 12px; font-weight: 600; color: var(--ink-dim);
+  cursor: pointer; transition: all 0.14s; white-space: nowrap;
+}
+.subtab:hover { color: var(--ink); background: var(--surface-2); }
+.subtab.active { background: var(--surface); color: var(--primary); border-color: var(--primary); }
+body.pixel .subtab { border: 2px solid var(--line); border-radius: 0; background: var(--surface); }
+body.pixel .subtab.active { background: var(--surface-2); color: var(--neon-yellow, #ffec27); border-color: var(--line-strong); }
+
 /* ===================== STAGE / VIEWS ===================== */
 .stage { max-width: 1180px; margin: 0 auto; padding: 0 22px; }
 .view { display: none; padding-top: 16px; }

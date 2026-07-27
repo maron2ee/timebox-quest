@@ -74,14 +74,13 @@
 </header>
 
 <!-- ===================== TABS ===================== -->
-<nav class="tabs" role="tablist" aria-label="화면 전환">
-  <button class="tab active" data-view="planner" role="tab" aria-selected="true">🗓️ 오늘</button>
-  <button class="tab" data-view="calendar" role="tab" aria-selected="false">📅 달력</button>
-  <button class="tab" data-view="habits" role="tab" aria-selected="false">🌱 습관</button>
-  <button class="tab" data-view="stats" role="tab" aria-selected="false">📊 성과</button>
-  <button class="tab" data-view="codex" role="tab" aria-selected="false">🗂️ 도감</button>
-  <button class="tab" data-view="settings" role="tab" aria-selected="false">⚙️ 설정</button>
+<nav class="tabs axis-tabs" role="tablist" aria-label="영역 전환">
+  <button class="tab axis" data-axis="tama" role="tab" aria-selected="false">🐵 다마고치</button>
+  <button class="tab axis active" data-axis="timebox" role="tab" aria-selected="true">🗓️ 타임박스</button>
+  <button class="tab axis" data-axis="pomo" role="tab" aria-selected="false">🍅 뽀모도로</button>
+  <button class="tab axis" data-axis="settings" role="tab" aria-selected="false">⚙️ 설정</button>
 </nav>
+<nav class="subtabs" id="subtabs" role="tablist" aria-label="하위 화면"><!-- injected per axis --></nav>
 
 <main class="stage">
 
@@ -136,37 +135,6 @@
       </div>
       <button id="nextDay" class="pixel-btn nav">▶</button>
       <button id="todayBtn" class="pixel-btn small today-btn">오늘로</button>
-    </div>
-
-    <!-- pomodoro focus timer (auto-reflects into the timebox) -->
-    <div class="pomo-card panel">
-      <div class="pomo-main">
-        <div id="pomoTimer" class="pomo-timer focus">
-          <div class="pomo-face">
-            <div id="pomoPhase" class="pomo-phase">🍅 집중</div>
-            <div id="pomoClock" class="pomo-clock">25:00</div>
-          </div>
-        </div>
-        <div class="pomo-side">
-          <div class="pomo-titlerow">
-            <span class="pomo-title">🍅 뽀모도로</span>
-            <span id="pomoCount" class="snack-chip">오늘 🍅 0</span>
-          </div>
-          <label class="field pomo-catfield"><span>집중할 카테고리</span>
-            <select id="pomoCat"></select>
-          </label>
-          <div class="pomo-controls">
-            <button id="pomoStart" class="pixel-btn small">▶ 시작</button>
-            <button id="pomoLock" class="pixel-btn small" title="전체화면 집중 — 나가면 세션이 깨져요">🔒 집중 잠금</button>
-            <button id="pomoReset" class="pixel-btn small ghost">↺ 리셋</button>
-            <button id="pomoSkip" class="pixel-btn tiny ghost" title="다음 단계로">⏭ 건너뛰기</button>
-          </div>
-          <label class="field row pomo-autorow">
-            <span>완료 시 타임박스 자동 반영 ✅</span>
-            <input type="checkbox" id="pomoAutofill" checked />
-          </label>
-        </div>
-      </div>
     </div>
 
     <div class="planner-grid">
@@ -232,6 +200,40 @@
           <label class="review-row"><span class="review-k try">T</span><input type="text" id="reviewT" maxlength="120" placeholder="Try · 내일 시도할 것" /></label>
         </div>
       </aside>
+    </div>
+  </section>
+
+  <!-- ===================== POMODORO VIEW ===================== -->
+  <section id="view-pomodoro" class="view">
+    <div class="pomo-card panel">
+      <div class="pomo-main">
+        <div id="pomoTimer" class="pomo-timer focus">
+          <div class="pomo-face">
+            <div id="pomoPhase" class="pomo-phase">🍅 집중</div>
+            <div id="pomoClock" class="pomo-clock">25:00</div>
+          </div>
+        </div>
+        <div class="pomo-side">
+          <div class="pomo-titlerow">
+            <span class="pomo-title">🍅 뽀모도로</span>
+            <span id="pomoCount" class="snack-chip">오늘 🍅 0</span>
+          </div>
+          <label class="field pomo-catfield"><span>집중할 카테고리</span>
+            <select id="pomoCat"></select>
+          </label>
+          <div class="pomo-controls">
+            <button id="pomoStart" class="pixel-btn small">▶ 시작</button>
+            <button id="pomoLock" class="pixel-btn small" title="전체화면 집중 — 나가면 세션이 깨져요">🔒 집중 잠금</button>
+            <button id="pomoReset" class="pixel-btn small ghost">↺ 리셋</button>
+            <button id="pomoSkip" class="pixel-btn tiny ghost" title="다음 단계로">⏭ 건너뛰기</button>
+          </div>
+          <label class="field row pomo-autorow">
+            <span>완료 시 타임박스 자동 반영 ✅</span>
+            <input type="checkbox" id="pomoAutofill" checked />
+          </label>
+        </div>
+      </div>
+      <p class="hint pomo-help">▶ 시작으로 집중 타이머를 켜고, 🔒 집중 잠금으로 전체화면 몰입 모드에 들어가요. 집중이 끝나면 그 시간대 타임박스 칸이 자동 완료로 반영돼요.</p>
     </div>
   </section>
 
