@@ -117,7 +117,10 @@
     ov.classList.remove("hidden", "failed"); ov.setAttribute("aria-hidden", "false");
     el("flWarn").textContent = "";
     el("flPhase").textContent = "🔒 집중 중";
-    if (App.character && App.character.heroSprite) el("flArt").innerHTML = App.character.heroSprite("happy");
+    // 캐릭터가 선택한 집중 카테고리에 맞춰 같이 활동(공부·운동·독서 등)하는 모습
+    const sel = el("pomoCat");
+    const cat = sel && App.catById(sel.value);
+    if (App.character && App.character.heroSprite) el("flArt").innerHTML = App.character.heroSprite("happy", cat);
     document.addEventListener("visibilitychange", onVisibility);
     window.addEventListener("blur", onAway);
     window.addEventListener("focus", onBack);

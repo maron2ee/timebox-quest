@@ -831,11 +831,12 @@
   }
   function bindClick(id, fn) { const e = document.getElementById(id); if (e) e.addEventListener("click", fn); }
 
-  // 현재 캐릭터의 SVG (집중 잠금 화면 등에서 크게 보여줄 때 사용). mood 지정 가능.
-  function heroSprite(mood) {
+  // 현재 캐릭터의 SVG (집중 잠금 화면 등에서 크게 보여줄 때 사용).
+  // mood 지정 가능, activityCat을 넘기면 그 카테고리 활동 포즈(공부/운동/독서/휴식)를 취함.
+  function heroSprite(mood, activityCat) {
     const info = App.gamify.levelInfo(game().xp || 0);
     const idx = stageForLevel(info.level);
-    return creature(idx, mood || moodInfo().mood, activePet().equip, activePet().species || "monkey", null);
+    return creature(idx, mood || moodInfo().mood, activePet().equip, activePet().species || "monkey", activityCat || null);
   }
 
   App.character = { init, render, renderCollection, renderMini, needsSpecies, chooseSpecies, heroSprite, STAGES, DECOS };
