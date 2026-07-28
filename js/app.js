@@ -4,7 +4,7 @@
 (function () {
   const App = (window.App = window.App || {});
   const U = App.util;
-  const APP_VERSION = "v30"; // sw.js CACHE와 함께 올릴 것 — 설정에 표시되어 캐시 확인용
+  const APP_VERSION = "v33"; // sw.js CACHE와 함께 올릴 것 — 설정에 표시되어 캐시 확인용
 
   /* ---------- UI skin (modern-mode variants; retro pixel mode overrides all of these) ---------- */
   const SKINS = ["soft", "glass", "pastel", "editorial"];
@@ -12,6 +12,12 @@
     const skin = App.state.settings.skin || "default";
     SKINS.forEach((s) => document.body.classList.remove("skin-" + s));
     if (skin !== "default") document.body.classList.add("skin-" + skin);
+  }
+  function applyPixelMode() {
+    const s = App.state.settings;
+    const on = s.pixel !== false;
+    document.body.classList.toggle("pixel", on);
+    document.body.classList.toggle("soft", on && !!s.pixelSoft); // 레트로 유지 + 부드러운 글씨
   }
 
   /* ---------- modal infra (with focus trap) ---------- */
@@ -195,9 +201,16 @@
     document.getElementById("setPixel").checked = s.pixel;
     document.getElementById("setPixel").onchange = () => {
       s.pixel = document.getElementById("setPixel").checked;
-      document.body.classList.toggle("pixel", s.pixel);
+      applyPixelMode();
       App.store.save();
       App.gamify.toast(s.pixel ? "🕹️ 레트로 픽셀 모드 ON" : "✨ 모던 모드 ON");
+    };
+    document.getElementById("setPixelSoft").checked = s.pixelSoft;
+    document.getElementById("setPixelSoft").onchange = () => {
+      s.pixelSoft = document.getElementById("setPixelSoft").checked;
+      applyPixelMode();
+      App.store.save();
+      App.gamify.toast(s.pixelSoft ? "✨ 레트로 글씨 부드럽게 ON" : "🕹️ 레트로 글씨 ON");
     };
     const skinSel = document.getElementById("setSkin");
     const SKIN_NAMES = { default: "기본", soft: "소프트 모던", glass: "다크 트레이더 글래스", pastel: "파스텔 플레이풀", editorial: "미니멀 에디토리얼" };
@@ -304,6 +317,7 @@
       document.getElementById("setWeekStart").value = s.weekStart;
       document.getElementById("setCompact").checked = s.compact;
       document.getElementById("setPixel").checked = s.pixel;
+      document.getElementById("setPixelSoft").checked = s.pixelSoft;
       document.getElementById("setSkin").value = s.skin || "default";
       document.getElementById("setAutoTpl").checked = s.autoTemplate;
       document.getElementById("setReminder").checked = s.reminderEnabled;
@@ -525,7 +539,7 @@
 
   /* ---------- boot ---------- */
   function boot() {
-    document.body.classList.toggle("pixel", App.state.settings.pixel !== false);
+    applyPixelMode();
     applySkin();
     initTabs();
     initSettings();

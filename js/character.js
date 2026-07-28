@@ -374,9 +374,32 @@
     return "";
   }
 
-  // 알 물방울 색 — 펫 id로 시드를 줘서 캐릭터마다 다르지만 재렌더에도 안 바뀌게(안정 랜덤)
+  // 알 물방울 — 펫 id로 시드를 줘서 위치·크기·색·개수가 캐릭터마다 다르지만 재렌더엔 안 바뀌게(안정 랜덤)
   const SPOT_COLORS = ["#6dbf3f", "#ff8fb0", "#5bb8ff", "#ffcf3f", "#b98cff", "#ff9d57", "#4fd6c0", "#ff6f91"];
   function hashStr(s) { s = String(s || ""); let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return Math.abs(h); }
+  function mulberry32(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+  function eggSpots(petId) {
+    const rnd = mulberry32(hashStr(petId || "egg"));
+    const n = 4 + Math.floor(rnd() * 3); // 4~6개
+    const placed = [];
+    let attempts = 0;
+    while (placed.length < n && attempts < 500) {
+      attempts++;
+      // 중앙 회피(바깥 띠) + 넉넉한 최소 간격으로 고르게 분산
+      const ang = rnd() * Math.PI * 2, rad = 0.42 + Math.sqrt(rnd()) * 0.58;
+      const cx = 60 + Math.cos(ang) * rad * 20;
+      const cy = 70 + Math.sin(ang) * rad * 28;
+      const rx = 4.5 + rnd() * 2.2;
+      const ry = rx * (0.85 + rnd() * 0.2);
+      const cr = Math.max(rx, ry);
+      let ok = true;
+      for (const p of placed) { if (Math.hypot(cx - p.cx, cy - p.cy) < cr + p.cr + 5) { ok = false; break; } } // 겹침 방지 + 분산 간격
+      if (ok) placed.push({ cx, cy, rx, ry, cr });
+    }
+    return placed.map((p) =>
+      `<ellipse cx="${p.cx.toFixed(1)}" cy="${p.cy.toFixed(1)}" rx="${p.rx.toFixed(1)}" ry="${p.ry.toFixed(1)}" fill="${SPOT_COLORS[Math.floor(rnd() * SPOT_COLORS.length)]}"/>`
+    ).join("");
+  }
 
   // 머니몽키(monkey)는 로고 그대로 골드 고정 — 진화해도 색 대신 크기·왕관으로 성장
   const MONKEY_GOLD = "#f0a91a";
@@ -405,11 +428,7 @@
       s += `<defs><linearGradient id="e${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#eaeee0"/></linearGradient></defs>`;
       s += `<path d="M60 26 C40 26 32 52 32 72 C32 95 45 110 60 110 C75 110 88 95 88 72 C88 52 80 26 60 26 Z" fill="url(#e${id})" stroke="#c2c6b4" stroke-width="2.6"/>`;
       s += '<ellipse cx="60" cy="99" rx="22" ry="9" fill="#b8bca8" opacity=".14"/>';                        // bottom depth
-      // Yoshi-style spots — 펫마다 랜덤 파스텔 색 (재렌더에도 안정)
-      const eggSeed = hashStr((activePet() && activePet().id) || "egg");
-      [[58, 42, 5.5, 5], [41, 60, 7, 6.2], [78, 56, 6, 5.4], [79, 84, 6.5, 5.8], [40, 88, 6.2, 5.6], [60, 101, 5.5, 4.8]].forEach((sp, i) => {
-        s += `<ellipse cx="${sp[0]}" cy="${sp[1]}" rx="${sp[2]}" ry="${sp[3]}" fill="${SPOT_COLORS[(eggSeed + i) % SPOT_COLORS.length]}"/>`;
-      });
+      s += eggSpots((activePet() && activePet().id) || "egg");                                              // 랜덤 위치·크기·색·개수 물방울
       s += '<ellipse cx="49" cy="50" rx="8" ry="12" fill="#fff" opacity=".55" transform="rotate(-16 49 50)"/>'; // glossy highlight
       // 얼굴 없는 깔끔한 요시 알 (눈·입 제거)
       s += decoLayer(idx, equip);

@@ -96,6 +96,21 @@ body.pixel {
 }
 body.pixel input, body.pixel select, body.pixel textarea { font-family: var(--kr-pixel); }
 
+/* ---------- soft retro: keep navy/bevel/scanline look, but readable (non-pixelated) text ---------- */
+body.pixel.soft {
+  font-family: var(--sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  image-rendering: auto;
+  letter-spacing: -0.01em;
+  --display: "Fredoka", "Pretendard", var(--sans);
+}
+body.pixel.soft input, body.pixel.soft select, body.pixel.soft textarea { font-family: var(--sans); }
+body.pixel.soft .tama-name { font-family: var(--sans); }
+body.pixel.soft .pomo-clock, body.pixel.soft .fl-clock, body.pixel.soft .fl-num { font-family: var(--display); }
+body.pixel.soft .title { letter-spacing: 0; }
+body.pixel.soft .scanlines { opacity: 0.14; }
+
 /* ===================== MODERN SKIN VARIANTS (apply when retro pixel mode is off) ===================== */
 body[class*="skin-"]:not(.pixel) .panel { border-color: var(--line); }
 body[class*="skin-"]:not(.pixel) .pixel-btn { background: var(--surface); }

@@ -32,6 +32,7 @@
         lastBackup: 0,  // ts of last JSON export
         compact: false, // denser planner rows
         pixel: true,    // retro pixel skin
+        pixelSoft: false, // 레트로 유지하되 글자를 부드러운(가독성) 폰트로
         skin: "default", // modern UI skin (applies when pixel is off): default|soft|glass|pastel|editorial
         autoTemplate: false, // auto-apply weekday template to empty today/future days
         seenTip: false, // shown the first-run usage tip
