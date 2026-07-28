@@ -167,12 +167,20 @@
   let saveTimer = null;
   let onChange = null;
 
+  let saveWarned = false;
   function save(touch = true) {
     if (touch) state.updatedAt = Date.now();
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      saveWarned = false;
     } catch (e) {
+      // 저장 실패(저장공간 가득참/브라우저 차단) → 설정·테마가 새로고침 시 원복되는 원인.
+      // 조용히 삼키지 말고 사용자에게 한 번 알린다.
       console.error("save failed", e);
+      if (!saveWarned && App.gamify && App.gamify.toast) {
+        saveWarned = true;
+        App.gamify.toast("⚠️ 저장 실패! 저장공간이 가득 찼거나 브라우저가 막고 있어요. 설정→내보내기로 백업 후 정리하세요.");
+      }
     }
     if (onChange) {
       clearTimeout(saveTimer);

@@ -374,6 +374,10 @@
     return "";
   }
 
+  // 알 물방울 색 — 펫 id로 시드를 줘서 캐릭터마다 다르지만 재렌더에도 안 바뀌게(안정 랜덤)
+  const SPOT_COLORS = ["#6dbf3f", "#ff8fb0", "#5bb8ff", "#ffcf3f", "#b98cff", "#ff9d57", "#4fd6c0", "#ff6f91"];
+  function hashStr(s) { s = String(s || ""); let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return Math.abs(h); }
+
   // 머니몽키(monkey)는 로고 그대로 골드 고정 — 진화해도 색 대신 크기·왕관으로 성장
   const MONKEY_GOLD = "#f0a91a";
   function monkeyHeartFace() {
@@ -399,15 +403,13 @@
       // egg — Yoshi-style egg (white with green spots), cute face (species hidden until it hatches)
       if (activityCat) s += `<circle cx="60" cy="70" r="46" fill="${activityCat.color}" opacity=".14"/>`; // 집중 카테고리 오라
       s += `<defs><linearGradient id="e${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#eaeee0"/></linearGradient></defs>`;
-      s += `<path d="M60 26 C40 26 32 52 32 72 C32 95 45 110 60 110 C75 110 88 95 88 72 C88 52 80 26 60 26 Z" fill="url(#e${id})" stroke="#8fb15e" stroke-width="2.6"/>`;
-      s += '<ellipse cx="60" cy="99" rx="22" ry="9" fill="#8fb15e" opacity=".12"/>';                        // bottom depth
-      // Yoshi green spots
-      s += '<ellipse cx="58" cy="42" rx="5.5" ry="5" fill="#6dbf3f"/>' +
-           '<ellipse cx="41" cy="60" rx="7" ry="6.2" fill="#6dbf3f"/>' +
-           '<ellipse cx="78" cy="56" rx="6" ry="5.4" fill="#6dbf3f"/>' +
-           '<ellipse cx="79" cy="84" rx="6.5" ry="5.8" fill="#6dbf3f"/>' +
-           '<ellipse cx="40" cy="88" rx="6.2" ry="5.6" fill="#6dbf3f"/>' +
-           '<ellipse cx="60" cy="101" rx="5.5" ry="4.8" fill="#6dbf3f"/>';
+      s += `<path d="M60 26 C40 26 32 52 32 72 C32 95 45 110 60 110 C75 110 88 95 88 72 C88 52 80 26 60 26 Z" fill="url(#e${id})" stroke="#c2c6b4" stroke-width="2.6"/>`;
+      s += '<ellipse cx="60" cy="99" rx="22" ry="9" fill="#b8bca8" opacity=".14"/>';                        // bottom depth
+      // Yoshi-style spots — 펫마다 랜덤 파스텔 색 (재렌더에도 안정)
+      const eggSeed = hashStr((activePet() && activePet().id) || "egg");
+      [[58, 42, 5.5, 5], [41, 60, 7, 6.2], [78, 56, 6, 5.4], [79, 84, 6.5, 5.8], [40, 88, 6.2, 5.6], [60, 101, 5.5, 4.8]].forEach((sp, i) => {
+        s += `<ellipse cx="${sp[0]}" cy="${sp[1]}" rx="${sp[2]}" ry="${sp[3]}" fill="${SPOT_COLORS[(eggSeed + i) % SPOT_COLORS.length]}"/>`;
+      });
       s += '<ellipse cx="49" cy="50" rx="8" ry="12" fill="#fff" opacity=".55" transform="rotate(-16 49 50)"/>'; // glossy highlight
       // 얼굴 없는 깔끔한 요시 알 (눈·입 제거)
       s += decoLayer(idx, equip);
