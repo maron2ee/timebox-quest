@@ -240,10 +240,10 @@
     const ht = 76 - (33 + idx); // head top y
     if (sp === "cat") {
       return (
-        `<path d="M52 ${ht + 7} L41 ${ht - 13} L59 ${ht + 1} Z" fill="${c}" stroke="${dark}" stroke-width="2" stroke-linejoin="round"/>` +
-        `<path d="M51 ${ht + 2} L45 ${ht - 7} L55 ${ht - 1} Z" fill="#ff9ec4"/>` +
-        `<path d="M68 ${ht + 7} L79 ${ht - 13} L61 ${ht + 1} Z" fill="${c}" stroke="${dark}" stroke-width="2" stroke-linejoin="round"/>` +
-        `<path d="M69 ${ht + 2} L75 ${ht - 7} L65 ${ht - 1} Z" fill="#ff9ec4"/>`
+        `<path d="M52 ${ht + 7} L41 ${ht - 13} L59 ${ht + 1} Z" fill="${c}" stroke="${dark}" stroke-width="3" stroke-linejoin="round"/>` +
+        `<path d="M51 ${ht + 2} L45 ${ht - 7} L55 ${ht - 1} Z" fill="#ffb9d6"/>` +
+        `<path d="M68 ${ht + 7} L79 ${ht - 13} L61 ${ht + 1} Z" fill="${c}" stroke="${dark}" stroke-width="3" stroke-linejoin="round"/>` +
+        `<path d="M69 ${ht + 2} L75 ${ht - 7} L65 ${ht - 1} Z" fill="#ffb9d6"/>`
       );
     }
     if (sp === "monkey") {
@@ -261,8 +261,10 @@
     const r = 33 + idx;
     const lx = 60 - r + 5, rx = 60 + r - 5, ey = 76 - r + 20;
     return (
-      `<ellipse cx="${lx}" cy="${ey}" rx="9" ry="17" fill="${shade(c, -20)}" stroke="${dark}" stroke-width="2" transform="rotate(-20 ${lx} ${ey})"/>` +
-      `<ellipse cx="${rx}" cy="${ey}" rx="9" ry="17" fill="${shade(c, -20)}" stroke="${dark}" stroke-width="2" transform="rotate(20 ${rx} ${ey})"/>`
+      `<ellipse cx="${lx}" cy="${ey}" rx="9.5" ry="18" fill="${shade(c, -20)}" stroke="${dark}" stroke-width="3" transform="rotate(-20 ${lx} ${ey})"/>` +
+      `<ellipse cx="${lx + 1}" cy="${ey + 3}" rx="4" ry="9" fill="#ffcdb8" opacity=".7" transform="rotate(-20 ${lx} ${ey})"/>` +
+      `<ellipse cx="${rx}" cy="${ey}" rx="9.5" ry="18" fill="${shade(c, -20)}" stroke="${dark}" stroke-width="3" transform="rotate(20 ${rx} ${ey})"/>` +
+      `<ellipse cx="${rx - 1}" cy="${ey + 3}" rx="4" ry="9" fill="#ffcdb8" opacity=".7" transform="rotate(20 ${rx} ${ey})"/>`
     );
   }
 
@@ -416,9 +418,9 @@
     const c = sp === "monkey" ? MONKEY_GOLD : STAGES[idx].color;
     const id = ++uid;
     const light = shade(c, 50);
-    // 원숭이는 귀여운 만화 느낌을 위해 진한 브라운 외곽선 사용
-    const dark = sp === "monkey" ? "#7a5320" : shade(c, -42);
-    const bodySW = sp === "monkey" ? 3.4 : 2.5;
+    // 귀여운 만화 느낌 — 진한 외곽선 + 두꺼운 선 (모든 종)
+    const dark = sp === "monkey" ? "#7a5320" : shade(c, -58);
+    const bodySW = 3.3;
     let s = '<svg viewBox="0 0 120 132" xmlns="http://www.w3.org/2000/svg">';
     s += '<ellipse cx="60" cy="124" rx="28" ry="6" fill="#000" opacity=".16"/>';
 
@@ -820,7 +822,7 @@
     App.ui.openModal("speciesModal");
   }
 
-  const SP_LABEL = { monkey: "머니몽키", dog: "강아지", cat: "고양이" };
+  const SP_LABEL = { monkey: "우끼끼", dog: "멍멍이", cat: "야옹이" };
   function chooseSpecies(sp) {
     sp = sp === "dog" ? "dog" : sp === "monkey" ? "monkey" : "cat";
     if (adoptMode) {
