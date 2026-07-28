@@ -396,18 +396,20 @@
     s += '<ellipse cx="60" cy="124" rx="28" ry="6" fill="#000" opacity=".16"/>';
 
     if (idx === 0) {
-      // egg — cute pastel tamagotchi egg with polka dots (species hidden until it hatches)
+      // egg — Yoshi-style egg (white with green spots), cute face (species hidden until it hatches)
       if (activityCat) s += `<circle cx="60" cy="70" r="46" fill="${activityCat.color}" opacity=".14"/>`; // 집중 카테고리 오라
-      s += `<defs><linearGradient id="e${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fffdf9"/><stop offset=".6" stop-color="#fff2f5"/><stop offset="1" stop-color="#ffe0ea"/></linearGradient></defs>`;
-      s += '<path d="M60 30 q-3 -10 5 -13 q-1 7 -5 13" fill="#9fe0c0"/>';                                    // little sprout on top
-      s += `<path d="M60 26 C40 26 32 52 32 72 C32 95 45 110 60 110 C75 110 88 95 88 72 C88 52 80 26 60 26 Z" fill="url(#e${id})" stroke="#f3c0d2" stroke-width="2.5"/>`;
-      s += '<ellipse cx="60" cy="99" rx="22" ry="9" fill="#f0b0c6" opacity=".18"/>';                        // bottom depth
-      // pastel polka dots
-      s += '<circle cx="45" cy="60" r="3.2" fill="#8fd9c4"/><circle cx="75" cy="52" r="2.6" fill="#ffd76b"/>' +
-           '<circle cx="72" cy="72" r="3.4" fill="#a7c8ff"/><circle cx="47" cy="83" r="2.8" fill="#ffb0c8"/>' +
-           '<circle cx="62" cy="94" r="2.4" fill="#ffd76b"/>';
-      s += '<ellipse cx="49" cy="52" rx="8.5" ry="12.5" fill="#fff" opacity=".6" transform="rotate(-16 49 52)"/>'; // glossy highlight
-      s += face(mood);
+      s += `<defs><linearGradient id="e${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#eaeee0"/></linearGradient></defs>`;
+      s += `<path d="M60 26 C40 26 32 52 32 72 C32 95 45 110 60 110 C75 110 88 95 88 72 C88 52 80 26 60 26 Z" fill="url(#e${id})" stroke="#8fb15e" stroke-width="2.6"/>`;
+      s += '<ellipse cx="60" cy="99" rx="22" ry="9" fill="#8fb15e" opacity=".12"/>';                        // bottom depth
+      // Yoshi green spots
+      s += '<ellipse cx="58" cy="42" rx="5.5" ry="5" fill="#6dbf3f"/>' +
+           '<ellipse cx="41" cy="60" rx="7" ry="6.2" fill="#6dbf3f"/>' +
+           '<ellipse cx="78" cy="56" rx="6" ry="5.4" fill="#6dbf3f"/>' +
+           '<ellipse cx="79" cy="84" rx="6.5" ry="5.8" fill="#6dbf3f"/>' +
+           '<ellipse cx="40" cy="88" rx="6.2" ry="5.6" fill="#6dbf3f"/>' +
+           '<ellipse cx="60" cy="101" rx="5.5" ry="4.8" fill="#6dbf3f"/>';
+      s += '<ellipse cx="49" cy="50" rx="8" ry="12" fill="#fff" opacity=".55" transform="rotate(-16 49 50)"/>'; // glossy highlight
+      // 얼굴 없는 깔끔한 요시 알 (눈·입 제거)
       s += decoLayer(idx, equip);
       if (activityCat) s += `<text x="60" y="107" font-size="15" text-anchor="middle">${activityCat.emoji}</text>`; // 지금 집중 활동
       s += '<text x="21" y="46" font-size="13">✨</text><text x="90" y="60" font-size="9">✨</text>';
