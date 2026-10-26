@@ -10,21 +10,36 @@
   const KEY = "tbxPlanner.v1";
   const SCHEMA = 1;
 
+  /* ---------- 카테고리 대분류 ----------
+     productive:true = '생산 시간'에 합산 */
+  const CAT_GROUPS = [
+    { id: "invest", name: "투자공부", productive: true },
+    { id: "exec",   name: "매매",     productive: true },
+    { id: "growth", name: "자기계발", productive: true },
+    { id: "body",   name: "운동",     productive: true },
+    { id: "life",   name: "생활",     productive: false },
+    { id: "rest",   name: "휴식",     productive: false },
+  ];
+  const catGroup = (id) => CAT_GROUPS.find((g) => g.id === id) || CAT_GROUPS[CAT_GROUPS.length - 1];
+
   /* ---------- 기본 카테고리 (타임박스 색) ---------- */
   const CATS = [
-    { id: "study",    name: "주식공부",  color: "#fde68a", study: true },
-    { id: "research", name: "리서치",    color: "#ddd6fe", study: true },
-    { id: "market",   name: "시황체크",  color: "#bfdbfe", study: true },
-    { id: "trade",    name: "매매",      color: "#fecaca", study: false },
-    { id: "read",     name: "독서",      color: "#bbf7d0", study: true },
-    { id: "exercise", name: "운동",      color: "#fbcfe8", study: false },
-    { id: "routine",  name: "루틴",      color: "#fed7aa", study: false },
-    { id: "rest",     name: "휴식",      color: "#e5e7eb", study: false },
+    { id: "study",    name: "주식공부", color: "#fde68a", group: "invest" },
+    { id: "research", name: "리서치",   color: "#ddd6fe", group: "invest" },
+    { id: "market",   name: "시황체크", color: "#bfdbfe", group: "invest" },
+    { id: "trade",    name: "매매",     color: "#fecaca", group: "exec" },
+    { id: "english",  name: "영어",     color: "#a7f3d0", group: "growth" },
+    { id: "japanese", name: "일본어",   color: "#f9a8d4", group: "growth" },
+    { id: "read",     name: "독서",     color: "#d9f99d", group: "growth" },
+    { id: "exercise", name: "운동",     color: "#fdba74", group: "body" },
+    { id: "routine",  name: "루틴",     color: "#cbd5e1", group: "life" },
+    { id: "rest",     name: "휴식",     color: "#e5e7eb", group: "rest" },
   ];
 
   const PROJECTS = [
     { id: "p_stock",  name: "주식공부", tab: "study", collapsed: false },
     { id: "p_eng",    name: "영어공부", tab: "study", collapsed: false },
+    { id: "p_jp",     name: "일본어",   tab: "study", collapsed: false },
     { id: "p_review", name: "회고",     tab: "study", collapsed: false },
     { id: "p_life",   name: "일정",     tab: "plan",  collapsed: false },
   ];
@@ -221,6 +236,23 @@
       ).filter((it) => it.text);
     });
     if (!Array.isArray(s.categories) || !s.categories.length) s.categories = d.categories;
+    // 카테고리 대분류: 예전 study(boolean) → group(id)
+    const firstUpgrade = s.categories.some((c) => c && c.group === undefined);
+    s.categories = s.categories.map((c) => {
+      if (c.group) return c;
+      const def = CATS.find((x) => x.id === c.id);
+      return { ...c, group: def ? def.group : (c.study ? "invest" : "life") };
+    });
+    // 첫 업그레이드에 한해 새로 생긴 기본 카테고리(영어·일본어 등)를 더해 준다
+    if (firstUpgrade) {
+      CATS.forEach((def) => {
+        if (!s.categories.some((c) => c.id === def.id)) s.categories.push({ ...def });
+      });
+    }
+    // 기본 할일 그룹 보강 (일본어 등)
+    PROJECTS.forEach((def) => {
+      if (!s.projects.some((p) => p.id === def.id)) s.projects.push({ ...def });
+    });
     if (!Array.isArray(s.projects) || !s.projects.length) s.projects = d.projects;
     if (!s.days || typeof s.days !== "object") s.days = {};
     ["ddays", "terms", "research"].forEach((k) => { if (!Array.isArray(s[k])) s[k] = []; });
@@ -312,11 +344,26 @@
     }
     return out;
   }
-  // 공부(study:true) 카테고리 누적 분
-  function studyMin(ds, side) {
+  // 대분류별 분 { groupId: min }
+  function minutesByGroup(ds, side) {
     const by = minutesByCat(ds, side || "done");
+    const out = {};
+    for (const id in by) {
+      const c = catById(id);
+      const g = c ? (c.group || "life") : "life";
+      out[g] = (out[g] || 0) + by[id];
+    }
+    return out;
+  }
+  // 한 대분류의 분
+  function groupMin(ds, groupId, side) { return minutesByGroup(ds, side)[groupId] || 0; }
+  // '학습시간' = 투자공부 그룹 (언어·독서는 자기계발로 분리)
+  function studyMin(ds, side) { return groupMin(ds, "invest", side || "done"); }
+  // 생산 시간 = productive:true 인 대분류 합계
+  function productiveMin(ds, side) {
+    const by = minutesByGroup(ds, side);
     let sum = 0;
-    for (const id in by) { const c = catById(id); if (c && c.study) sum += by[id]; }
+    for (const g in by) if (catGroup(g).productive) sum += by[g];
     return sum;
   }
   // 제시간 실천율(%) — 계획한 슬롯 '그 시간에' 실행된 비율. 시간이 밀리면 떨어진다.
@@ -500,6 +547,7 @@
     catById, projectById,
     slotMin, startMin, endMin, slotKeys,
     filledMin, minutesByCat, studyMin, adherence, onTimeRate,
+    CAT_GROUPS, catGroup, minutesByGroup, groupMin, productiveMin,
     blocksOf, verdictOf, judgeProgress,
     tasksOf, taskStats, upcomingDdays,
     phases, phaseAt, phaseById, phaseProgress,

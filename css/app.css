@@ -642,3 +642,10 @@ input, textarea, select { font: inherit; color: inherit; }
 .it-min { width: 64px; flex: 0 0 64px; text-align: right; }
 .budget { font-size: 11.5px; font-weight: 800; color: var(--muted); background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 2px 9px; }
 .budget.over { background: #fff1f1; border-color: #fbcfcf; color: #dc2626; }
+
+/* ---------- 생산 시간 ---------- */
+.prod-head { margin-bottom: 12px; }
+.prod-v { font-size: 26px; font-weight: 800; letter-spacing: -.8px; }
+.prod-s { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+.barrow.off .barrow-n, .barrow.off .barrow-v { color: var(--faint); }
+.c-group { font-size: 12.5px; }

@@ -81,7 +81,10 @@ sw.js, manifest.webmanifest, icon.svg   PWA
 - **데이터 모델(store.js)**
   ```
   settings { dayStartHour:7, dayEndHour:24, slotMin:10, market{show,sessions}, carryOver }
-  categories[] { id, name, color, study }      // study:true 만 '학습시간'에 합산
+  categories[] { id, name, color, group }      // group = 대분류 id (store.CAT_GROUPS)
+  CAT_GROUPS   invest(투자공부) exec(매매) growth(자기계발) body(운동) | life(생활) rest(휴식)
+                      // 앞의 4개가 productive:true → '생산 시간'에 합산
+                      // 학습시간 카드 = invest 그룹만 (언어·독서는 growth 로 분리해 숫자를 흐리지 않는다)
   projects[]   { id, name, tab:'study'|'plan', collapsed }   // 전역 그룹
   settings.routine { enabled, phases[] }       // 구간 정의(기본 10개)
   phases[].items[] { text, min }               // min = 배분 시간(분). 0이면 타이머 없음
@@ -147,6 +150,12 @@ sw.js, manifest.webmanifest, icon.svg   PWA
   **서버 푸시가 없어 탭이 열려 있을 때만 동작한다** — 설정 화면에 이 한계를 그대로 써 둘 것.
   OS 알림 권한이 없거나 거부돼도 **인앱 토스트는 항상** 뜬다. 주말(비거래일)엔 조용하다.
   앱을 켠 직후 첫 틱은 기준만 잡고 알리지 않는다(새로고침마다 울리는 것 방지).
+- **카테고리 대분류**(`store.CAT_GROUPS`): 카테고리마다 `group` 을 달아 통계를 대분류로 묶는다.
+  `minutesByGroup` / `groupMin` / `productiveMin` 으로 집계하고, 통계의 **생산 시간** 카드가
+  `productive:true` 그룹 합계를 보여준다(생활·휴식 제외).
+  `studyMin` 은 **invest 그룹만** — 예전 `study` boolean 은 migrate 에서 group 으로 올린다.
+  카테고리를 고치면 **반드시 `App.timeline.refreshPalette()`** 도 부를 것 —
+  팔레트는 init 때 한 번만 그려지므로 안 부르면 새로고침 전까지 반영되지 않는다.
 - **실천율 지표는 두 개이고 기본은 카테고리 분 기준**이다.
   - `adherence(ds)` — **Σ min(계획분, 실제분) / Σ 계획분** (카테고리별). 시간이 밀려도 한 건 인정.
   - `onTimeRate(ds)` — 계획한 슬롯 '그 시간에' 실행된 비율. 밀리면 떨어진다. 보조 지표로만 표시.

@@ -51,7 +51,7 @@
       `<div class="card stat"><div class="stat-k">${k}</div><div class="stat-v">${v}</div><div class="stat-sub">${sub}</div></div>`;
 
     host.innerHTML =
-      card("총 공부시간", U.minToKo(totalStudy), `${range === "week" ? "이번 주" : "이번 달"} · ${activeDays}일 기록`) +
+      card("투자공부", U.minToKo(totalStudy), `${range === "week" ? "이번 주" : "이번 달"} · ${activeDays}일 기록`) +
       card("하루 평균", U.minToKo(avg), "기록한 날 기준") +
       card("계획 실천율", adh == null ? "—" : adh + "%", "계획한 칸 중 실행된 비율") +
       card("연속 기록", streak() + "일", "공부 1분 이상");
@@ -110,6 +110,53 @@
         <span class="barrow-t"><i style="width:${r.adh}%;background:${r.adh >= 80 ? "#34d399" : r.adh >= 50 ? "#fbbf24" : "#f87171"}"></i></span>
         <span class="barrow-v">${r.adh}%</span>
       </div>`).join("");
+  }
+
+  // 대분류별 시간 + '생산 시간'
+  function renderGroups() {
+    const host = U.byId("groupStats");
+    if (!host) return;
+    const [from, to] = bounds();
+    const days = U.rangeDays(from, to);
+
+    const total = {};
+    let prod = 0, all = 0;
+    days.forEach((ds) => {
+      const by = S().minutesByGroup(ds, "done");
+      for (const g in by) {
+        total[g] = (total[g] || 0) + by[g];
+        all += by[g];
+        if (S().catGroup(g).productive) prod += by[g];
+      }
+    });
+
+    const activeDays = days.filter((ds) => S().filledMin(ds, "done") > 0).length;
+    const avg = activeDays ? Math.round(prod / activeDays) : 0;
+    const groups = S().CAT_GROUPS.filter((g) => total[g.id]);
+    const max = Math.max(1, ...groups.map((g) => total[g.id]));
+
+    if (!all) {
+      host.innerHTML = `<div class="card-title" style="margin-bottom:8px">생산 시간</div>
+        <div class="empty">아직 기록이 없어요</div>`;
+      return;
+    }
+
+    host.innerHTML = `
+      <div class="row" style="margin-bottom:12px">
+        <div class="card-title">생산 시간</div>
+        <div class="stat-sub ml-auto">${range === "week" ? "이번 주" : "이번 달"} · 기록한 ${activeDays}일</div>
+      </div>
+      <div class="prod-head">
+        <div class="prod-v">${U.minToKo(prod)}</div>
+        <div class="prod-s">하루 평균 ${U.minToKo(avg)} · 전체 기록 ${U.minToKo(all)} 중 ${Math.round((prod / all) * 100)}%</div>
+      </div>
+      ${groups.map((g) => `
+        <div class="barrow${g.productive ? "" : " off"}">
+          <span class="barrow-n">${U.esc(g.name)}</span>
+          <span class="barrow-t"><i style="width:${(total[g.id] / max) * 100}%;background:${g.productive ? "#4f6ef7" : "#d4d4db"}"></i></span>
+          <span class="barrow-v">${U.minToKo(total[g.id])}</span>
+        </div>`).join("")}
+      <div class="stat-sub" style="margin-top:8px">생활·휴식은 생산 시간에서 빼고 셉니다. 분류는 설정 → 카테고리에서 바꿀 수 있어요.</div>`;
   }
 
   // 루틴 준수 — 시트/노션이 집계하지 못하는 것만 본다.
@@ -174,6 +221,7 @@
   function render() {
     const rows = series();
     renderCards(rows);
+    renderGroups();
     renderRoutine();
     renderChart(rows);
     renderCats(rows);

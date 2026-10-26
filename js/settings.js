@@ -265,13 +265,15 @@
   function renderCats() {
     const host = U.byId("catRows");
     if (!host) return;
+    const groups = S().CAT_GROUPS;
     host.innerHTML = S().state.categories.map((c) => `
-      <div class="row" style="gap:8px;margin-bottom:6px" data-id="${c.id}">
+      <div class="row" style="gap:8px;margin-bottom:6px;flex-wrap:wrap" data-id="${c.id}">
         <input type="color" class="c-color" value="${U.esc(c.color)}" style="width:38px;height:32px;border:1px solid var(--line);border-radius:8px;background:none;padding:2px">
-        <input class="inp c-name" value="${U.esc(c.name)}" style="max-width:190px">
-        <label class="row" style="gap:5px;font-size:12.5px;color:var(--muted)">
-          <input type="checkbox" class="c-study" ${c.study ? "checked" : ""}> 공부시간에 포함
-        </label>
+        <input class="inp c-name" value="${U.esc(c.name)}" style="max-width:150px">
+        <select class="inp c-group" style="max-width:130px">
+          ${groups.map((g) => `<option value="${g.id}"${g.id === c.group ? " selected" : ""}>${U.esc(g.name)}</option>`).join("")}
+        </select>
+        <span class="stat-sub">${S().catGroup(c.group).productive ? "생산 시간에 포함" : "생산 집계 제외"}</span>
         <button class="icon-btn ml-auto c-del" title="삭제">✕</button>
       </div>`).join("");
 
@@ -279,14 +281,14 @@
       const id = row.dataset.id;
       const c = S().catById(id);
       if (!c) return;
-      row.querySelector(".c-color").onchange = (e) => { c.color = e.target.value; S().save(); App.day.refresh(); };
-      row.querySelector(".c-name").onchange = (e) => { c.name = e.target.value.trim() || "카테고리"; S().save(); App.day.refresh(); };
-      row.querySelector(".c-study").onchange = (e) => { c.study = e.target.checked; S().save(); App.day.refresh(); };
+      row.querySelector(".c-color").onchange = (e) => { c.color = e.target.value; S().save(); App.timeline.refreshPalette(); App.day.refresh(); };
+      row.querySelector(".c-name").onchange = (e) => { c.name = e.target.value.trim() || "카테고리"; S().save(); App.timeline.refreshPalette(); App.day.refresh(); };
+      row.querySelector(".c-group").onchange = (e) => { c.group = e.target.value; S().save(); renderCats(); App.day.refresh(); };
       row.querySelector(".c-del").onclick = () => {
         if (S().state.categories.length <= 1) { App.ui.toast("최소 하나는 있어야 해요"); return; }
         if (!confirm(`“${c.name}” 카테고리를 삭제할까요? (이미 칠한 칸은 그대로 남아요)`)) return;
         S().state.categories = S().state.categories.filter((x) => x.id !== id);
-        S().save(); renderCats(); App.day.refresh();
+        S().save(); renderCats(); App.timeline.refreshPalette(); App.day.refresh();
       };
     });
   }
@@ -340,7 +342,7 @@
           if (!confirm("현재 데이터를 덮어씁니다. 계속할까요?")) return;
           Object.assign(S().state, S().migrate(Object.assign(S().defaults(), parsed)));
           S().save();
-          App.day.refresh(); render();
+          App.timeline.refreshPalette(); App.day.refresh(); render();
           App.ui.toast("가져왔어요");
         } catch (e) {
           App.ui.toast("읽을 수 없는 파일이에요");
@@ -442,8 +444,8 @@
       S().save(); App.trades.render(App.day.date());
     });
     U.on("catAdd", "click", () => {
-      S().state.categories.push({ id: U.uid("c"), name: "새 카테고리", color: "#dbeafe", study: false });
-      S().save(); renderCats(); App.day.refresh();
+      S().state.categories.push({ id: U.uid("c"), name: "새 카테고리", color: "#dbeafe", group: "life" });
+      S().save(); renderCats(); App.timeline.refreshPalette(); App.day.refresh();
     });
     U.on("dataExport", "click", exportJson);
     U.on("dataCsv", "click", exportCsv);
@@ -452,7 +454,7 @@
       if (!confirm("정말 모든 데이터를 지울까요? 되돌릴 수 없어요.")) return;
       if (!confirm("한 번 더 확인합니다. 전부 삭제할까요?")) return;
       S().reset();
-      App.day.refresh(); render();
+      App.timeline.refreshPalette(); App.day.refresh(); render();
       App.ui.toast("초기화했어요");
     });
   }

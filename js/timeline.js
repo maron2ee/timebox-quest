@@ -320,11 +320,19 @@
   }
 
   function rebindPalette() {
+    const cats = S().state.categories;
+    if (activeCat !== "__erase" && !cats.some((c) => c.id === activeCat)) {
+      activeCat = (cats[0] || {}).id || "__erase";
+    }
     App.ui.renderPalette("palette", activeCat, (id) => {
       activeCat = id;
       rebindPalette();
     });
   }
 
-  App.timeline = { init, render, applyMinutes, copyPlanToDone, get activeCat() { return activeCat; } };
+  App.timeline = {
+    init, render, applyMinutes, copyPlanToDone,
+    refreshPalette: rebindPalette,          // 카테고리가 바뀌면 설정에서 호출
+    get activeCat() { return activeCat; },
+  };
 })();

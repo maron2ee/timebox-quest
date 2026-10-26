@@ -139,12 +139,14 @@ t("filledMin / minutesByCat", () => {
   eq(S.filledMin("2026-07-17", "plan"), 30);
   eq(S.minutesByCat("2026-07-17", "plan"), { study: 20, rest: 10 });
 });
-t("studyMin 은 study:true 만 합산", () => {
+t("studyMin 은 '투자공부' 대분류만 합산", () => {
   S.reset();
   const d = S.getDay("2026-07-17");
-  d.done["09:00"] = { c: "study", t: "" };   // study:true
-  d.done["09:10"] = { c: "rest", t: "" };    // study:false
-  eq(S.studyMin("2026-07-17", "done"), 10);
+  d.done["09:00"] = { c: "study", t: "" };     // 투자공부
+  d.done["09:10"] = { c: "research", t: "" };  // 투자공부
+  d.done["09:20"] = { c: "english", t: "" };   // 자기계발 — 안 섞인다
+  d.done["09:30"] = { c: "rest", t: "" };      // 휴식
+  eq(S.studyMin("2026-07-17", "done"), 20);
 });
 t("adherence = 계획 칸 중 실행된 비율", () => {
   S.reset();
@@ -567,6 +569,64 @@ t("빈 항목과 이상한 min 은 보정", () => {
   eq(items.length, 2, "빈 텍스트 항목은 버린다");
   eq(items[0].min, 13, "문자열 숫자는 반올림");
   eq(items[1].min, 0, "음수는 0");
+});
+
+
+/* ---------- 카테고리 대분류 · 생산 시간 ---------- */
+t("기본 카테고리의 대분류 배치", () => {
+  S.load();
+  const by = {};
+  S.state.categories.forEach((c) => (by[c.id] = c.group));
+  eq(by.study, "invest"); eq(by.research, "invest"); eq(by.market, "invest");
+  eq(by.trade, "exec");
+  eq(by.english, "growth"); eq(by.japanese, "growth"); eq(by.read, "growth");
+  eq(by.exercise, "body");
+  eq(by.routine, "life"); eq(by.rest, "rest");
+});
+t("생산 집계 대상은 투자공부·매매·자기계발·운동", () => {
+  eq(S.CAT_GROUPS.filter((g) => g.productive).map((g) => g.id), ["invest", "exec", "growth", "body"]);
+  eq(S.CAT_GROUPS.filter((g) => !g.productive).map((g) => g.id), ["life", "rest"]);
+});
+t("minutesByGroup / productiveMin", () => {
+  S.reset();
+  const d = S.getDay("2026-07-17");
+  const put = (cat, n) => { for (let i = 0; i < n; i++) d.done[U.toHHMM(9 * 60 + Object.keys(d.done).length * 10)] = { c: cat, t: "" }; };
+  put("study", 6);     // 투자공부 60분
+  put("english", 3);   // 자기계발 30분
+  put("japanese", 3);  // 자기계발 30분
+  put("exercise", 3);  // 운동 30분
+  put("rest", 6);      // 휴식 60분
+  eq(S.minutesByGroup("2026-07-17", "done"), { invest: 60, growth: 60, body: 30, rest: 60 });
+  eq(S.productiveMin("2026-07-17", "done"), 150, "휴식 60분은 빠진다");
+  eq(S.groupMin("2026-07-17", "growth", "done"), 60, "영어+일본어");
+  eq(S.studyMin("2026-07-17", "done"), 60, "학습시간은 투자공부만");
+});
+t("예전 study 플래그를 대분류로 올린다", () => {
+  const fixed = S.migrate(Object.assign(S.defaults(), {
+    categories: [
+      { id: "study", name: "주식공부", color: "#fff", study: true },
+      { id: "custom1", name: "내 공부", color: "#fff", study: true },
+      { id: "custom2", name: "딴짓", color: "#fff", study: false },
+    ],
+  }));
+  const by = {};
+  fixed.categories.forEach((c) => (by[c.id] = c.group));
+  eq(by.study, "invest", "알려진 id 는 기본 배치를 따른다");
+  eq(by.custom1, "invest", "study:true 커스텀 → 투자공부");
+  eq(by.custom2, "life", "study:false 커스텀 → 생활");
+  ok(fixed.categories.some((c) => c.id === "english"), "첫 업그레이드에 영어 카테고리가 추가된다");
+  ok(fixed.categories.some((c) => c.id === "japanese"), "일본어도");
+});
+t("이미 group 이 있으면 기본 카테고리를 다시 넣지 않는다", () => {
+  const once = S.migrate(Object.assign(S.defaults(), {
+    categories: [{ id: "study", name: "주식공부", color: "#fff", group: "invest" }],
+  }));
+  eq(once.categories.length, 1, "지운 기본 카테고리가 되살아나지 않는다");
+});
+t("기본 할일 그룹에 일본어가 있다", () => {
+  S.load();
+  ok(S.state.projects.some((p) => p.name === "일본어"), "일본어 그룹");
+  ok(S.state.projects.some((p) => p.name === "영어공부"), "영어공부 그룹");
 });
 
 /* ---------- 결과 ---------- */
