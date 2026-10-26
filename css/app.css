@@ -425,42 +425,6 @@ input, textarea, select { font: inherit; color: inherit; }
 .link-inp { flex: 1; min-width: 0; border: 1px solid var(--line); border-radius: 8px; padding: 6px 9px; font-size: 12px; outline: 0; }
 .link-inp:focus { border-color: var(--accent); }
 
-/* ---------- 가설 ---------- */
-.hypo-badge { font-size: 11px; font-weight: 700; border-radius: 999px; padding: 3px 9px; }
-.hypo-badge.todo   { background: var(--accent-soft); color: var(--accent); }
-.hypo-badge.warn   { background: #fff1f1; color: #dc2626; }
-.hypo-badge.ok     { background: #effaf3; color: #15803d; }
-.hypo-badge.edited { background: #fff8e8; color: #b45309; }
-.bias-row { display: flex; gap: 6px; margin: 10px 0 8px; }
-.bias {
-  flex: 1; border: 1px solid var(--line); background: var(--surface-2); border-radius: 9px;
-  padding: 8px 0; font-size: 13px; font-weight: 700; color: var(--muted);
-}
-.bias:disabled { opacity: .55; cursor: default; }
-.bias.up.on   { background: #fff1f1; border-color: #fbbcbc; color: #dc2626; }
-.bias.flat.on { background: #f3f4f6; border-color: var(--line-strong); color: var(--ink); }
-.bias.down.on { background: #eff6ff; border-color: #bfdbfe; color: #2563eb; }
-.hypo-inp {
-  width: 100%; border: 0; border-bottom: 1px solid var(--line); background: transparent;
-  padding: 7px 0; font-size: 13.5px; outline: 0; margin-bottom: 4px;
-}
-.hypo-inp:focus { border-bottom-color: var(--accent); }
-.hypo-inp:disabled { color: var(--muted); }
-.sec-row { display: flex; align-items: center; gap: 7px; margin-top: 8px; }
-.sec-k { font-size: 11px; font-weight: 800; color: var(--faint); flex: 0 0 auto; }
-.sec-inp { flex: 1; min-width: 0; border: 1px solid var(--line); border-radius: 8px; padding: 6px 9px; font-size: 12.5px; outline: 0; }
-.sec-inp:focus { border-color: var(--accent); }
-.hypo-orig { margin-top: 9px; font-size: 11.5px; color: var(--muted); background: var(--surface-2); border-radius: 8px; padding: 7px 10px; }
-.hypo-wait { margin-top: 9px; font-size: 11.5px; color: var(--faint); }
-
-/* ---------- 판정 ---------- */
-.verdict { margin-top: 12px; padding-top: 11px; border-top: 1px solid var(--line); }
-.verdict-row { display: flex; align-items: center; gap: 7px; margin-bottom: 7px; }
-.verdict-k { font-size: 12px; font-weight: 700; color: var(--muted); width: 36px; flex: 0 0 36px; }
-.vbtn { border: 1px solid var(--line); background: var(--surface-2); border-radius: 8px; padding: 5px 13px; font-size: 12.5px; font-weight: 700; color: var(--muted); }
-.vbtn.hit  { background: #effaf3; border-color: #bbf0cd; color: #15803d; }
-.vbtn.miss { background: #fff1f1; border-color: #fbcfcf; color: #dc2626; }
-
 /* ---------- 가드레일 ---------- */
 .guard { border-radius: var(--r); padding: 12px 15px; font-size: 13px; border: 1px solid var(--line); background: var(--surface); box-shadow: var(--shadow); }
 .guard.ok { color: var(--ink-2); }
@@ -516,14 +480,14 @@ input, textarea, select { font: inherit; color: inherit; }
 }
 
 /* ---------- 가설 통계 ---------- */
-.hypo-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.quad-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
 .hs { border: 1px solid var(--line); border-radius: 11px; padding: 11px 13px; background: var(--surface-2); }
 .hs.bad { background: #fff6f6; border-color: #ffdcdc; }
 .hs-v { font-size: 21px; font-weight: 800; letter-spacing: -.6px; }
 .hs.bad .hs-v { color: var(--danger); }
 .hs-k { font-size: 12px; font-weight: 700; color: var(--ink-2); margin-top: 1px; }
 .hs-s { font-size: 11px; color: var(--muted); margin-top: 3px; }
-@media (max-width: 900px) { .hypo-stats { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 900px) { .quad-stats { grid-template-columns: 1fr 1fr; } }
 
 /* ---------- 오늘 판정 ---------- */
 #judgeHead { gap: 8px; }
@@ -591,3 +555,23 @@ input, textarea, select { font: inherit; color: inherit; }
   max-height: 230px; overflow: auto; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 .rs-oldhint { font-size: 11.5px; color: var(--muted); margin-bottom: 6px; }
+
+/* ---------- 오늘의 기록 허브 ---------- */
+.rec-note { font-size: 11px; color: var(--faint); font-weight: 700; }
+.rec-row { display: flex; align-items: center; gap: 9px; padding: 7px 0; border-bottom: 1px solid #f4f4f7; }
+.rec-row:last-child { border-bottom: 0; }
+.rec-k { font-size: 11.5px; font-weight: 800; color: var(--faint); flex: 0 0 64px; }
+.rec-v { font-size: 13px; }
+.rec-v.muted { color: var(--faint); }
+.rec-stamp { font-size: 12.5px; font-weight: 800; border-radius: 999px; padding: 3px 11px; flex: 0 0 auto; font-variant-numeric: tabular-nums; }
+.rec-stamp.ok   { background: #effaf3; color: #15803d; }
+.rec-stamp.bad  { background: #fff1f1; color: #dc2626; }
+.rec-stamp.todo { background: var(--accent-soft); color: var(--accent); }
+.rec-sub { font-size: 11.5px; color: var(--muted); }
+.rec-link {
+  flex: 1; min-width: 0; border: 0; border-bottom: 1px solid var(--line);
+  background: transparent; outline: 0; padding: 5px 0; font-size: 12px; color: var(--accent);
+}
+.rec-link:focus { border-bottom-color: var(--accent); }
+.rec-link.bad { color: var(--danger); border-bottom-color: #fbcfcf; }
+.rec-quick { display: flex; gap: 6px; flex-wrap: wrap; }

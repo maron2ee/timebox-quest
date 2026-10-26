@@ -90,10 +90,10 @@
         market: { show: true, sessions: null },
         carryOver: true,     // 어제 미완료 할일 이어받기 제안
         routine: { enabled: true, phases: PHASES.map((p) => ({ ...p, items: p.items.slice() })) },
-        // 가설 수정 정책: free(자유) / mark(수정 표시·원본 보존) / lock(09:00 이후 잠금)
-        hypothesisPolicy: "mark",
         // 가드레일: 계획외 매매 발생 시 off(무시) / warn(경고 배너) / block(매매 입력 차단)
         guard: { planViolation: "warn", maxTrades: 0, maxLossPct: 0 },
+        // 외부 기록 시스템 — 숫자는 시트(2층), 서술은 노션 데일리 노트(3층)
+        links: { sheet: "", notes: "", rules: "" },
       },
       categories: CATS.map((c) => ({ ...c })),
       projects: PROJECTS.map((p) => ({ ...p })),
@@ -142,6 +142,7 @@
     s.settings.market = Object.assign({}, d.settings.market, s.settings.market || {});
     s.settings.guard = Object.assign({}, d.settings.guard, s.settings.guard || {});
     s.settings.routine = Object.assign({}, d.settings.routine, s.settings.routine || {});
+    s.settings.links = Object.assign({}, d.settings.links, s.settings.links || {});
     if (!Array.isArray(s.settings.routine.phases) || !s.settings.routine.phases.length) {
       s.settings.routine.phases = d.settings.routine.phases;
     }
@@ -171,7 +172,6 @@
       goal: "", big3: ["", "", ""],
       plan: {}, done: {}, tasks: [],
       review: { k: "", p: "", t: "" },
-      hypothesis: null,     // {bias, reason, sectors[], savedAt, openSnapshot, editedAfterOpen, verdict{...}}
       plans: [],            // 매매 계획 [{id, ticker, name, entry, stop, target, qty, reason}]
       trades: [],           // 체결 [{id, planId|null, ticker, side, price, qty, time, pnl, emotion, note}]
       noTradeIf: "",        // 오늘 매매하지 않는 조건
@@ -323,6 +323,29 @@
     return { done, total };
   }
 
+  // 구간을 언제 끝냈는지. checks 에 저장된 timestamp 를 읽는다.
+  // late = 구간 종료 시각을 넘겨서 체크함 → 사후 기록
+  function phaseStamp(ds, phaseId) {
+    const p = phaseById(phaseId);
+    if (!p) return null;
+    const checks = peekDay(ds).checks || {};
+    const total = (p.items || []).length;
+    let done = 0, last = 0;
+    for (let i = 0; i < total; i++) {
+      const v = checks[p.id + ":" + i];
+      if (!v) continue;
+      done++;
+      if (typeof v === "number" && v > last) last = v;
+    }
+    let late = false, atMin = null;
+    if (last) {
+      const t = new Date(last);
+      atMin = t.getHours() * 60 + t.getMinutes();
+      late = atMin >= p.endMin;
+    }
+    return { phase: p, done, total, complete: total > 0 && done === total, at: last || null, atMin, late };
+  }
+
   /* ---------- 매매 ---------- */
   // 손익비 = (목표가-진입가) / (진입가-손절가), 매도 방향이면 부호 반전
   function riskReward(p) {
@@ -364,13 +387,6 @@
     return { hits, blocked: hits.length > 0 && g.planViolation === "block", stats: st };
   }
 
-  /* ---------- 가설 ---------- */
-  function blankHypothesis() {
-    return { bias: "", reason: "", sectors: ["", ""], savedAt: 0,
-             openSnapshot: null, editedAfterOpen: false, lateFirstWrite: false,
-             verdict: { hit: null, sectorHit: null, note: "" } };
-  }
-
   /* ---------- D-day ---------- */
   function upcomingDdays(limit) {
     const t = U.today();
@@ -392,6 +408,7 @@
     blocksOf, verdictOf, judgeProgress,
     tasksOf, taskStats, upcomingDdays,
     phases, phaseAt, phaseById, phaseProgress,
-    riskReward, offPlanTrades, tradeStats, guardState, blankHypothesis,
+    riskReward, offPlanTrades, tradeStats, guardState,
+    phaseStamp,
   };
 })();

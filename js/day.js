@@ -184,7 +184,7 @@
     renderGoal();
     renderBig3();
     renderReview();
-    App.hypo.render(ds);
+    App.record.render(ds);
     App.tasks.render(ds);      // 루틴 탭이면 내부에서 routine.render 호출
     App.routine.render(ds);    // 레일·배너는 항상
     App.timeline.render(ds);

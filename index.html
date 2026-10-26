@@ -69,7 +69,7 @@
     <div class="mode-banner off" id="modeBanner"></div>
 
     <div class="grid2">
-      <div class="card card-pad" id="hypoBox"></div>
+      <div class="card card-pad" id="recordBox"></div>
       <div class="card big3box">
         <div class="card-label">BIG 3</div>
         <div id="big3List"></div>
@@ -217,7 +217,7 @@
   <!-- ===================== 통계 ===================== -->
   <section class="view" id="view-stats">
     <div class="statrow" id="statsCards"></div>
-    <div class="card card-pad" id="hypoStats" style="margin-bottom:12px"></div>
+    <div class="card card-pad" id="routineStats" style="margin-bottom:12px"></div>
     <div class="card card-pad" style="margin-bottom:12px">
       <div class="row" style="margin-bottom:10px">
         <div class="card-title">기간별 추이</div>
@@ -331,16 +331,7 @@
     </div>
 
     <div class="card card-pad" style="margin-bottom:12px">
-      <div class="card-title" style="margin-bottom:12px">가설 · 가드레일</div>
-      <div class="row" style="gap:10px;flex-wrap:wrap;margin-bottom:10px">
-        <label class="row" style="gap:6px">가설 수정
-          <select class="inp" id="setHypoPolicy" style="width:220px">
-            <option value="free">자유 — 언제든 수정</option>
-            <option value="mark">수정 표시 — 원본 보존 (권장)</option>
-            <option value="lock">잠금 — 장 시작 후 수정 불가</option>
-          </select>
-        </label>
-      </div>
+      <div class="card-title" style="margin-bottom:12px">매매 가드레일</div>
       <div class="row" style="gap:10px;flex-wrap:wrap">
         <label class="row" style="gap:6px">계획외 매매 시
           <select class="inp" id="setGuardMode" style="width:190px">
@@ -357,6 +348,23 @@
         </label>
       </div>
       <div class="stat-sub" style="margin-top:8px">0이면 해당 한도를 쓰지 않습니다. 손실 한도는 ‘오늘 체결’에 손익을 적을 때만 작동해요.</div>
+    </div>
+
+    <div class="card card-pad" style="margin-bottom:12px">
+      <div class="card-title" style="margin-bottom:4px">외부 기록 (시트 · 노션)</div>
+      <div class="stat-sub" style="margin-bottom:12px">숫자는 2층 시트, 서술은 3층 데일리 노트. 앱은 링크만 들고 있어요.</div>
+      <div class="row" style="gap:8px;margin-bottom:7px">
+        <span class="rec-k">2층 시트</span>
+        <input class="inp" id="setLinkSheet" placeholder="구글시트 링크 (1행 = 하루)">
+      </div>
+      <div class="row" style="gap:8px;margin-bottom:7px">
+        <span class="rec-k">3층 노트 DB</span>
+        <input class="inp" id="setLinkNotes" placeholder="노션 Daily Market Log 링크">
+      </div>
+      <div class="row" style="gap:8px">
+        <span class="rec-k">1층 규칙</span>
+        <input class="inp" id="setLinkRules" placeholder="노션 매매 운영 규칙 링크">
+      </div>
     </div>
 
     <div class="card card-pad" style="margin-bottom:12px">
@@ -415,9 +423,9 @@
 <script src="js/ui.js"></script>
 <script src="js/timeline.js"></script>
 <script src="js/routine.js"></script>
-<script src="js/hypothesis.js"></script>
 <script src="js/trades.js"></script>
 <script src="js/judge.js"></script>
+<script src="js/record.js"></script>
 <script src="js/tasks.js"></script>
 <script src="js/pomodoro.js"></script>
 <script src="js/day.js"></script>

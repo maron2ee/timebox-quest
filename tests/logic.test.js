@@ -36,7 +36,7 @@ sandbox.globalThis = sandbox;
 vm.createContext(sandbox);
 
 sandbox.window.App = sandbox.window.App || {};
-["util.js", "store.js", "market.js", "hypothesis.js", "judge.js"].forEach((f) => {
+["util.js", "store.js", "market.js", "judge.js"].forEach((f) => {
   const code = fs.readFileSync(path.join(__dirname, "..", "js", f), "utf8");
   vm.runInContext(code, sandbox, { filename: f });
 });
@@ -302,31 +302,40 @@ t("가드레일 — 매매 횟수 상한", () => {
   S.state.settings.guard.maxTrades = 0;
 });
 
-/* ---------- 가설 적중률 ---------- */
-t("가설 적중률은 장 시작 전 확정분만 집계", () => {
+/* ---------- 구간 '도장' — 언제 확정했는가 ---------- */
+t("phaseStamp 는 마지막 체크 시각을 쓴다", () => {
   S.reset();
-  const mk = (ds, over) => {
-    const h = S.blankHypothesis();
-    h.bias = "bull"; h.reason = "x"; h.savedAt = 1;
-    h.verdict = { hit: true, sectorHit: null, note: "" };
-    Object.assign(h, over || {});
-    S.getDay(ds).hypothesis = h;
-  };
-  mk("2026-07-13");                                  // 정상 적중
-  mk("2026-07-14", { verdict: { hit: false, sectorHit: null, note: "" } }); // 정상 빗나감
-  mk("2026-07-15", { lateFirstWrite: true });        // 사후 작성 → clean 에서 제외
-  mk("2026-07-16", { editedAfterOpen: true });       // 장중 수정 → clean 에서 제외
-
-  const a = App.hypo.accuracy("2026-07-13", "2026-07-17");
-  eq(a.written, 4);
-  eq(a.lateFirst, 1);
-  eq(a.edited, 1);
-  eq(a.judged, 4, "전체 판정 건수");
-  eq(a.rate, 75, "전체 적중률 3/4");
-  eq(a.cleanJudged, 2, "깨끗한 가설만 2건");
-  eq(a.cleanRate, 50, "그 중 1건 적중");
+  const ds = "2026-07-17";
+  const d = S.getDay(ds);
+  const at = (h, m) => new Date(2026, 6, 17, h, m).getTime();
+  d.checks["pre3:0"] = at(8, 35);
+  d.checks["pre3:1"] = at(8, 42);
+  const st = S.phaseStamp(ds, "pre3");
+  eq(st.done, 2);
+  eq(st.total, 4);
+  eq(st.complete, false, "4개 중 2개면 미완료");
+  eq(U.toHHMM(st.atMin), "08:42", "가장 늦은 체크 시각");
+  eq(st.late, false, "구간(~09:00) 안이면 제시간");
 });
-
+t("구간 종료 후 체크하면 late", () => {
+  S.reset();
+  const ds = "2026-07-17";
+  const d = S.getDay(ds);
+  d.checks["pre3:0"] = new Date(2026, 6, 17, 9, 14).getTime();
+  const st = S.phaseStamp(ds, "pre3");
+  ok(st.late, "09:14 는 09:00 구간을 넘김 — 사후 작성");
+  eq(U.toHHMM(st.atMin), "09:14");
+});
+t("체크가 없으면 도장도 없다", () => {
+  S.reset();
+  const st = S.phaseStamp("2026-07-17", "pre3");
+  eq(st.at, null);
+  eq(st.late, false);
+  eq(st.done, 0);
+});
+t("없는 구간은 null", () => {
+  eq(S.phaseStamp("2026-07-17", "없는구간"), null);
+});
 
 /* ---------- 실천율: 카테고리 분 vs 슬롯 ---------- */
 t("실천율은 시간이 밀려도 한 걸 인정한다", () => {

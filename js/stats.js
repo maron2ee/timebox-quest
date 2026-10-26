@@ -112,44 +112,69 @@
       </div>`).join("");
   }
 
-  // 가설 적중률 + 계획 준수
-  function renderHypo() {
-    const host = U.byId("hypoStats");
+  // 루틴 준수 — 시트/노션이 집계하지 못하는 것만 본다.
+  // (가설 적중률·섹터 적중률은 2층 시트의 AL/AM 수식이 담당)
+  function renderRoutine() {
+    const host = U.byId("routineStats");
     if (!host) return;
     const [from, to] = bounds();
-    const a = App.hypo.accuracy(from, to);
     const days = U.rangeDays(from, to);
-    let trades = 0, offPlan = 0, planDays = 0;
+
+    let tracked = 0, onTime = 0, lateStamp = 0;
+    let checkDone = 0, checkTotal = 0, missedPhases = 0;
+    let trades = 0, offPlan = 0;
+
     days.forEach((ds) => {
-      const st = S().tradeStats(ds);
-      trades += st.count; offPlan += st.offPlan;
-      if ((S().peekDay(ds).plans || []).length) planDays++;
+      const d = S().peekDay(ds);
+      const used = Object.keys(d.checks || {}).length || Object.keys(d.plan || {}).length;
+      if (!used) return;
+      tracked++;
+
+      const st = S().phaseStamp(ds, App.record.STAMP_PHASE);
+      if (st && st.at) { if (st.late) lateStamp++; else onTime++; }
+
+      S().phases().forEach((p) => {
+        if (p.readonly || !(p.items || []).length) return;
+        const pr = S().phaseProgress(ds, p);
+        checkDone += pr.done; checkTotal += pr.total;
+        if (pr.done === 0) missedPhases++;
+      });
+
+      const ts = S().tradeStats(ds);
+      trades += ts.count; offPlan += ts.offPlan;
     });
 
-    const pct = (v) => (v == null ? "—" : v + "%");
+    const stamped = onTime + lateStamp;
+    const pct = (a, b) => (b ? Math.round((a / b) * 100) + "%" : "—");
+
     host.innerHTML = `
       <div class="row" style="margin-bottom:12px">
-        <div class="card-title">가설 · 계획 준수</div>
-        <div class="stat-sub ml-auto">${range === "week" ? "이번 주" : "이번 달"}</div>
+        <div class="card-title">루틴 준수</div>
+        <div class="stat-sub ml-auto">${range === "week" ? "이번 주" : "이번 달"} · 기록한 ${tracked}일</div>
       </div>
-      <div class="hypo-stats">
-        <div class="hs"><div class="hs-v">${pct(a.cleanRate)}</div><div class="hs-k">가설 적중률</div>
-          <div class="hs-s">장 시작 전 확정분 ${a.cleanJudged}건</div></div>
-        <div class="hs"><div class="hs-v">${pct(a.sectorRate)}</div><div class="hs-k">섹터 적중률</div>
-          <div class="hs-s">예상 주도 섹터</div></div>
-        <div class="hs"><div class="hs-v">${a.written}일</div><div class="hs-k">가설 작성</div>
-          <div class="hs-s">${a.lateFirst ? `사후 작성 ${a.lateFirst}일 · ` : ""}수정 ${a.edited}일</div></div>
-        <div class="hs${offPlan ? " bad" : ""}"><div class="hs-v">${offPlan}건</div><div class="hs-k">계획외 매매</div>
-          <div class="hs-s">전체 ${trades}건 · 계획 세운 날 ${planDays}일</div></div>
+      <div class="quad-stats">
+        <div class="hs${lateStamp ? " bad" : ""}"><div class="hs-v">${pct(onTime, stamped)}</div>
+          <div class="hs-k">제시간 확정</div>
+          <div class="hs-s">${stamped ? `장 시작 전 ${onTime}일 · 이후 ${lateStamp}일` : "아직 확정 기록 없음"}</div></div>
+        <div class="hs"><div class="hs-v">${pct(checkDone, checkTotal)}</div>
+          <div class="hs-k">구간 체크</div>
+          <div class="hs-s">${checkDone}/${checkTotal}개</div></div>
+        <div class="hs${missedPhases ? " bad" : ""}"><div class="hs-v">${missedPhases}</div>
+          <div class="hs-k">누락 구간</div>
+          <div class="hs-s">하나도 체크 안 한 구간</div></div>
+        <div class="hs${offPlan ? " bad" : ""}"><div class="hs-v">${offPlan}건</div>
+          <div class="hs-k">계획외 매매</div>
+          <div class="hs-s">전체 ${trades}건</div></div>
       </div>
-      ${a.lateFirst ? `<div class="stat-sub" style="margin-top:10px;color:var(--danger)">
-        장이 열린 뒤에 처음 쓴 가설 ${a.lateFirst}일 — 적중률 집계에서 제외했어요.</div>` : ""}`;
+      <div class="stat-sub" style="margin-top:10px">
+        가설·섹터 적중률은 <b>2층 시트</b>의 월말 집계(<code>AL</code>·<code>AM</code>)에서 보세요.
+      </div>`;
   }
 
   function render() {
     const rows = series();
     renderCards(rows);
-    renderHypo();
+    renderRoutine();
     renderChart(rows);
     renderCats(rows);
     renderAdh(rows);

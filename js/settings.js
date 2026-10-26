@@ -71,7 +71,10 @@
   /* ---------- 가설 · 가드레일 ---------- */
   function renderGuard() {
     const s = S().state.settings;
-    const hp = U.byId("setHypoPolicy"); if (hp) hp.value = s.hypothesisPolicy || "mark";
+    const L = s.links || {};
+    [["setLinkSheet", "sheet"], ["setLinkNotes", "notes"], ["setLinkRules", "rules"]].forEach(([id, k]) => {
+      const e = U.byId(id); if (e) e.value = L[k] || "";
+    });
     const gm = U.byId("setGuardMode");  if (gm) gm.value = s.guard.planViolation || "warn";
     const mt = U.byId("setMaxTrades");  if (mt) mt.value = s.guard.maxTrades || 0;
     const ml = U.byId("setMaxLoss");    if (ml) ml.value = s.guard.maxLossPct || 0;
@@ -216,9 +219,11 @@
       S().state.settings.routine.enabled = e.target.checked;
       S().save(); App.day.refresh();
     });
-    U.on("setHypoPolicy", "change", (e) => {
-      S().state.settings.hypothesisPolicy = e.target.value;
-      S().save(); App.day.refresh();
+    [["setLinkSheet", "sheet"], ["setLinkNotes", "notes"], ["setLinkRules", "rules"]].forEach(([id, k]) => {
+      U.on(id, "change", (e) => {
+        S().state.settings.links[k] = e.target.value.trim();
+        S().save(); App.day.refresh();
+      });
     });
     U.on("setGuardMode", "change", (e) => {
       S().state.settings.guard.planViolation = e.target.value;
