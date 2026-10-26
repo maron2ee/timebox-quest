@@ -113,7 +113,14 @@
         // 가드레일: 계획외 매매 발생 시 off(무시) / warn(경고 배너) / block(매매 입력 차단)
         guard: { planViolation: "warn", maxTrades: 0, maxLossPct: 0 },
         // 외부 기록 시스템 — 숫자는 시트(2층), 서술은 노션 데일리 노트(3층)
-        links: { sheet: "", notes: "", rules: "" },
+        // 외부 기록 링크 — 이름·URL 모두 편집 가능. daily:true 면 URL 을 날짜별(day.links[id])로 저장
+        links: [
+          { id: "sheet",   label: "2층 시트",  url: "", daily: false },
+          { id: "note",    label: "3층 노트",  url: "", daily: true  },
+          { id: "notes",   label: "노트 DB",   url: "", daily: false },
+          { id: "rules",   label: "1층 규칙",  url: "", daily: false },
+          { id: "journal", label: "매매일지",  url: "", daily: false },
+        ],
         // 구간 알림 — 탭이 열려 있을 때만 동작한다 (서버 푸시 없음)
         notify: { enabled: false, lead: 3, sound: false },
       },
@@ -164,7 +171,19 @@
     s.settings.market = Object.assign({}, d.settings.market, s.settings.market || {});
     s.settings.guard = Object.assign({}, d.settings.guard, s.settings.guard || {});
     s.settings.routine = Object.assign({}, d.settings.routine, s.settings.routine || {});
-    s.settings.links = Object.assign({}, d.settings.links, s.settings.links || {});
+    // 링크: 예전 객체형 {sheet,notes,rules} 을 목록형으로 올린다
+    if (!Array.isArray(s.settings.links)) {
+      const old = s.settings.links || {};
+      s.settings.links = d.settings.links.map((e) => ({ ...e, url: old[e.id] || "" }));
+    }
+    s.settings.links = s.settings.links
+      .filter((e) => e && typeof e === "object")
+      .map((e) => ({
+        id: e.id || U.uid("lk"),
+        label: (e.label || "링크").toString().slice(0, 20),
+        url: e.url || "",
+        daily: !!e.daily,
+      }));
     s.settings.notify = Object.assign({}, d.settings.notify, s.settings.notify || {});
     if (!Array.isArray(s.settings.routine.phases) || !s.settings.routine.phases.length) {
       s.settings.routine.phases = d.settings.routine.phases;
@@ -329,6 +348,20 @@
     return { done: list.filter((t) => t.done).length, total: list.length };
   }
 
+  /* ---------- 외부 기록 링크 ---------- */
+  function links() { return state.settings.links || []; }
+  function linkById(id) { return links().find((e) => e.id === id) || null; }
+  // daily 항목은 그날의 day.links[id], 아니면 전역 url
+  function linkUrl(ds, entry) {
+    if (!entry) return "";
+    return entry.daily ? ((peekDay(ds).links || {})[entry.id] || "") : (entry.url || "");
+  }
+  function setLinkUrl(ds, entry, url) {
+    url = (url || "").trim();
+    if (entry.daily) { getDay(ds).links[entry.id] = url; touch(ds); }
+    else { entry.url = url; save(); }
+  }
+
   /* ---------- 루틴 구간 ---------- */
   function phases() {
     const r = state.settings.routine || {};
@@ -434,6 +467,7 @@
     phases, phaseAt, phaseById, phaseProgress,
     riskReward, offPlanTrades, tradeStats, guardState,
     phaseStamp,
+    links, linkById, linkUrl, setLinkUrl,
     RS_KINDS, RS_STANCES, rsKind, rsStance,
   };
 })();

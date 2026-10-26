@@ -439,6 +439,53 @@ t("id 없는 리서치 항목도 복구된다", () => {
   eq(fixed.research[0].name, "SK하이닉스");
 });
 
+
+/* ---------- 외부 기록 링크 (이름까지 편집) ---------- */
+t("기본 링크 5개, 3층 노트만 날짜별", () => {
+  S.load();
+  const l = S.links();
+  eq(l.length, 5);
+  eq(l.map((e) => e.label), ["2층 시트", "3층 노트", "노트 DB", "1층 규칙", "매매일지"]);
+  eq(l.filter((e) => e.daily).map((e) => e.id), ["note"], "날짜별은 3층 노트 하나");
+});
+t("예전 객체형 {sheet,notes,rules} 을 목록으로 올린다", () => {
+  const fixed = S.migrate(Object.assign(S.defaults(), {
+    settings: { links: { sheet: "https://sheet", rules: "https://rules" } },
+  }));
+  ok(Array.isArray(fixed.settings.links), "목록형이 된다");
+  const by = {};
+  fixed.settings.links.forEach((e) => (by[e.id] = e.url));
+  eq(by.sheet, "https://sheet", "URL 보존");
+  eq(by.rules, "https://rules");
+  eq(by.notes, "", "없던 건 빈 값");
+});
+t("이름은 20자로 자르고 빈 이름은 보정", () => {
+  const fixed = S.migrate(Object.assign(S.defaults(), {
+    settings: { links: [{ id: "x", label: "가".repeat(40), url: "" }, { id: "y", label: "" }] },
+  }));
+  eq(fixed.settings.links[0].label.length, 20);
+  eq(fixed.settings.links[1].label, "링크");
+});
+t("linkUrl — 전역은 entry.url, 날짜별은 day.links[id]", () => {
+  S.reset();
+  const ds = "2026-07-17";
+  const sheet = S.linkById("sheet"), note = S.linkById("note");
+  S.setLinkUrl(ds, sheet, "https://sheet");
+  S.setLinkUrl(ds, note, "https://note-0717");
+  eq(S.linkUrl(ds, sheet), "https://sheet");
+  eq(S.linkUrl(ds, note), "https://note-0717");
+  eq(S.linkUrl("2026-07-18", sheet), "https://sheet", "전역은 날짜와 무관");
+  eq(S.linkUrl("2026-07-18", note), "", "날짜별은 그날만");
+});
+t("이름을 바꿔도 링크는 유지된다", () => {
+  S.reset();
+  const e = S.linkById("sheet");
+  S.setLinkUrl("2026-07-17", e, "https://keep");
+  e.label = "내 매매시트";
+  eq(S.linkById("sheet").label, "내 매매시트");
+  eq(S.linkUrl("2026-07-17", S.linkById("sheet")), "https://keep");
+});
+
 /* ---------- 결과 ---------- */
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

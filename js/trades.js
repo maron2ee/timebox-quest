@@ -251,7 +251,12 @@
     renderTrades(ds);
     renderWatch(ds);
     const link = U.byId("tradeSheetLink");
-    if (link) link.value = (day(ds).links || {}).journal || "";
+    const je = S().linkById("journal");
+    if (link) {
+      link.value = je ? S().linkUrl(ds, je) : "";
+      link.placeholder = je ? `${je.label} 링크 (설정에서 이름 변경 가능)` : "설정에서 링크 항목을 추가하세요";
+      link.disabled = !je;
+    }
     const pnl = U.byId("dayPnl");
     if (pnl) pnl.value = day(ds).pnl || "";
   }
@@ -277,9 +282,10 @@
       S().touch(ds); render(ds);
     });
     U.on("tradeSheetLink", "change", (e) => {
-      const ds = App.day.date();
-      S().getDay(ds).links.journal = e.target.value.trim();
-      S().touch(ds); render(ds);
+      const je = S().linkById("journal");
+      if (!je) return;
+      S().setLinkUrl(App.day.date(), je, e.target.value);
+      render(App.day.date());
     });
   }
 

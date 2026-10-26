@@ -380,20 +380,10 @@
     </div>
 
     <div class="card card-pad" style="margin-bottom:12px">
-      <div class="card-title" style="margin-bottom:4px">외부 기록 (시트 · 노션)</div>
-      <div class="stat-sub" style="margin-bottom:12px">숫자는 2층 시트, 서술은 3층 데일리 노트. 앱은 링크만 들고 있어요.</div>
-      <div class="row" style="gap:8px;margin-bottom:7px">
-        <span class="rec-k">2층 시트</span>
-        <input class="inp" id="setLinkSheet" placeholder="구글시트 링크 (1행 = 하루)">
-      </div>
-      <div class="row" style="gap:8px;margin-bottom:7px">
-        <span class="rec-k">3층 노트 DB</span>
-        <input class="inp" id="setLinkNotes" placeholder="노션 Daily Market Log 링크">
-      </div>
-      <div class="row" style="gap:8px">
-        <span class="rec-k">1층 규칙</span>
-        <input class="inp" id="setLinkRules" placeholder="노션 매매 운영 규칙 링크">
-      </div>
+      <div class="card-title" style="margin-bottom:4px">외부 기록 링크</div>
+      <div class="stat-sub" style="margin-bottom:12px">이름과 주소를 자유롭게 바꾸세요. <b>날짜별</b>을 켜면 하루마다 다른 링크를 넣습니다(예: 그날의 데일리 노트).</div>
+      <div id="linkRows"></div>
+      <button class="btn sm" id="linkAdd" style="margin-top:8px">＋ 링크 추가</button>
     </div>
 
     <div class="card card-pad" style="margin-bottom:12px">

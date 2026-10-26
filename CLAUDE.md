@@ -22,6 +22,9 @@
 > **가설·적중률을 앱에 다시 만들지 말 것.** 시트에 `AL`/`AM` 수식과 월말 집계
 > (`=COUNTIF(AL:AL,"O")/COUNTA(AL2:AL)`)가 이미 있고, 틀린 날만 빨강으로 필터하는 복기 흐름까지 있다.
 >
+> 링크는 `settings.links[]` 한 곳에서만 관리한다 — 이름·주소·순서를 사용자가 바꾸므로
+> 코드에 `"2층 시트"` 같은 **라벨을 하드코딩하지 말 것**. 기본 id 는 sheet·note·notes·rules·journal.
+>
 > 앱이 맡는 것은 **시트·노션이 구조적으로 못 하는 것**뿐이다:
 > 시계(지금 어느 구간인지) · 타임박스 PLAN/판정 · 장중 가드레일(계획외 카운터·손익비 게이트) ·
 > **확정 시각 도장**(언제 썼는가) · 용어 복습 · 링크 허브.
@@ -100,6 +103,9 @@ sw.js, manifest.webmanifest, icon.svg   PWA
   }
   ddays[] / terms[] / pomo
   settings.notify { enabled, lead(분), sound }
+  settings.links[] { id, label, url, daily }   // 외부 기록 링크. 이름·순서·개수 모두 편집 가능
+                      // daily:true 면 URL 을 day.links[id] 에 날짜별로 저장(그날의 데일리 노트)
+                      // store.linkUrl(ds,e) / setLinkUrl(ds,e,url) 로만 읽고 쓸 것
   research[] { id, ticker, name, kind, stance, sector, url, note, body?, date, updated }
                // 2축 — kind: stock|theme|macro|report|event
                //       stance: watch|cand|hold|pause|drop  (store.RS_KINDS / RS_STANCES)

@@ -590,3 +590,13 @@ input, textarea, select { font: inherit; color: inherit; }
 .rsrow.st-drop { opacity: .58; }
 .rsrow.st-hold { border-color: #cdeedc; }
 .rsrow.st-cand { border-color: #d3e1ff; }
+
+/* ---------- 링크 편집 행 ---------- */
+.link-edit { display: flex; align-items: center; gap: 6px; margin-bottom: 7px; flex-wrap: wrap; }
+.link-edit .icon-btn { width: 26px; height: 26px; font-size: 11px; flex: 0 0 26px; }
+.link-edit .icon-btn:disabled { opacity: .3; cursor: default; }
+.le-label { max-width: 130px; }
+.le-url { flex: 1; min-width: 160px; }
+.le-url:disabled { background: var(--surface-2); color: var(--faint); }
+.le-daily { gap: 5px; font-size: 12px; color: var(--muted); flex: 0 0 auto; }
+.rec-daily { font-size: 10.5px; font-weight: 700; color: var(--faint); background: var(--surface-2); border-radius: 5px; padding: 2px 6px; flex: 0 0 auto; }

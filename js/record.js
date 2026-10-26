@@ -42,17 +42,19 @@
     return row;
   }
 
-  function linkRow(label, url, onChange, hint) {
+  function linkRow(ds, entry) {
     const row = U.el("div", "rec-row");
-    row.appendChild(U.el("span", "rec-k", label));
-    const inp = U.el("input", "rec-link" + (url && !isUrl(url) ? " bad" : ""));
-    inp.value = url || "";
-    inp.placeholder = hint;
-    inp.onchange = () => onChange(inp.value.trim());
+    row.appendChild(U.el("span", "rec-k", U.esc(entry.label)));
+    const cur = S().linkUrl(ds, entry);
+    const inp = U.el("input", "rec-link" + (cur && !isUrl(cur) ? " bad" : ""));
+    inp.value = cur;
+    inp.placeholder = entry.daily ? "오늘 페이지 링크 (날짜별)" : "https://...";
+    inp.onchange = () => { S().setLinkUrl(ds, entry, inp.value); render(ds); };
     row.appendChild(inp);
-    if (isUrl(url)) {
+    if (entry.daily) row.appendChild(U.el("span", "rec-daily", "날짜별"));
+    if (isUrl(cur)) {
       const a = U.el("a", "btn sm", "열기");
-      a.href = url; a.target = "_blank"; a.rel = "noopener noreferrer";
+      a.href = cur; a.target = "_blank"; a.rel = "noopener noreferrer";
       row.appendChild(a);
     }
     return row;
@@ -61,9 +63,6 @@
   function render(ds) {
     const host = U.byId("recordBox");
     if (!host) return;
-    const L = S().state.settings.links || {};
-    const day = S().peekDay(ds);
-
     host.innerHTML = "";
     const head = U.el("div", "row");
     head.innerHTML = `<div class="card-label" style="margin:0">오늘의 기록</div>`;
@@ -71,31 +70,9 @@
     host.appendChild(head);
 
     host.appendChild(stampEl(ds));
-
-    host.appendChild(linkRow("2층 시트", L.sheet,
-      (v) => { S().state.settings.links.sheet = v; S().save(); render(ds); },
-      "구글시트 링크 (설정에서도 바꿀 수 있어요)"));
-
-    host.appendChild(linkRow("3층 노트", (day.links || {}).note,
-      (v) => { S().getDay(ds).links.note = v; S().touch(ds); render(ds); },
-      "오늘 데일리 노트 페이지 링크"));
-
-    if (isUrl(L.notes) || isUrl(L.rules)) {
-      const row = U.el("div", "rec-row");
-      row.appendChild(U.el("span", "rec-k", "바로가기"));
-      const wrap = U.el("span", "rec-quick");
-      if (isUrl(L.notes)) {
-        const a = U.el("a", "btn sm", "노트 DB");
-        a.href = L.notes; a.target = "_blank"; a.rel = "noopener noreferrer";
-        wrap.appendChild(a);
-      }
-      if (isUrl(L.rules)) {
-        const a = U.el("a", "btn sm", "운영 규칙");
-        a.href = L.rules; a.target = "_blank"; a.rel = "noopener noreferrer";
-        wrap.appendChild(a);
-      }
-      row.appendChild(wrap);
-      host.appendChild(row);
+    S().links().forEach((e) => host.appendChild(linkRow(ds, e)));
+    if (!S().links().length) {
+      host.appendChild(U.el("div", "rec-sub", "설정 → 외부 기록에서 링크를 추가하세요"));
     }
   }
 

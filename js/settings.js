@@ -68,6 +68,62 @@
     });
   }
 
+  /* ---------- 외부 기록 링크 ---------- */
+  function renderLinks() {
+    const host = U.byId("linkRows");
+    if (!host) return;
+    const list = S().links();
+    host.innerHTML = "";
+    if (!list.length) {
+      host.appendChild(U.el("div", "empty", "링크가 없어요. 아래에서 추가하세요."));
+      return;
+    }
+    list.forEach((e, i) => {
+      const row = U.el("div", "link-edit");
+
+      const up = U.el("button", "icon-btn", "↑");
+      up.title = "위로"; up.disabled = i === 0;
+      up.onclick = () => { list.splice(i - 1, 0, list.splice(i, 1)[0]); S().save(); renderLinks(); App.day.refresh(); };
+      row.appendChild(up);
+
+      const down = U.el("button", "icon-btn", "↓");
+      down.title = "아래로"; down.disabled = i === list.length - 1;
+      down.onclick = () => { list.splice(i + 1, 0, list.splice(i, 1)[0]); S().save(); renderLinks(); App.day.refresh(); };
+      row.appendChild(down);
+
+      const label = U.el("input", "inp le-label");
+      label.value = e.label;
+      label.placeholder = "이름";
+      label.onchange = () => { e.label = label.value.trim().slice(0, 20) || "링크"; S().save(); renderLinks(); App.day.refresh(); };
+      row.appendChild(label);
+
+      const url = U.el("input", "inp le-url");
+      url.value = e.daily ? "" : e.url || "";
+      url.placeholder = e.daily ? "날짜별 — 하루 탭에서 입력" : "https://...";
+      url.disabled = !!e.daily;
+      url.onchange = () => { e.url = url.value.trim(); S().save(); App.day.refresh(); };
+      row.appendChild(url);
+
+      const dayWrap = U.el("label", "row le-daily");
+      const cb = U.el("input");
+      cb.type = "checkbox"; cb.checked = !!e.daily;
+      cb.onchange = () => { e.daily = cb.checked; S().save(); renderLinks(); App.day.refresh(); };
+      dayWrap.appendChild(cb);
+      dayWrap.appendChild(U.el("span", null, "날짜별"));
+      row.appendChild(dayWrap);
+
+      const del = U.el("button", "icon-btn", "✕");
+      del.title = "삭제";
+      del.onclick = () => {
+        if (!confirm(`“${e.label}” 링크 항목을 지울까요?`)) return;
+        S().state.settings.links = list.filter((x) => x.id !== e.id);
+        S().save(); renderLinks(); App.day.refresh();
+      };
+      row.appendChild(del);
+      host.appendChild(row);
+    });
+  }
+
   /* ---------- 알림 ---------- */
   function renderNotify() {
     const n = S().state.settings.notify || {};
@@ -89,10 +145,6 @@
   /* ---------- 가설 · 가드레일 ---------- */
   function renderGuard() {
     const s = S().state.settings;
-    const L = s.links || {};
-    [["setLinkSheet", "sheet"], ["setLinkNotes", "notes"], ["setLinkRules", "rules"]].forEach(([id, k]) => {
-      const e = U.byId(id); if (e) e.value = L[k] || "";
-    });
     const gm = U.byId("setGuardMode");  if (gm) gm.value = s.guard.planViolation || "warn";
     const mt = U.byId("setMaxTrades");  if (mt) mt.value = s.guard.maxTrades || 0;
     const ml = U.byId("setMaxLoss");    if (ml) ml.value = s.guard.maxLossPct || 0;
@@ -206,6 +258,7 @@
     renderMarket();
     renderPhases();
     renderNotify();
+    renderLinks();
     renderGuard();
     renderCats();
     info();
@@ -261,11 +314,9 @@
       S().state.settings.routine.enabled = e.target.checked;
       S().save(); App.day.refresh();
     });
-    [["setLinkSheet", "sheet"], ["setLinkNotes", "notes"], ["setLinkRules", "rules"]].forEach(([id, k]) => {
-      U.on(id, "change", (e) => {
-        S().state.settings.links[k] = e.target.value.trim();
-        S().save(); App.day.refresh();
-      });
+    U.on("linkAdd", "click", () => {
+      S().links().push({ id: U.uid("lk"), label: "새 링크", url: "", daily: false });
+      S().save(); renderLinks(); App.day.refresh();
     });
     U.on("setGuardMode", "change", (e) => {
       S().state.settings.guard.planViolation = e.target.value;

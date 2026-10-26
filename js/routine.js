@@ -128,24 +128,6 @@
       host.appendChild(row);
     });
 
-    // 외부 문서 링크 (구글시트 / 노션)
-    if (p.mode === "input" || p.mode === "record") {
-      const slot = p.mode === "input" ? "am" : "pm";
-      const cur = (day.links || {})[slot] || "";
-      const wrap = U.el("div", "link-row");
-      wrap.innerHTML = `<span class="link-k">${slot === "am" ? "AM" : "PM"} 노트</span>`;
-      const inp = U.el("input", "link-inp");
-      inp.placeholder = "구글시트 · 노션 링크 붙여넣기";
-      inp.value = cur;
-      inp.onchange = () => { S().getDay(ds).links[slot] = inp.value.trim(); S().touch(ds); App.day.refresh(); };
-      wrap.appendChild(inp);
-      if (cur) {
-        const go = U.el("a", "btn sm", "열기");
-        go.href = cur; go.target = "_blank"; go.rel = "noopener noreferrer";
-        wrap.appendChild(go);
-      }
-      host.appendChild(wrap);
-    }
   }
 
   /* ---------- 루틴을 타임라인 PLAN에 깔기 ---------- */
