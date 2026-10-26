@@ -1,97 +1,219 @@
 /* ===========================================================
-   logic.test.js — headless regression tests for the pure logic
-   Run:  node tests/logic.test.js
-   Stubs a minimal DOM/localStorage, loads the app modules, asserts.
+   logic.test.js — 순수 로직 회귀 테스트 (DOM 스텁)
+   실행: node tests/logic.test.js
    =========================================================== */
 const fs = require("fs");
 const path = require("path");
+const vm = require("vm");
 
-const ROOT = path.join(__dirname, "..");
-const storage = {};
-global.localStorage = {
-  getItem: (k) => (k in storage ? storage[k] : null),
-  setItem: (k, v) => (storage[k] = String(v)),
-  removeItem: (k) => delete storage[k],
+/* ---------- 최소 DOM / 저장소 스텁 ---------- */
+const store = {};
+const localStorage = {
+  getItem: (k) => (k in store ? store[k] : null),
+  setItem: (k, v) => { store[k] = String(v); },
+  removeItem: (k) => { delete store[k]; },
 };
-global.window = global;
-global.requestAnimationFrame = () => {};
-const captured = {};
-function fakeEl(id) {
-  return {
-    id,
-    set innerHTML(v) { captured[id] = v; },
-    get innerHTML() { return captured[id] || ""; },
-    style: { setProperty() {} },
-    disabled: false,
-    classList: { _s: new Set(), add(x) { this._s.add(x); }, remove(x) { this._s.delete(x); }, toggle(x, on) { on ? this._s.add(x) : this._s.delete(x); }, contains(x) { return this._s.has(x); } },
-    addEventListener() {}, appendChild() {}, textContent: "",
-    getBoundingClientRect: () => ({ left: 0, top: 0, width: 100, height: 100 }), offsetWidth: 0,
-    getContext: () => ({ clearRect() {}, beginPath() {}, arc() {}, fill() {}, save() {}, translate() {}, rotate() {}, restore() {}, moveTo() {}, arcTo() {}, closePath() {}, fillRect() {} }),
-  };
-}
-const els = {};
-const get = (id) => els[id] || (els[id] = fakeEl(id));
-global.document = { documentElement: fakeEl("html"), getElementById: get, querySelector: () => get("__q"), querySelectorAll: () => [], createElement: () => fakeEl("x"), addEventListener() {} };
-global.App = { ui: { openModal() {}, closeModals() {} }, refreshAll() {} };
+const noopEl = () => ({
+  className: "", innerHTML: "", textContent: "", value: "", style: {}, dataset: {},
+  classList: { add() {}, remove() {}, toggle() {}, contains: () => false },
+  appendChild() {}, addEventListener() {}, querySelector: () => null,
+  querySelectorAll: () => [], getBoundingClientRect: () => ({ left: 0, width: 100 }),
+});
+const document = {
+  createElement: noopEl,
+  getElementById: () => null,
+  querySelector: () => null,
+  querySelectorAll: () => [],
+  addEventListener() {},
+};
+const sandbox = {
+  window: {}, document, localStorage, console,
+  setTimeout, clearTimeout, setInterval, clearInterval,
+  Date, Math, JSON, Blob: function () {}, alert() {},
+};
+sandbox.window = sandbox;
+sandbox.globalThis = sandbox;
+vm.createContext(sandbox);
 
-const load = (p) => eval(fs.readFileSync(path.join(ROOT, p), "utf8"));
-["js/state.js", "js/gamify.js", "js/character.js"].forEach(load);
-const App = global.App, U = App.util, C = App.character;
+["util.js", "store.js", "market.js"].forEach((f) => {
+  const code = fs.readFileSync(path.join(__dirname, "..", "js", f), "utf8");
+  vm.runInContext(code, sandbox, { filename: f });
+});
 
+const App = sandbox.window.App;
+const U = App.util;
+const S = App.store;
+
+/* ---------- 테스트 러너 ---------- */
 let pass = 0, fail = 0;
-function ok(name, cond) { if (cond) { pass++; } else { fail++; console.error("  ✗ " + name); } }
-function eq(name, a, b) { ok(name + ` (=${b}, got ${a})`, a === b); }
+function t(name, fn) {
+  try { fn(); pass++; }
+  catch (e) { fail++; console.error(`  ✗ ${name}\n    ${e.message}`); }
+}
+function eq(a, b, msg) {
+  const x = JSON.stringify(a), y = JSON.stringify(b);
+  if (x !== y) throw new Error(`${msg || ""} expected ${y}, got ${x}`);
+}
+function ok(v, msg) { if (!v) throw new Error(msg || "expected truthy"); }
 
-// --- date / slots ---
-eq("15-min slots 06-24", U.slotsFor(App.state.settings).length, 72);
-eq("default slot minutes", App.state.settings.slotMinutes, 15);
+/* ---------- util: 날짜 ---------- */
+t("ymd/parseYmd 왕복", () => {
+  const ds = "2026-07-17";
+  eq(U.ymd(U.parseYmd(ds)), ds);
+});
+t("addDays 월 경계", () => {
+  eq(U.addDays("2026-07-31", 1), "2026-08-01");
+  eq(U.addDays("2026-01-01", -1), "2025-12-31");
+});
+t("weekday / fmtMD", () => {
+  eq(U.weekday("2026-07-17"), "금");
+  eq(U.fmtMD("2026-07-17"), "7월 17일 금");
+});
+t("diffDays / dday", () => {
+  eq(U.diffDays("2026-07-10", "2026-07-17"), 7);
+  eq(U.dday("2026-07-17", "2026-07-10"), "D-7");
+  eq(U.dday("2026-07-10", "2026-07-10"), "D-DAY");
+  eq(U.dday("2026-07-03", "2026-07-10"), "D+7");
+});
+t("weekStart 는 월요일", () => {
+  eq(U.weekStart("2026-07-17"), "2026-07-13");   // 금 → 그 주 월
+  eq(U.weekStart("2026-07-13"), "2026-07-13");
+});
+t("monthStart / monthEnd", () => {
+  eq(U.monthStart("2026-07-17"), "2026-07-01");
+  eq(U.monthEnd("2026-07-17"), "2026-07-31");
+  eq(U.monthEnd("2026-02-10"), "2026-02-28");
+});
+t("rangeDays 개수", () => {
+  eq(U.rangeDays("2026-07-01", "2026-07-07").length, 7);
+});
 
-// --- actual vs planned ---
-const cats = App.state.categories, stock = cats.find((c) => c.name.includes("주식")).id, ex = cats.find((c) => c.name === "운동").id;
-const today = U.today();
-App.state.days[today] = { blocks: { "09:00": { categoryId: stock, done: true, actual: ex }, "09:15": { categoryId: stock, done: true }, "09:30": { categoryId: stock, done: false } } };
-const d = App.stats.deriveDay(today);
-eq("planned blocks", d.plannedBlocks, 3);
-eq("done blocks", d.doneBlocks, 2);
-eq("actual credited to 운동", d.perCat[ex].done, 1);
-eq("planned credited to 주식", d.perCat[stock].planned, 3);
+/* ---------- util: 시간 ---------- */
+t("toMin / toHHMM 왕복", () => {
+  eq(U.toMin("09:30"), 570);
+  eq(U.toHHMM(570), "09:30");
+  eq(U.toHHMM(0), "00:00");
+  eq(U.toHHMM(1440), "00:00");
+});
+t("minToKo 표기", () => {
+  eq(U.minToKo(320), "5시간 20분");
+  eq(U.minToKo(60), "1시간");
+  eq(U.minToKo(40), "40분");
+  eq(U.minToKo(0), "0분");
+});
+t("clamp", () => {
+  eq(U.clamp(5, 0, 3), 3);
+  eq(U.clamp(-1, 0, 3), 0);
+});
+t("esc 는 HTML 이스케이프", () => {
+  eq(U.esc('<b>"x"</b>'), "&lt;b&gt;&quot;x&quot;&lt;/b&gt;");
+});
 
-// --- week start ---
-App.state.settings.weekStart = 1; eq("weekStart Mon", U.ymd(U.startOfWeek(U.parseYmd("2026-06-17"))), "2026-06-15");
-App.state.settings.weekStart = 0; eq("weekStart Sun", U.ymd(U.startOfWeek(U.parseYmd("2026-06-17"))), "2026-06-14");
+/* ---------- store ---------- */
+t("load 하면 기본 카테고리/프로젝트", () => {
+  S.load();
+  ok(S.state.categories.length >= 4, "카테고리 기본값");
+  ok(S.state.projects.length >= 3, "프로젝트 기본값");
+  eq(S.state.version, S.SCHEMA);
+});
+t("slotKeys 개수 = (끝-시작)*60/slot", () => {
+  S.load();
+  const s = S.state.settings;
+  const expect = ((s.dayEndHour - s.dayStartHour) * 60) / s.slotMin;
+  eq(S.slotKeys().length, expect);
+});
+t("peekDay 는 저장소를 더럽히지 않는다", () => {
+  S.reset();
+  S.peekDay("2026-07-17");
+  eq(Object.keys(S.state.days).length, 0);
+  S.getDay("2026-07-17");
+  eq(Object.keys(S.state.days).length, 1);
+});
+t("filledMin / minutesByCat", () => {
+  S.reset();
+  const d = S.getDay("2026-07-17");
+  d.plan["09:00"] = { c: "study", t: "" };
+  d.plan["09:10"] = { c: "study", t: "" };
+  d.plan["09:20"] = { c: "rest", t: "" };
+  eq(S.filledMin("2026-07-17", "plan"), 30);
+  eq(S.minutesByCat("2026-07-17", "plan"), { study: 20, rest: 10 });
+});
+t("studyMin 은 study:true 만 합산", () => {
+  S.reset();
+  const d = S.getDay("2026-07-17");
+  d.done["09:00"] = { c: "study", t: "" };   // study:true
+  d.done["09:10"] = { c: "rest", t: "" };    // study:false
+  eq(S.studyMin("2026-07-17", "done"), 10);
+});
+t("adherence = 계획 칸 중 실행된 비율", () => {
+  S.reset();
+  const d = S.getDay("2026-07-17");
+  d.plan["09:00"] = { c: "study", t: "" };
+  d.plan["09:10"] = { c: "study", t: "" };
+  d.plan["09:20"] = { c: "study", t: "" };
+  d.plan["09:30"] = { c: "study", t: "" };
+  d.done["09:00"] = { c: "study", t: "" };
+  d.done["09:10"] = { c: "study", t: "" };
+  eq(S.adherence("2026-07-17"), 50);
+  eq(S.adherence("2026-07-18"), null, "계획 없으면 null");
+});
+t("taskStats 집계", () => {
+  S.reset();
+  const d = S.getDay("2026-07-17");
+  d.tasks = [
+    { id: "a", projectId: "p_stock", text: "x", done: true },
+    { id: "b", projectId: "p_stock", text: "y", done: false },
+    { id: "c", projectId: "p_life", text: "z", done: true },
+  ];
+  eq(S.taskStats("2026-07-17"), { done: 2, total: 3 });
+  eq(S.taskStats("2026-07-17", "study"), { done: 1, total: 2 });
+  eq(S.taskStats("2026-07-17", "plan"), { done: 1, total: 1 });
+});
+t("migrate 는 누락 필드를 복구", () => {
+  const broken = { version: 0, days: null, categories: [], settings: { dayStartHour: 5 } };
+  const fixed = S.migrate(Object.assign(S.defaults(), broken));
+  eq(fixed.version, S.SCHEMA);
+  eq(fixed.settings.dayStartHour, 5, "사용자 값은 보존");
+  ok(fixed.categories.length > 0, "빈 카테고리는 기본값으로");
+  ok(fixed.days && typeof fixed.days === "object");
+  ok(Array.isArray(fixed.terms) && Array.isArray(fixed.research));
+});
+t("저장 후 load 하면 복원", () => {
+  S.reset();
+  S.getDay("2026-07-17").goal = "테스트 목표";
+  localStorage.setItem(S.KEY, JSON.stringify(S.state));  // debounce 우회
+  S.load();
+  eq(S.peekDay("2026-07-17").goal, "테스트 목표");
+});
 
-// --- migration: old flat character -> pets[] + new settings ---
-App.store.replaceState({ version: 1, settings: { slotMinutes: 30 }, categories: cats, days: {}, game: { xp: 1200, charName: "바둑이", species: "dog", fed: 4, equip: { hat: "ribbon", hand: null } } });
-const g = App.state.game;
-eq("migrate -> 1 pet", g.pets.length, 1);
-eq("migrate name", g.pets[0].name, "바둑이");
-eq("migrate species", g.pets[0].species, "dog");
-eq("migrate fed", g.pets[0].fed, 4);
-eq("migrate equip", g.pets[0].equip.hat, "ribbon");
-eq("migrate slot->15", App.state.settings.slotMinutes, 15);
-eq("migrate templates", typeof App.state.templates, "object");
-ok("migrate weekStart present", App.state.settings.weekStart != null);
+/* ---------- market (2026.09.14 개편) ---------- */
+t("정규장 09:00~15:30", () => {
+  S.load();
+  const s = App.market.sessionAt(U.toMin("10:00"));
+  eq(s && s.id, "regular");
+  eq(App.market.sessionAt(U.toMin("15:35")), null, "15:35 는 공백");
+});
+t("애프터마켓 16:00~20:00 신설", () => {
+  const a = App.market.sessionAt(U.toMin("18:00"));
+  eq(a && a.id, "after");
+  eq(a && a.end, "20:00");
+  eq(App.market.sessionAt(U.toMin("20:00")), null, "20:00 이후는 장 마감");
+});
+t("장전 동시호가 / 시간외 종가", () => {
+  eq(App.market.sessionAt(U.toMin("08:45")).id, "preCall");
+  eq(App.market.sessionAt(U.toMin("15:45")).id, "afterClose");
+});
+t("주말은 비거래일", () => {
+  ok(App.market.isTradingDay("2026-07-17"), "금요일은 거래일");
+  ok(!App.market.isTradingDay("2026-07-18"), "토요일");
+  ok(!App.market.isTradingDay("2026-07-19"), "일요일");
+});
+t("toneFor 는 비거래일에 null", () => {
+  eq(App.market.toneFor("2026-07-18", U.toMin("10:00"), 60), null);
+  eq(App.market.toneFor("2026-07-17", U.toMin("10:00"), 60), "core");
+  eq(App.market.toneFor("2026-07-17", U.toMin("17:00"), 60), "after");
+});
 
-// --- gamify / levels ---
-App.state.days = {};
-for (let i = 0; i < 30; i++) { const day = { blocks: {} }; for (let h = 0; h < 16; h++) { const t = 8 + Math.floor(h / 2); const mm = h % 2 ? "30" : "00"; day.blocks[String(t).padStart(2, "0") + ":" + mm] = { categoryId: stock, done: true }; } App.state.days[U.ymd(U.addDays(new Date(), -i))] = day; }
-App.gamify.refresh(false);
-const lvl = App.gamify.levelInfo(App.state.game.xp).level;
-ok("level grows with activity", lvl >= 10);
-
-// --- character stage + render ---
-const stageIdx = (lv) => { let i = 0; C.STAGES.forEach((s, k) => { if (lv >= s.minLevel) i = k; }); return i; };
-ok("stage idx valid", stageIdx(lvl) >= 0 && stageIdx(lvl) < C.STAGES.length);
-get("view-codex").classList.add("active");
-C.render(false);
-ok("charArt rendered svg", /<svg/.test(captured.charArt));
-ok("--app-bg applied", true); // applyThemeNow ran without throwing
-
-// --- default character is 머니몽키 (monkey), so no species prompt on fresh ---
-App.store.reset();
-eq("fresh default species", App.state.game.pets[0].species, "monkey");
-eq("fresh default name", App.state.game.pets[0].name, "머니몽키");
-ok("needsSpecies false on fresh", !C.needsSpecies());
-
+/* ---------- 결과 ---------- */
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
