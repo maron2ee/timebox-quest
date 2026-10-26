@@ -82,9 +82,11 @@ sw.js, manifest.webmanifest, icon.svg   PWA
   ```
   settings { dayStartHour:7, dayEndHour:24, slotMin:10, market{show,sessions}, carryOver }
   categories[] { id, name, color, group }      // group = 대분류 id (store.CAT_GROUPS)
-  CAT_GROUPS   invest(투자공부) exec(매매) growth(자기계발) body(운동) | life(생활) rest(휴식)
+  CAT_GROUPS   invest(투자공부: 주식공부·리서치·시황체크·독서) exec(매매)
+               growth(자기계발: 영어·일본어) body(운동) | life(생활) rest(휴식)
                       // 앞의 4개가 productive:true → '생산 시간'에 합산
-                      // 학습시간 카드 = invest 그룹만 (언어·독서는 growth 로 분리해 숫자를 흐리지 않는다)
+                      // 학습시간 카드 = invest 그룹만 (언어는 growth 로 분리해 숫자를 흐리지 않는다)
+                      // 독서는 대부분 투자 서적이라 invest 에 둔다 (사용자 확인)
   projects[]   { id, name, tab:'study'|'plan', collapsed }   // 전역 그룹
   settings.routine { enabled, phases[] }       // 구간 정의(기본 10개)
   phases[].items[] { text, min }               // min = 배분 시간(분). 0이면 타이머 없음

@@ -578,8 +578,9 @@ t("기본 카테고리의 대분류 배치", () => {
   const by = {};
   S.state.categories.forEach((c) => (by[c.id] = c.group));
   eq(by.study, "invest"); eq(by.research, "invest"); eq(by.market, "invest");
+  eq(by.read, "invest", "독서는 대부분 투자 서적 → 투자공부");
   eq(by.trade, "exec");
-  eq(by.english, "growth"); eq(by.japanese, "growth"); eq(by.read, "growth");
+  eq(by.english, "growth"); eq(by.japanese, "growth");
   eq(by.exercise, "body");
   eq(by.routine, "life"); eq(by.rest, "rest");
 });

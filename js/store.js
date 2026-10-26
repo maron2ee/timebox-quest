@@ -30,7 +30,7 @@
     { id: "trade",    name: "매매",     color: "#fecaca", group: "exec" },
     { id: "english",  name: "영어",     color: "#a7f3d0", group: "growth" },
     { id: "japanese", name: "일본어",   color: "#f9a8d4", group: "growth" },
-    { id: "read",     name: "독서",     color: "#d9f99d", group: "growth" },
+    { id: "read",     name: "독서",     color: "#d9f99d", group: "invest" },
     { id: "exercise", name: "운동",     color: "#fdba74", group: "body" },
     { id: "routine",  name: "루틴",     color: "#cbd5e1", group: "life" },
     { id: "rest",     name: "휴식",     color: "#e5e7eb", group: "rest" },
