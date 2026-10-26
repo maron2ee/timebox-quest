@@ -486,6 +486,41 @@ t("이름을 바꿔도 링크는 유지된다", () => {
   eq(S.linkUrl("2026-07-17", S.linkById("sheet")), "https://keep");
 });
 
+
+/* ---------- 링크 아이콘 · 바로가기 ---------- */
+t("기본 아이콘과 바로가기 구성", () => {
+  S.load();
+  const by = {};
+  S.links().forEach((e) => (by[e.id] = e));
+  eq(by.sheet.icon, "📊");
+  eq(by.journal.icon, "📒");
+  eq(S.links().filter((e) => e.quick).map((e) => e.id), ["notes", "rules", "journal"],
+     "노트DB·규칙·매매일지는 바로가기 버튼");
+  eq(by.sheet.quick, false);
+  eq(by.note.quick, false, "날짜별 항목은 주소칸이 필요하므로 바로가기 아님");
+});
+t("아이콘 없는 예전 데이터는 기본 아이콘으로 복구", () => {
+  const fixed = S.migrate(Object.assign(S.defaults(), {
+    settings: { links: [{ id: "journal", label: "매매일지", url: "https://j" }] },
+  }));
+  eq(fixed.settings.links[0].icon, "📒", "기본값에서 아이콘을 가져온다");
+  eq(fixed.settings.links[0].quick, true, "quick 기본값도 가져온다");
+  eq(fixed.settings.links[0].url, "https://j");
+});
+t("모르는 id 는 기본 아이콘 🔗 / 일반 행", () => {
+  const fixed = S.migrate(Object.assign(S.defaults(), {
+    settings: { links: [{ id: "custom", label: "내 링크", url: "" }] },
+  }));
+  eq(fixed.settings.links[0].icon, "🔗");
+  eq(fixed.settings.links[0].quick, false);
+});
+t("아이콘은 4자로 자른다", () => {
+  const fixed = S.migrate(Object.assign(S.defaults(), {
+    settings: { links: [{ id: "x", label: "a", icon: "📊📊📊📊📊", url: "" }] },
+  }));
+  ok(fixed.settings.links[0].icon.length <= 4);
+});
+
 /* ---------- 결과 ---------- */
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

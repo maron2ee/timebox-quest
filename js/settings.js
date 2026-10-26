@@ -91,6 +91,13 @@
       down.onclick = () => { list.splice(i + 1, 0, list.splice(i, 1)[0]); S().save(); renderLinks(); App.day.refresh(); };
       row.appendChild(down);
 
+      const icon = U.el("input", "inp le-icon");
+      icon.value = e.icon || "🔗";
+      icon.maxLength = 4;
+      icon.title = "아이콘 (이모지)";
+      icon.onchange = () => { e.icon = icon.value.trim().slice(0, 4) || "🔗"; S().save(); renderLinks(); App.day.refresh(); };
+      row.appendChild(icon);
+
       const label = U.el("input", "inp le-label");
       label.value = e.label;
       label.placeholder = "이름";
@@ -107,10 +114,25 @@
       const dayWrap = U.el("label", "row le-daily");
       const cb = U.el("input");
       cb.type = "checkbox"; cb.checked = !!e.daily;
+      cb.disabled = !!e.quick;
+      cb.title = e.quick ? "바로가기는 날짜별로 쓸 수 없어요" : "";
       cb.onchange = () => { e.daily = cb.checked; S().save(); renderLinks(); App.day.refresh(); };
       dayWrap.appendChild(cb);
       dayWrap.appendChild(U.el("span", null, "날짜별"));
       row.appendChild(dayWrap);
+
+      const qWrap = U.el("label", "row le-daily");
+      const qcb = U.el("input");
+      qcb.type = "checkbox"; qcb.checked = !!e.quick;
+      qcb.title = "주소칸 없이 아이콘 버튼으로만 표시";
+      qcb.onchange = () => {
+        e.quick = qcb.checked;
+        if (e.quick) e.daily = false;   // 바로가기는 전역 주소만
+        S().save(); renderLinks(); App.day.refresh();
+      };
+      qWrap.appendChild(qcb);
+      qWrap.appendChild(U.el("span", null, "바로가기"));
+      row.appendChild(qWrap);
 
       const del = U.el("button", "icon-btn", "✕");
       del.title = "삭제";
@@ -315,7 +337,7 @@
       S().save(); App.day.refresh();
     });
     U.on("linkAdd", "click", () => {
-      S().links().push({ id: U.uid("lk"), label: "새 링크", url: "", daily: false });
+      S().links().push({ id: U.uid("lk"), label: "새 링크", icon: "🔗", url: "", daily: false, quick: false });
       S().save(); renderLinks(); App.day.refresh();
     });
     U.on("setGuardMode", "change", (e) => {

@@ -6,7 +6,7 @@
 **하루 계획** — 초보 전업투자자를 위한 타임박스 플래너 + 매매 프로세스 러너.
 하루를 **PLAN(계획) / DONE(실행)** 두 열로 나란히 기록하고, 그 위에 **데일리 루틴 구간**을 얹어
 시각에 따라 앱의 모드가 바뀐다(입력→계획→매매금지→집행→휴식→관리→기록→학습).
-핵심 루프는 **아침 가설 → 장 마감 판정**과 **매매 계획 → 집행 → 계획외 카운터**다.
+핵심 루프는 **매매 계획 → 집행 → 계획외 카운터**와 **계획 → 탭 판정(DONE)**이다.
 국내 장 시간(정규장·애프터마켓)이 타임라인에 겹쳐 보인다.
 
 > **역할 분담(가장 중요). 앱은 허브이지 저장소가 아니다.**
@@ -71,7 +71,7 @@ js/stats.js         주간/월간 통계 (App.stats)
 js/archive.js       회고(K/P/T) 모아보기 (App.archive)
 js/terms.js         경제용어 노트 (App.terms)
 js/research.js      리서치 '링크 인덱스' — 2축 분류, 본문은 노션 (App.research)
-js/settings.js      타임라인·장시간·카테고리·데이터 (App.settings)
+js/settings.js      타임라인·장시간·루틴구간·링크·알림·가드레일·카테고리·데이터 (App.settings)
 js/app.js           부트스트랩 + 탭 전환 (App.nav)
 tests/logic.test.js 회귀 테스트 (util/store/market만, DOM 스텁)
 sw.js, manifest.webmanifest, icon.svg   PWA
@@ -84,27 +84,26 @@ sw.js, manifest.webmanifest, icon.svg   PWA
   categories[] { id, name, color, study }      // study:true 만 '학습시간'에 합산
   projects[]   { id, name, tab:'study'|'plan', collapsed }   // 전역 그룹
   settings.routine { enabled, phases[] }       // 구간 정의(기본 10개)
-  settings.hypothesisPolicy  free | mark | lock
   settings.guard { planViolation: off|warn|block, maxTrades, maxLossPct }
   days['YYYY-MM-DD'] {
     goal, big3[3],
     plan { 'HH:MM': {c:catId, t:'제목'} },      // 계획
     done { 'HH:MM': {c:catId, t:'제목'} },      // 실행
     tasks[] { id, projectId, text, done },      // 그날의 할 일
-    hypothesis { bias, reason, sectors[], savedAt,
-                 openSnapshot, editedAfterOpen, lateFirstWrite,
-                 verdict{hit, sectorHit, note} },
     plans[] { id, ticker, name, entry, stop, target, qty, reason },
     trades[] { id, planId|null, ticker, at, entry, pnl },
-    noTradeIf, checks{'phaseId:index'}, links{am,pm,journal},
+    noTradeIf, pnl, checks{'phaseId:index'},
+    links{ '<linkId>': url },        // daily:true 인 링크의 그날 주소만
     judged { '<블록시작슬롯>': 'done'|'skip'|'other' },
     watch { today[], tomorrow[] },
     review { k, p, t }, mtime
   }
   ddays[] / terms[] / pomo
   settings.notify { enabled, lead(분), sound }
-  settings.links[] { id, label, url, daily }   // 외부 기록 링크. 이름·순서·개수 모두 편집 가능
-                      // daily:true 면 URL 을 day.links[id] 에 날짜별로 저장(그날의 데일리 노트)
+  settings.links[] { id, label, icon, url, daily, quick }
+                      // 외부 기록 링크. 이름·아이콘·순서·개수 모두 사용자가 바꾼다
+                      // daily:true → URL 을 day.links[id] 에 날짜별로 저장(그날의 데일리 노트)
+                      // quick:true → 주소칸 없이 '바로가기' 아이콘 버튼으로만 표시 (daily 와 배타)
                       // store.linkUrl(ds,e) / setLinkUrl(ds,e,url) 로만 읽고 쓸 것
   research[] { id, ticker, name, kind, stance, sector, url, note, body?, date, updated }
                // 2축 — kind: stock|theme|macro|report|event

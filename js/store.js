@@ -112,14 +112,14 @@
         routine: { enabled: true, phases: PHASES.map((p) => ({ ...p, items: p.items.slice() })) },
         // 가드레일: 계획외 매매 발생 시 off(무시) / warn(경고 배너) / block(매매 입력 차단)
         guard: { planViolation: "warn", maxTrades: 0, maxLossPct: 0 },
-        // 외부 기록 시스템 — 숫자는 시트(2층), 서술은 노션 데일리 노트(3층)
         // 외부 기록 링크 — 이름·URL 모두 편집 가능. daily:true 면 URL 을 날짜별(day.links[id])로 저장
+        // quick:true 면 주소칸 없이 '바로가기' 아이콘 버튼으로만 보인다
         links: [
-          { id: "sheet",   label: "2층 시트",  url: "", daily: false },
-          { id: "note",    label: "3층 노트",  url: "", daily: true  },
-          { id: "notes",   label: "노트 DB",   url: "", daily: false },
-          { id: "rules",   label: "1층 규칙",  url: "", daily: false },
-          { id: "journal", label: "매매일지",  url: "", daily: false },
+          { id: "sheet",   label: "2층 시트", icon: "📊", url: "", daily: false, quick: false },
+          { id: "note",    label: "3층 노트", icon: "📝", url: "", daily: true,  quick: false },
+          { id: "notes",   label: "노트 DB",  icon: "📚", url: "", daily: false, quick: true  },
+          { id: "rules",   label: "1층 규칙", icon: "📌", url: "", daily: false, quick: true  },
+          { id: "journal", label: "매매일지", icon: "📒", url: "", daily: false, quick: true  },
         ],
         // 구간 알림 — 탭이 열려 있을 때만 동작한다 (서버 푸시 없음)
         notify: { enabled: false, lead: 3, sound: false },
@@ -178,12 +178,17 @@
     }
     s.settings.links = s.settings.links
       .filter((e) => e && typeof e === "object")
-      .map((e) => ({
-        id: e.id || U.uid("lk"),
-        label: (e.label || "링크").toString().slice(0, 20),
-        url: e.url || "",
-        daily: !!e.daily,
-      }));
+      .map((e) => {
+        const def = d.settings.links.find((x) => x.id === e.id);
+        return {
+          id: e.id || U.uid("lk"),
+          label: (e.label || "링크").toString().slice(0, 20),
+          icon: (e.icon != null ? e.icon : (def ? def.icon : "🔗")).toString().slice(0, 4) || "🔗",
+          url: e.url || "",
+          daily: !!e.daily,
+          quick: e.quick != null ? !!e.quick : !!(def && def.quick),
+        };
+      });
     s.settings.notify = Object.assign({}, d.settings.notify, s.settings.notify || {});
     if (!Array.isArray(s.settings.routine.phases) || !s.settings.routine.phases.length) {
       s.settings.routine.phases = d.settings.routine.phases;

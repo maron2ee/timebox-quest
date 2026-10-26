@@ -44,7 +44,7 @@
 
   function linkRow(ds, entry) {
     const row = U.el("div", "rec-row");
-    row.appendChild(U.el("span", "rec-k", U.esc(entry.label)));
+    row.appendChild(U.el("span", "rec-k", `${U.esc(entry.icon || "🔗")} ${U.esc(entry.label)}`));
     const cur = S().linkUrl(ds, entry);
     const inp = U.el("input", "rec-link" + (cur && !isUrl(cur) ? " bad" : ""));
     inp.value = cur;
@@ -70,9 +70,33 @@
     host.appendChild(head);
 
     host.appendChild(stampEl(ds));
-    S().links().forEach((e) => host.appendChild(linkRow(ds, e)));
-    if (!S().links().length) {
-      host.appendChild(U.el("div", "rec-sub", "설정 → 외부 기록에서 링크를 추가하세요"));
+    const all = S().links();
+    all.filter((e) => !e.quick).forEach((e) => host.appendChild(linkRow(ds, e)));
+
+    const quick = all.filter((e) => e.quick);
+    if (quick.length) {
+      const row = U.el("div", "rec-row");
+      row.appendChild(U.el("span", "rec-k", "바로가기"));
+      const wrap = U.el("span", "rec-quick");
+      quick.forEach((e) => {
+        const url = S().linkUrl(ds, e);
+        const label = `${e.icon || "🔗"} ${e.label}`;
+        if (isUrl(url)) {
+          const a = U.el("a", "quick-btn", U.esc(label));
+          a.href = url; a.target = "_blank"; a.rel = "noopener noreferrer";
+          a.title = url;
+          wrap.appendChild(a);
+        } else {
+          const b = U.el("span", "quick-btn off", U.esc(label));
+          b.title = "설정 → 외부 기록 링크에서 주소를 넣어주세요";
+          wrap.appendChild(b);
+        }
+      });
+      row.appendChild(wrap);
+      host.appendChild(row);
+    }
+    if (!all.length) {
+      host.appendChild(U.el("div", "rec-sub", "설정 → 외부 기록 링크에서 추가하세요"));
     }
   }
 
