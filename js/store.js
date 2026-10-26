@@ -34,7 +34,7 @@
            rest(휴식) / manage(관리) / record(기록) / learn(학습)
      장중(observe·exec·manage) 체크리스트는 읽기 전용 — "장중엔 기록하지 않고 읽기만" 원칙 */
   const PHASES = [
-    { id: "pre1", name: "뉴스·미국장", start: "07:30", end: "08:00", mode: "input", catId: "market",
+    { id: "pre1", name: "뉴스·미국장", start: "07:00", end: "08:00", mode: "input", catId: "market",
       items: ["전일 미국장 3지수·금리·환율·원자재 확인",
               "경제뉴스 제목만 훑고 정독은 5개까지",
               "오늘 유리한 요인 1개 / 불리한 요인 1개 적기"] },
@@ -80,6 +80,26 @@
               "텔레그램 분석 → 채널별 적중/실패 (하루 1회)"] },
   ];
 
+  /* ---------- 리서치 인덱스 2축 ---------- */
+  // 구분 — 무엇에 대한 메모인가
+  const RS_KINDS = [
+    { id: "stock",  name: "종목" },
+    { id: "theme",  name: "테마·섹터" },
+    { id: "macro",  name: "매크로" },
+    { id: "report", name: "리포트" },
+    { id: "event",  name: "이벤트" },
+  ];
+  // 스탠스 — 지금 내 판단
+  const RS_STANCES = [
+    { id: "watch", name: "관심" },
+    { id: "cand",  name: "후보" },
+    { id: "hold",  name: "보유" },
+    { id: "pause", name: "보류" },
+    { id: "drop",  name: "폐기" },
+  ];
+  const rsKind = (id) => RS_KINDS.find((x) => x.id === id) || RS_KINDS[0];
+  const rsStance = (id) => RS_STANCES.find((x) => x.id === id) || RS_STANCES[0];
+
   function defaults() {
     return {
       version: SCHEMA,
@@ -94,6 +114,8 @@
         guard: { planViolation: "warn", maxTrades: 0, maxLossPct: 0 },
         // 외부 기록 시스템 — 숫자는 시트(2층), 서술은 노션 데일리 노트(3층)
         links: { sheet: "", notes: "", rules: "" },
+        // 구간 알림 — 탭이 열려 있을 때만 동작한다 (서버 푸시 없음)
+        notify: { enabled: false, lead: 3, sound: false },
       },
       categories: CATS.map((c) => ({ ...c })),
       projects: PROJECTS.map((p) => ({ ...p })),
@@ -143,6 +165,7 @@
     s.settings.guard = Object.assign({}, d.settings.guard, s.settings.guard || {});
     s.settings.routine = Object.assign({}, d.settings.routine, s.settings.routine || {});
     s.settings.links = Object.assign({}, d.settings.links, s.settings.links || {});
+    s.settings.notify = Object.assign({}, d.settings.notify, s.settings.notify || {});
     if (!Array.isArray(s.settings.routine.phases) || !s.settings.routine.phases.length) {
       s.settings.routine.phases = d.settings.routine.phases;
     }
@@ -155,6 +178,7 @@
       id: r.id || U.uid("rs"),
       ticker: r.ticker || "", name: r.name || "",
       sector: r.sector || "", url: r.url || "", note: r.note || "",
+      kind: rsKind(r.kind).id, stance: rsStance(r.stance).id,
       body: r.body || "",
       date: r.date || U.today(),
       updated: r.updated || r.date || U.today(),
@@ -410,5 +434,6 @@
     phases, phaseAt, phaseById, phaseProgress,
     riskReward, offPlanTrades, tradeStats, guardState,
     phaseStamp,
+    RS_KINDS, RS_STANCES, rsKind, rsStance,
   };
 })();

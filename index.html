@@ -274,21 +274,25 @@
   <section class="view" id="view-research">
     <div class="card card-pad" style="margin-bottom:12px">
       <div class="row" style="margin-bottom:10px">
-        <div class="card-title">종목 리서치 인덱스</div>
+        <div class="card-title">리서치 인덱스</div>
         <span class="stat-sub ml-auto" id="rsCount"></span>
       </div>
       <div class="row" style="gap:8px;flex-wrap:wrap">
-        <input class="inp" id="rsTicker" placeholder="티커/코드" style="max-width:120px">
-        <input class="inp" id="rsName" placeholder="종목명" style="max-width:160px">
-        <input class="inp" id="rsSector" placeholder="섹터" style="max-width:130px">
-        <input class="inp" id="rsUrl" placeholder="노션 링크 (https://...)" style="min-width:200px">
+        <select class="inp" id="rsKind" style="max-width:120px"></select>
+        <select class="inp" id="rsStance" style="max-width:100px"></select>
+        <input class="inp" id="rsTicker" placeholder="티커/코드" style="max-width:110px">
+        <input class="inp" id="rsName" placeholder="이름 (종목·테마)" style="max-width:170px">
+        <input class="inp" id="rsSector" placeholder="섹터" style="max-width:120px">
+        <input class="inp" id="rsUrl" placeholder="노션 링크 (https://...)" style="min-width:180px">
         <button class="btn primary" id="rsAdd">추가</button>
       </div>
-      <div class="stat-sub" style="margin-top:8px">본문 분석은 <b>노션</b>에 씁니다. 여기엔 찾아가는 길과 한 줄 결론만 둬요.</div>
-      <div class="row" style="gap:8px;margin-top:10px;flex-wrap:wrap">
-        <input class="inp" id="rsQ" placeholder="검색 (티커·종목명·섹터·결론)" style="max-width:240px">
-        <div class="palette" id="rsSectors"></div>
+      <div class="stat-sub" style="margin-top:8px">본문 분석은 <b>노션</b>에. 여기엔 분류·링크·한 줄 결론만 둡니다.</div>
+      <div class="row" style="margin-top:12px">
+        <input class="inp" id="rsQ" placeholder="검색 (티커·이름·섹터·결론)" style="max-width:260px">
       </div>
+      <div class="filter-row" id="rsKinds"></div>
+      <div class="filter-row" id="rsStances"></div>
+      <div class="filter-row" id="rsSectors"></div>
     </div>
     <div id="rsList"></div>
   </section>
@@ -327,6 +331,7 @@
         </label>
       </div>
       <div id="phaseRows"></div>
+      <button class="btn sm" id="phaseReset" style="margin-top:8px">기본 시간표로 되돌리기</button>
       <div class="stat-sub" style="margin-top:8px">장중 구간(관찰·집행·관리)의 체크리스트는 읽기 전용이에요 — “장중에는 기록하지 않고 읽기만” 원칙.</div>
     </div>
 
@@ -348,6 +353,30 @@
         </label>
       </div>
       <div class="stat-sub" style="margin-top:8px">0이면 해당 한도를 쓰지 않습니다. 손실 한도는 ‘오늘 체결’에 손익을 적을 때만 작동해요.</div>
+    </div>
+
+    <div class="card card-pad" style="margin-bottom:12px">
+      <div class="row" style="margin-bottom:4px">
+        <div class="card-title">구간 알림</div>
+        <label class="row ml-auto" style="gap:6px;font-size:13px">
+          <input type="checkbox" id="setNotify"> 사용
+        </label>
+      </div>
+      <div class="stat-sub" style="margin-bottom:12px" id="notifyState"></div>
+      <div class="row" style="gap:12px;flex-wrap:wrap">
+        <label class="row" style="gap:6px">미리 알림
+          <select class="inp" id="setNotifyLead" style="width:110px">
+            <option value="0">없음</option>
+            <option value="3">3분 전</option>
+            <option value="5">5분 전</option>
+            <option value="10">10분 전</option>
+          </select>
+        </label>
+        <label class="row" style="gap:6px;font-size:13px">
+          <input type="checkbox" id="setNotifySound"> 소리
+        </label>
+        <button class="btn sm ml-auto" id="notifyTest">알림 테스트</button>
+      </div>
     </div>
 
     <div class="card card-pad" style="margin-bottom:12px">
@@ -426,6 +455,7 @@
 <script src="js/trades.js"></script>
 <script src="js/judge.js"></script>
 <script src="js/record.js"></script>
+<script src="js/notify.js"></script>
 <script src="js/tasks.js"></script>
 <script src="js/pomodoro.js"></script>
 <script src="js/day.js"></script>

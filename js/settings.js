@@ -68,6 +68,24 @@
     });
   }
 
+  /* ---------- 알림 ---------- */
+  function renderNotify() {
+    const n = S().state.settings.notify || {};
+    const cb = U.byId("setNotify");       if (cb) cb.checked = !!n.enabled;
+    const ld = U.byId("setNotifyLead");   if (ld) ld.value = String(n.lead == null ? 3 : n.lead);
+    const sd = U.byId("setNotifySound");  if (sd) sd.checked = !!n.sound;
+
+    const perm = App.notify.permission();
+    const msg = !App.notify.supported()
+      ? "이 브라우저는 데스크톱 알림을 지원하지 않아요 (앱 안 토스트는 동작합니다)."
+      : perm === "granted"
+        ? "구간이 바뀔 때 알려드려요. ⚠️ 이 탭이 열려 있을 때만 동작합니다 (서버 푸시가 없어요)."
+        : perm === "denied"
+          ? "브라우저에서 알림이 차단돼 있어요. 주소창 자물쇠 → 알림 허용으로 바꿔주세요."
+          : "‘사용’을 켜면 알림 권한을 요청합니다.";
+    U.setText("notifyState", msg);
+  }
+
   /* ---------- 가설 · 가드레일 ---------- */
   function renderGuard() {
     const s = S().state.settings;
@@ -187,6 +205,7 @@
     if (sl) sl.value = String(s.slotMin);
     renderMarket();
     renderPhases();
+    renderNotify();
     renderGuard();
     renderCats();
     info();
@@ -214,6 +233,29 @@
     U.on("setMarket", "change", (e) => {
       S().state.settings.market.show = e.target.checked;
       S().save(); App.day.refresh();
+    });
+    U.on("setNotify", "change", async (e) => {
+      await App.notify.enable(e.target.checked);
+      renderNotify();
+      const p = App.notify.permission();
+      if (e.target.checked && p !== "granted" && App.notify.supported()) {
+        App.ui.toast(p === "denied" ? "브라우저가 알림을 막고 있어요" : "알림 권한이 필요해요");
+      }
+    });
+    U.on("setNotifyLead", "change", (e) => {
+      S().state.settings.notify.lead = +e.target.value || 0;
+      S().save(); App.notify.start();
+    });
+    U.on("setNotifySound", "change", (e) => {
+      S().state.settings.notify.sound = e.target.checked;
+      S().save();
+    });
+    U.on("notifyTest", "click", () => App.notify.test());
+    U.on("phaseReset", "click", () => {
+      if (!confirm("루틴 구간을 기본 시간표로 되돌릴까요? (이름·시간·카테고리가 초기화돼요)")) return;
+      S().state.settings.routine.phases = S().defaults().settings.routine.phases;
+      S().save(); renderPhases(); App.day.refresh();
+      App.ui.toast("기본 시간표로 되돌렸어요");
     });
     U.on("setRoutine", "change", (e) => {
       S().state.settings.routine.enabled = e.target.checked;

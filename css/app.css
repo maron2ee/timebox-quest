@@ -575,3 +575,18 @@ input, textarea, select { font: inherit; color: inherit; }
 .rec-link:focus { border-bottom-color: var(--accent); }
 .rec-link.bad { color: var(--danger); border-bottom-color: #fbcfcf; }
 .rec-quick { display: flex; gap: 6px; flex-wrap: wrap; }
+
+/* ---------- 리서치 필터 / 2축 배지 ---------- */
+.filter-row { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; margin-top: 8px; }
+.filter-k { font-size: 11px; font-weight: 800; color: var(--faint); flex: 0 0 38px; }
+.rs-kind, .rs-stance {
+  border: 1px solid var(--line); background: var(--surface); border-radius: 999px;
+  padding: 3px 8px; font-size: 11.5px; font-weight: 700; color: var(--ink-2); outline: 0;
+}
+.rs-stance.s-cand  { background: #eef4ff; border-color: #cfe0ff; color: #2563eb; }
+.rs-stance.s-hold  { background: #effaf3; border-color: #bbf0cd; color: #15803d; }
+.rs-stance.s-pause { background: #fffaf0; border-color: #fbe3b4; color: #b45309; }
+.rs-stance.s-drop  { background: #f4f4f7; border-color: var(--line); color: var(--faint); }
+.rsrow.st-drop { opacity: .58; }
+.rsrow.st-hold { border-color: #cdeedc; }
+.rsrow.st-cand { border-color: #d3e1ff; }

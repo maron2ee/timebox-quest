@@ -52,6 +52,7 @@
     App.terms.init();
     App.research.init();
     App.settings.init();
+    App.notify.init();
 
     initTabs();
     show((location.hash || "").replace("#", "") || "day");

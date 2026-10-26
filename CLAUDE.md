@@ -60,13 +60,14 @@ js/routine.js       데일리 루틴 구간 엔진 — 레일·모드배너·구
 js/trades.js        매매 계획·집행 체크·계획외 카운터·관찰목록 (App.trades)
 js/judge.js         오늘 판정 — 계획 블록을 탭으로 확정해 DONE 생성 (App.judge)
 js/record.js        '오늘의 기록' 허브 — 확정 시각 도장 + 시트·노션 링크 (App.record)
+js/notify.js        구간 알림 — 탭이 열려 있을 때만 (App.notify)
 js/tasks.js         프로젝트 그룹별 오늘 할 일 (App.tasks)
 js/pomodoro.js      집중 타이머 → 끝나면 DONE에 자동 기록 (App.pomo)
 js/day.js           하루 뷰 총괄: 날짜네비·스탯·Goal·Big3·Review (App.day)
 js/stats.js         주간/월간 통계 (App.stats)
 js/archive.js       회고(K/P/T) 모아보기 (App.archive)
 js/terms.js         경제용어 노트 (App.terms)
-js/research.js      종목 리서치 '링크 인덱스' — 본문은 노션 (App.research)
+js/research.js      리서치 '링크 인덱스' — 2축 분류, 본문은 노션 (App.research)
 js/settings.js      타임라인·장시간·카테고리·데이터 (App.settings)
 js/app.js           부트스트랩 + 탭 전환 (App.nav)
 tests/logic.test.js 회귀 테스트 (util/store/market만, DOM 스텁)
@@ -98,8 +99,12 @@ sw.js, manifest.webmanifest, icon.svg   PWA
     review { k, p, t }, mtime
   }
   ddays[] / terms[] / pomo
-  research[] { id, ticker, name, sector, url, note, body?, date, updated }
-               // 링크 인덱스. body 는 예전 앱 내 메모 — migrate 에서 보존만 한다
+  settings.notify { enabled, lead(분), sound }
+  research[] { id, ticker, name, kind, stance, sector, url, note, body?, date, updated }
+               // 2축 — kind: stock|theme|macro|report|event
+               //       stance: watch|cand|hold|pause|drop  (store.RS_KINDS / RS_STANCES)
+               // 목록은 스탠스 우선순위(후보→보유→관심→보류→폐기) 다음 최근 수정순
+               // body 는 예전 앱 내 메모 — migrate 에서 보존만 한다
   ```
   스키마 변경 시 `SCHEMA` 올리고 `migrate()`에 단계 추가 (현재 v1).
 - **타임라인**: 한 행 = 1시간, 한 칸 = `slotMin`(기본 10분). 슬롯은 `plan`/`done` 맵에 `'HH:MM'` 키로 저장.
@@ -130,6 +135,10 @@ sw.js, manifest.webmanifest, icon.svg   PWA
   - `전부 계획대로` 버튼은 **미판정 블록만** 처리한다(이미 판정한 걸 덮어쓰지 말 것).
   - DONE 직접 칠하기는 남겨둔다 — 계획에 없던 활동을 기록하는 유일한 수단이고,
     판정 목록 하단의 '계획에 없던 활동' 섹션이 그걸 보여준다.
+- **구간 알림**(`notify.js`): 구간이 바뀔 때 + N분 전 미리 알림. 20초마다 틱.
+  **서버 푸시가 없어 탭이 열려 있을 때만 동작한다** — 설정 화면에 이 한계를 그대로 써 둘 것.
+  OS 알림 권한이 없거나 거부돼도 **인앱 토스트는 항상** 뜬다. 주말(비거래일)엔 조용하다.
+  앱을 켠 직후 첫 틱은 기준만 잡고 알리지 않는다(새로고침마다 울리는 것 방지).
 - **실천율 지표는 두 개이고 기본은 카테고리 분 기준**이다.
   - `adherence(ds)` — **Σ min(계획분, 실제분) / Σ 계획분** (카테고리별). 시간이 밀려도 한 건 인정.
   - `onTimeRate(ds)` — 계획한 슬롯 '그 시간에' 실행된 비율. 밀리면 떨어진다. 보조 지표로만 표시.
