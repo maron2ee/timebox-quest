@@ -166,6 +166,7 @@
       plans: [],            // 매매 계획 [{id, ticker, name, entry, stop, target, qty, reason}]
       trades: [],           // 체결 [{id, planId|null, ticker, side, price, qty, time, pnl, emotion, note}]
       noTradeIf: "",        // 오늘 매매하지 않는 조건
+      judged: {},           // 계획 블록 판정 {startKey: 'done'|'skip'|'other'}
       checks: {},           // 구간 체크리스트 {'phaseId:index': true}
       links: {},            // 외부 문서 {am:'url', pm:'url'}
       watch: { today: [], tomorrow: [] },
@@ -187,6 +188,7 @@
     if (!Array.isArray(d.trades)) d.trades = [];
     if (typeof d.noTradeIf !== "string") d.noTradeIf = "";
     if (!d.checks) d.checks = {};
+    if (!d.judged) d.judged = {};
     if (!d.links) d.links = {};
     if (!d.watch || !Array.isArray(d.watch.today)) d.watch = { today: [], tomorrow: [] };
     if (!Array.isArray(d.watch.tomorrow)) d.watch.tomorrow = [];
@@ -231,14 +233,51 @@
     for (const id in by) { const c = catById(id); if (c && c.study) sum += by[id]; }
     return sum;
   }
-  // 계획 대비 실천율(%) — 계획한 슬롯 중 같은 슬롯이 실행에도 찍힌 비율
-  function adherence(ds) {
+  // 제시간 실천율(%) — 계획한 슬롯 '그 시간에' 실행된 비율. 시간이 밀리면 떨어진다.
+  function onTimeRate(ds) {
     const d = peekDay(ds), plan = d.plan || {}, done = d.done || {};
     const keys = Object.keys(plan);
     if (!keys.length) return null;
     let hit = 0;
     keys.forEach((k) => { if (done[k]) hit++; });
     return Math.round((hit / keys.length) * 100);
+  }
+
+  // 실천율(%) — 카테고리별 '분' 기준. 시간이 밀려도 한 건 한 걸로 인정한다.
+  // Σ min(계획분, 실제분) / Σ 계획분
+  function adherence(ds) {
+    const p = minutesByCat(ds, "plan"), d = minutesByCat(ds, "done");
+    let planTotal = 0, overlap = 0;
+    for (const c in p) { planTotal += p[c]; overlap += Math.min(p[c], d[c] || 0); }
+    if (!planTotal) return null;
+    return Math.round((overlap / planTotal) * 100);
+  }
+
+  // 연속된 같은 (카테고리, 제목) 슬롯을 하나의 블록으로 묶는다
+  function blocksOf(ds, side) {
+    const map = peekDay(ds)[side || "plan"] || {};
+    const step = slotMin();
+    const out = [];
+    let cur = null;
+    slotKeys().forEach((k) => {
+      const v = map[k];
+      if (!v) { cur = null; return; }
+      if (cur && cur.c === v.c && cur.t === (v.t || "")) {
+        cur.slots.push(k); cur.endMin += step;
+      } else {
+        cur = { key: k, c: v.c, t: v.t || "", slots: [k], startMin: U.toMin(k), endMin: U.toMin(k) + step };
+        out.push(cur);
+      }
+    });
+    return out;
+  }
+
+  // 계획 블록별 판정 상태: done(했음) / skip(안 함) / other(다른 걸 함) / null(미판정)
+  function verdictOf(ds, blockKey) { return (peekDay(ds).judged || {})[blockKey] || null; }
+  function judgeProgress(ds) {
+    const blocks = blocksOf(ds, "plan");
+    const judged = peekDay(ds).judged || {};
+    return { done: blocks.filter((b) => judged[b.key]).length, total: blocks.length };
   }
 
   /* ---------- 할일 ---------- */
@@ -341,7 +380,8 @@
     blankDay, peekDay, getDay, touch,
     catById, projectById,
     slotMin, startMin, endMin, slotKeys,
-    filledMin, minutesByCat, studyMin, adherence,
+    filledMin, minutesByCat, studyMin, adherence, onTimeRate,
+    blocksOf, verdictOf, judgeProgress,
     tasksOf, taskStats, upcomingDdays,
     phases, phaseAt, phaseById, phaseProgress,
     riskReward, offPlanTrades, tradeStats, guardState, blankHypothesis,

@@ -46,6 +46,7 @@ js/timeline.js      PLAN|DONE 타임라인 — 칠하기·블록편집·드롭 (
 js/routine.js       데일리 루틴 구간 엔진 — 레일·모드배너·구간 체크리스트 (App.routine)
 js/hypothesis.js    아침 가설 → 장 마감 판정 + 적중률 (App.hypo)
 js/trades.js        매매 계획·집행 체크·계획외 카운터·관찰목록 (App.trades)
+js/judge.js         오늘 판정 — 계획 블록을 탭으로 확정해 DONE 생성 (App.judge)
 js/tasks.js         프로젝트 그룹별 오늘 할 일 (App.tasks)
 js/pomodoro.js      집중 타이머 → 끝나면 DONE에 자동 기록 (App.pomo)
 js/day.js           하루 뷰 총괄: 날짜네비·스탯·Goal·Big3·Review (App.day)
@@ -79,6 +80,7 @@ sw.js, manifest.webmanifest, icon.svg   PWA
     plans[] { id, ticker, name, entry, stop, target, qty, reason },
     trades[] { id, planId|null, ticker, at, entry, pnl },
     noTradeIf, checks{'phaseId:index'}, links{am,pm,journal},
+    judged { '<블록시작슬롯>': 'done'|'skip'|'other' },
     watch { today[], tomorrow[] },
     review { k, p, t }, mtime
   }
@@ -105,8 +107,21 @@ sw.js, manifest.webmanifest, icon.svg   PWA
 - **매매 가드레일**(`trades.js` + `store.guardState`): 계획외 매매 1건이라도 생기면 경고.
   `settings.guard.planViolation` 이 `block` 이면 집행 버튼이 비활성된다. 매매 횟수 상한·손실 한도도 같은 함수에서 판정.
   **손익비(`store.riskReward`)가 1:2 미만이면 계획 카드가 빨갛게 '후보 제외'** 로 표시된다.
-- **실천율(adherence)**: 계획한 슬롯 중 같은 슬롯이 실행에도 찍힌 비율.
+- **DONE은 그리는 게 아니라 판정한다**(`judge.js`). 사용자 원칙이 "장중엔 기록 안 함 + 사후 추정 금지"라
+  DONE을 두 번째 그리드로 칠하게 하면 둘 다 어기게 된다. 그래서 15:30 기록 구간에
+  **계획 블록 목록을 띄우고 `했음 / 안 함 / 다른 걸 함`을 탭**하면 DONE 슬롯이 생성된다.
+  - `전부 계획대로` 버튼은 **미판정 블록만** 처리한다(이미 판정한 걸 덮어쓰지 말 것).
+  - DONE 직접 칠하기는 남겨둔다 — 계획에 없던 활동을 기록하는 유일한 수단이고,
+    판정 목록 하단의 '계획에 없던 활동' 섹션이 그걸 보여준다.
+- **실천율 지표는 두 개이고 기본은 카테고리 분 기준**이다.
+  - `adherence(ds)` — **Σ min(계획분, 실제분) / Σ 계획분** (카테고리별). 시간이 밀려도 한 건 인정.
+  - `onTimeRate(ds)` — 계획한 슬롯 '그 시간에' 실행된 비율. 밀리면 떨어진다. 보조 지표로만 표시.
+  - 왜: 계획대로 다 했는데 1시간 밀린 날이 슬롯 기준으로는 47%로 찍혔다. 시간 밀림을 '안 함'과
+    똑같이 처벌하면 안 된다. 통계·타임라인 푸터 모두 `adherence` 를 주 지표로 쓴다.
 - **뽀모도로**: 완료/중단 시 시작~현재 구간을 `timeline.applyMinutes(ds,'done',...)`로 기록.
+- **D-day**(`day.js`): `state.ddays[]` 에 **사용자가 직접 입력**한다. 실적·공시 일정을 외부에서
+  가져오지 않는다(DART 등은 브라우저 CORS 때문에 중계 서버가 필요). 하루 탭의 D-day 카드를 누르면
+  모달에서 이름·날짜를 즉시 수정·삭제할 수 있다.
 
 ## 작업 규칙
 - 코드 수정 후 **`node tests/logic.test.js` 통과** 확인.

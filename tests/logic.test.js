@@ -35,7 +35,8 @@ sandbox.window = sandbox;
 sandbox.globalThis = sandbox;
 vm.createContext(sandbox);
 
-["util.js", "store.js", "market.js", "hypothesis.js"].forEach((f) => {
+sandbox.window.App = sandbox.window.App || {};
+["util.js", "store.js", "market.js", "hypothesis.js", "judge.js"].forEach((f) => {
   const code = fs.readFileSync(path.join(__dirname, "..", "js", f), "utf8");
   vm.runInContext(code, sandbox, { filename: f });
 });
@@ -307,6 +308,88 @@ t("가설 적중률은 장 시작 전 확정분만 집계", () => {
   eq(a.rate, 75, "전체 적중률 3/4");
   eq(a.cleanJudged, 2, "깨끗한 가설만 2건");
   eq(a.cleanRate, 50, "그 중 1건 적중");
+});
+
+
+/* ---------- 실천율: 카테고리 분 vs 슬롯 ---------- */
+t("실천율은 시간이 밀려도 한 걸 인정한다", () => {
+  S.reset();
+  const d = S.getDay("2026-07-17");
+  // 계획: 13:00~14:00 리서치 6칸
+  for (let m = 13 * 60; m < 14 * 60; m += 10) d.plan[U.toHHMM(m)] = { c: "research", t: "리서치" };
+  // 실제: 같은 걸 1시간 밀려서 14:00~15:00 에 함
+  for (let m = 14 * 60; m < 15 * 60; m += 10) d.done[U.toHHMM(m)] = { c: "research", t: "리서치" };
+  eq(S.adherence("2026-07-17"), 100, "카테고리 분 기준이면 100%");
+  eq(S.onTimeRate("2026-07-17"), 0, "제시간 기준이면 0%");
+});
+t("다른 카테고리를 했으면 실천율이 깎인다", () => {
+  S.reset();
+  const d = S.getDay("2026-07-17");
+  for (let m = 13 * 60; m < 14 * 60; m += 10) d.plan[U.toHHMM(m)] = { c: "research", t: "" };
+  // 절반만 리서치, 절반은 휴식
+  for (let m = 13 * 60; m < 13 * 60 + 30; m += 10) d.done[U.toHHMM(m)] = { c: "research", t: "" };
+  for (let m = 13 * 60 + 30; m < 14 * 60; m += 10) d.done[U.toHHMM(m)] = { c: "rest", t: "" };
+  eq(S.adherence("2026-07-17"), 50);
+});
+t("계획보다 더 해도 100%를 넘지 않는다", () => {
+  S.reset();
+  const d = S.getDay("2026-07-17");
+  for (let m = 13 * 60; m < 13 * 60 + 30; m += 10) d.plan[U.toHHMM(m)] = { c: "research", t: "" };
+  for (let m = 13 * 60; m < 14 * 60; m += 10) d.done[U.toHHMM(m)] = { c: "research", t: "" };
+  eq(S.adherence("2026-07-17"), 100);
+});
+t("계획이 없으면 null", () => {
+  S.reset();
+  eq(S.adherence("2026-07-17"), null);
+  eq(S.onTimeRate("2026-07-17"), null);
+});
+
+/* ---------- 블록 병합 · 판정 ---------- */
+t("연속 같은 (카테고리,제목) 슬롯은 한 블록", () => {
+  S.reset();
+  const d = S.getDay("2026-07-17");
+  d.plan["09:00"] = { c: "market", t: "시황" };
+  d.plan["09:10"] = { c: "market", t: "시황" };
+  d.plan["09:20"] = { c: "market", t: "다른제목" };   // 제목이 다르면 끊김
+  d.plan["09:40"] = { c: "market", t: "시황" };       // 09:30 비어서 끊김
+  const b = S.blocksOf("2026-07-17", "plan");
+  eq(b.length, 3);
+  eq(b[0].slots.length, 2);
+  eq(b[0].startMin, U.toMin("09:00"));
+  eq(b[0].endMin, U.toMin("09:20"));
+});
+t("판정: 했음 → DONE 채움 / 안 함 → 비움", () => {
+  S.reset();
+  const ds = "2026-07-17";
+  const d = S.getDay(ds);
+  for (let m = 13 * 60; m < 14 * 60; m += 10) d.plan[U.toHHMM(m)] = { c: "research", t: "리서치" };
+  const block = S.blocksOf(ds, "plan")[0];
+
+  App.judge.apply(ds, block, "done");
+  eq(S.filledMin(ds, "done"), 60);
+  eq(S.verdictOf(ds, block.key), "done");
+
+  App.judge.apply(ds, block, "skip");
+  eq(S.filledMin(ds, "done"), 0, "안 함이면 DONE 을 비운다");
+  eq(S.verdictOf(ds, block.key), "skip");
+
+  App.judge.apply(ds, block, "other", "rest");
+  eq(S.minutesByCat(ds, "done"), { rest: 60 }, "다른 걸 함 → 그 카테고리로");
+  eq(S.verdictOf(ds, block.key), "other");
+
+  App.judge.apply(ds, block, null);
+  eq(S.verdictOf(ds, block.key), null, "판정 취소");
+  eq(S.filledMin(ds, "done"), 0);
+});
+t("judgeProgress 집계", () => {
+  S.reset();
+  const ds = "2026-07-17";
+  const d = S.getDay(ds);
+  d.plan["09:00"] = { c: "market", t: "a" };
+  d.plan["10:00"] = { c: "study", t: "b" };
+  eq(S.judgeProgress(ds), { done: 0, total: 2 });
+  App.judge.apply(ds, S.blocksOf(ds, "plan")[0], "done");
+  eq(S.judgeProgress(ds), { done: 1, total: 2 });
 });
 
 /* ---------- 결과 ---------- */

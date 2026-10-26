@@ -524,3 +524,43 @@ input, textarea, select { font: inherit; color: inherit; }
 .hs-k { font-size: 12px; font-weight: 700; color: var(--ink-2); margin-top: 1px; }
 .hs-s { font-size: 11px; color: var(--muted); margin-top: 3px; }
 @media (max-width: 900px) { .hypo-stats { grid-template-columns: 1fr 1fr; } }
+
+/* ---------- 오늘 판정 ---------- */
+#judgeHead { gap: 8px; }
+.judge-count {
+  font-size: 11.5px; font-weight: 800; color: var(--muted);
+  background: var(--surface-2); border: 1px solid var(--line); border-radius: 999px; padding: 2px 9px;
+}
+.judge-count.all { background: #effaf3; border-color: #bbf0cd; color: #15803d; }
+.judge-now { font-size: 11.5px; font-weight: 700; color: var(--accent); margin-left: auto; }
+.jrow { display: flex; align-items: center; gap: 9px; padding: 6px 0; border-bottom: 1px solid #f4f4f7; }
+.jrow:last-child { border-bottom: 0; }
+.jwhen { font-size: 11.5px; color: var(--muted); font-variant-numeric: tabular-nums; flex: 0 0 86px; }
+.jdot { width: 10px; height: 10px; border-radius: 3px; flex: 0 0 10px; }
+.jlabel { flex: 1; min-width: 0; font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.jacts { display: flex; gap: 4px; flex: 0 0 auto; }
+.jbtn {
+  border: 1px solid var(--line); background: var(--surface-2); border-radius: 7px;
+  padding: 4px 9px; font-size: 11.5px; font-weight: 700; color: var(--muted);
+}
+.jbtn:hover { background: #f1f1f4; color: var(--ink-2); }
+.jbtn.on.done  { background: #effaf3; border-color: #bbf0cd; color: #15803d; }
+.jbtn.on.skip  { background: #fff1f1; border-color: #fbcfcf; color: #dc2626; }
+.jbtn.on.other { background: #fff8e8; border-color: #fbe3b4; color: #b45309; }
+.jrow.j-skip .jlabel { color: var(--faint); text-decoration: line-through; }
+.jrow.j-other .jlabel { color: #b45309; }
+.jpick { display: flex; flex-wrap: wrap; gap: 5px; padding: 4px 0 10px 95px; }
+.jextra-k { font-size: 11px; font-weight: 800; color: var(--faint); margin-top: 12px; padding-top: 9px; border-top: 1px solid var(--line); }
+.jrow.jextra { opacity: .75; }
+
+/* D-day 모달 행 */
+.dd-row { display: flex; align-items: center; gap: 7px; padding: 5px 0; }
+.dd-name { flex: 1; min-width: 0; border: 0; border-bottom: 1px solid transparent; background: transparent; font-size: 13px; font-weight: 600; outline: 0; padding: 3px 0; }
+.dd-name:hover, .dd-name:focus { border-bottom-color: var(--line-strong); }
+.dd-date { border: 1px solid var(--line); border-radius: 7px; padding: 4px 7px; font-size: 12px; outline: 0; }
+.dd-left { font-size: 11.5px; font-weight: 800; color: var(--accent); flex: 0 0 52px; text-align: right; }
+
+@media (max-width: 620px) {
+  .jwhen { flex: 0 0 72px; font-size: 11px; }
+  .jpick { padding-left: 0; }
+}

@@ -128,11 +128,33 @@
     if (!list.length) { host.innerHTML = `<div class="empty">등록된 D-day가 없어요</div>`; return; }
     host.innerHTML = "";
     list.forEach((x) => {
-      const row = U.el("div", "task");
-      row.appendChild(U.el("span", "task-text", `<b>${U.esc(x.label)}</b> · ${U.esc(x.date)} · ${U.dday(x.date)}`));
+      const row = U.el("div", "dd-row");
+
+      const name = U.el("input", "dd-name");
+      name.value = x.label;
+      name.onchange = () => {
+        x.label = name.value.trim() || "일정";
+        S().save(); renderHeader();
+      };
+      row.appendChild(name);
+
+      const date = U.el("input", "dd-date");
+      date.type = "date";
+      date.value = x.date;
+      date.onchange = () => {
+        if (!date.value) { date.value = x.date; return; }
+        x.date = date.value;
+        S().save(); renderDdayList(); renderHeader();
+      };
+      row.appendChild(date);
+
+      row.appendChild(U.el("span", "dd-left", U.dday(x.date)));
+
       const del = U.el("button", "task-del", "✕");
       del.style.opacity = "1";
+      del.title = "삭제";
       del.onclick = () => {
+        if (!confirm(`“${x.label}” 삭제할까요?`)) return;
         S().state.ddays = S().state.ddays.filter((q) => q.id !== x.id);
         S().save(); renderDdayList(); renderHeader();
       };
@@ -166,6 +188,7 @@
     App.tasks.render(ds);      // 루틴 탭이면 내부에서 routine.render 호출
     App.routine.render(ds);    // 레일·배너는 항상
     App.timeline.render(ds);
+    App.judge.render(ds);
     if (App.nav && App.nav.current === "trade") App.trades.render(ds);
   }
 

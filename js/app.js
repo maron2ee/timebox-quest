@@ -43,6 +43,7 @@
     App.timeline.init();
     App.routine.init();
     App.trades.init();
+    App.judge.init();
     App.tasks.init();
     App.pomo.init();
     App.day.init();

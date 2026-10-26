@@ -149,13 +149,15 @@
     const planMin = S().filledMin(ds, "plan");
     const doneMin = S().filledMin(ds, "done");
     const adh = S().adherence(ds);
+    const onTime = S().onTimeRate(ds);
     const study = S().studyMin(ds, "done");
     host.innerHTML =
       `<span>계획 <b>${U.minToKo(planMin)}</b></span>` +
       `<span>실행 <b>${U.minToKo(doneMin)}</b></span>` +
       `<span>공부 <b>${U.minToKo(study)}</b></span>` +
       (adh == null ? "" : `<span>실천율 <b>${adh}%</b></span>`) +
-      `<span style="margin-left:auto;color:var(--faint)">드래그해서 칠하기 · 블록 클릭해서 이름 넣기</span>`;
+      (onTime == null ? "" : `<span style="color:var(--muted)">제시간 ${onTime}%</span>`) +
+      `<span style="margin-left:auto;color:var(--faint)">DONE은 아래에서 탭으로 판정하세요</span>`;
   }
 
   /* ---------- 칠하기 ---------- */
