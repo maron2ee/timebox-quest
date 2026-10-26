@@ -9,10 +9,16 @@
 핵심 루프는 **아침 가설 → 장 마감 판정**과 **매매 계획 → 집행 → 계획외 카운터**다.
 국내 장 시간(정규장·애프터마켓)이 타임라인에 겹쳐 보인다.
 
-> **역할 분담(중요).** 사용자는 AM/PM 시장 노트와 **상세 매매일지를 구글시트에서** 쓴다.
-> 앱은 *루프를 돌리는 것*(가설·판정, 매매계획·집행체크, 구간 체크리스트)만 맡고,
-> *쓰고 보관하는 것*(표·수식·누적손익)은 시트에 둔다. **중복 입력을 만들지 말 것.**
-> 각 구간에서 시트/노션 링크를 저장해 1클릭으로 연다(`day.links`).
+> **역할 분담(중요). 앱은 허브이지 저장소가 아니다.**
+> | 무엇 | 어디 |
+> |---|---|
+> | 숫자 (지수·금리·환율·수급·거래대금), **상세 매매일지** | **구글시트** |
+> | 서술 (뉴스·시황 정리, 리포트 분석, 종목 분석) | **노션** |
+> | 판정 가능한 한 줄 + 프로세스 (가설·판정, 매매계획·집행체크, 구간 체크리스트, 용어) | **앱** |
+>
+> 앱에 긴 글·표·누적손익을 들이지 말 것 — 시트/노션과 **중복 입력**이 생기는 순간 둘 다 안 쓰게 된다.
+> 대신 `day.links{am,pm,journal}` 과 `research[].url` 로 **링크만** 들고 1클릭으로 연다.
+> 용어 노트만 예외로 앱에 둔다(한 줄짜리 + 복습 주기가 필요해서).
 
 > 2026-10 전면 재작성. 이전 버전(TamaBox: 다마고치 캐릭터 육성형)은 git 히스토리에 있음.
 > 캐릭터·게임화 요소는 전부 제거됨.
@@ -53,7 +59,7 @@ js/day.js           하루 뷰 총괄: 날짜네비·스탯·Goal·Big3·Review 
 js/stats.js         주간/월간 통계 (App.stats)
 js/archive.js       회고(K/P/T) 모아보기 (App.archive)
 js/terms.js         경제용어 노트 (App.terms)
-js/research.js      종목 리서치 메모 (App.research)
+js/research.js      종목 리서치 '링크 인덱스' — 본문은 노션 (App.research)
 js/settings.js      타임라인·장시간·카테고리·데이터 (App.settings)
 js/app.js           부트스트랩 + 탭 전환 (App.nav)
 tests/logic.test.js 회귀 테스트 (util/store/market만, DOM 스텁)
@@ -84,7 +90,9 @@ sw.js, manifest.webmanifest, icon.svg   PWA
     watch { today[], tomorrow[] },
     review { k, p, t }, mtime
   }
-  ddays[] / terms[] / research[] / pomo
+  ddays[] / terms[] / pomo
+  research[] { id, ticker, name, sector, url, note, body?, date, updated }
+               // 링크 인덱스. body 는 예전 앱 내 메모 — migrate 에서 보존만 한다
   ```
   스키마 변경 시 `SCHEMA` 올리고 `migrate()`에 단계 추가 (현재 v1).
 - **타임라인**: 한 행 = 1시간, 한 칸 = `slotMin`(기본 10분). 슬롯은 `plan`/`done` 맵에 `'HH:MM'` 키로 저장.

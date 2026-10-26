@@ -270,14 +270,24 @@
     <div id="termList"></div>
   </section>
 
-  <!-- ===================== 종목 리서치 ===================== -->
+  <!-- ===================== 종목 리서치 인덱스 ===================== -->
   <section class="view" id="view-research">
     <div class="card card-pad" style="margin-bottom:12px">
+      <div class="row" style="margin-bottom:10px">
+        <div class="card-title">종목 리서치 인덱스</div>
+        <span class="stat-sub ml-auto" id="rsCount"></span>
+      </div>
       <div class="row" style="gap:8px;flex-wrap:wrap">
-        <input class="inp" id="rsTicker" placeholder="티커/코드" style="max-width:130px">
-        <input class="inp" id="rsName" placeholder="종목명" style="max-width:190px">
-        <button class="btn primary" id="rsAdd">새 메모</button>
-        <input class="inp ml-auto" id="rsQ" placeholder="검색" style="max-width:220px">
+        <input class="inp" id="rsTicker" placeholder="티커/코드" style="max-width:120px">
+        <input class="inp" id="rsName" placeholder="종목명" style="max-width:160px">
+        <input class="inp" id="rsSector" placeholder="섹터" style="max-width:130px">
+        <input class="inp" id="rsUrl" placeholder="노션 링크 (https://...)" style="min-width:200px">
+        <button class="btn primary" id="rsAdd">추가</button>
+      </div>
+      <div class="stat-sub" style="margin-top:8px">본문 분석은 <b>노션</b>에 씁니다. 여기엔 찾아가는 길과 한 줄 결론만 둬요.</div>
+      <div class="row" style="gap:8px;margin-top:10px;flex-wrap:wrap">
+        <input class="inp" id="rsQ" placeholder="검색 (티커·종목명·섹터·결론)" style="max-width:240px">
+        <div class="palette" id="rsSectors"></div>
       </div>
     </div>
     <div id="rsList"></div>

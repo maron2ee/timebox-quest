@@ -149,6 +149,15 @@
     if (!Array.isArray(s.projects) || !s.projects.length) s.projects = d.projects;
     if (!s.days || typeof s.days !== "object") s.days = {};
     ["ddays", "terms", "research"].forEach((k) => { if (!Array.isArray(s[k])) s[k] = []; });
+    // 리서치는 '링크 인덱스'로 바뀌었다. 예전 앱 내 메모(body)는 지우지 않고 보존한다.
+    s.research = s.research.map((r) => ({
+      id: r.id || U.uid("rs"),
+      ticker: r.ticker || "", name: r.name || "",
+      sector: r.sector || "", url: r.url || "", note: r.note || "",
+      body: r.body || "",
+      date: r.date || U.today(),
+      updated: r.updated || r.date || U.today(),
+    }));
     s.pomo = Object.assign({}, d.pomo, s.pomo || {});
     s.version = SCHEMA;
     return s;

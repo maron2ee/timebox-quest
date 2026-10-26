@@ -409,6 +409,27 @@ t("judgeProgress 집계", () => {
   eq(S.judgeProgress(ds), { done: 1, total: 2 });
 });
 
+
+/* ---------- 리서치 링크 인덱스 마이그레이션 ---------- */
+t("예전 리서치 메모(body)는 지우지 않고 보존한다", () => {
+  const old = Object.assign(S.defaults(), {
+    research: [{ id: "rs1", ticker: "005930", name: "삼성전자", body: "## 무엇을 하는 회사인가\n반도체", date: "2026-10-01" }],
+  });
+  const fixed = S.migrate(old);
+  const r = fixed.research[0];
+  eq(r.ticker, "005930");
+  eq(r.sector, "", "새 필드는 빈 값으로 생긴다");
+  eq(r.url, "");
+  eq(r.note, "");
+  ok(r.body.includes("반도체"), "예전 메모 보존");
+  eq(r.updated, "2026-10-01", "updated 없으면 date 를 쓴다");
+});
+t("id 없는 리서치 항목도 복구된다", () => {
+  const fixed = S.migrate(Object.assign(S.defaults(), { research: [{ name: "SK하이닉스" }] }));
+  ok(fixed.research[0].id, "id 생성");
+  eq(fixed.research[0].name, "SK하이닉스");
+});
+
 /* ---------- 결과 ---------- */
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
