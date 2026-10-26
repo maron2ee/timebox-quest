@@ -166,6 +166,7 @@
       plans: [],            // 매매 계획 [{id, ticker, name, entry, stop, target, qty, reason}]
       trades: [],           // 체결 [{id, planId|null, ticker, side, price, qty, time, pnl, emotion, note}]
       noTradeIf: "",        // 오늘 매매하지 않는 조건
+      pnl: "",              // 하루 손익 (선택 — 상세는 구글시트 매매일지)
       judged: {},           // 계획 블록 판정 {startKey: 'done'|'skip'|'other'}
       checks: {},           // 구간 체크리스트 {'phaseId:index': true}
       links: {},            // 외부 문서 {am:'url', pm:'url'}
@@ -187,6 +188,7 @@
     if (!Array.isArray(d.plans)) d.plans = [];
     if (!Array.isArray(d.trades)) d.trades = [];
     if (typeof d.noTradeIf !== "string") d.noTradeIf = "";
+    if (d.pnl == null) d.pnl = "";
     if (!d.checks) d.checks = {};
     if (!d.judged) d.judged = {};
     if (!d.links) d.links = {};
@@ -325,18 +327,15 @@
   function offPlanTrades(ds) {
     return (peekDay(ds).trades || []).filter((t) => !t.planId);
   }
+  // 손익/승률은 구글시트의 매매일지에서 관리한다. 여기선 '계획대로 했는가'만 센다.
   function tradeStats(ds) {
     const trades = peekDay(ds).trades || [];
-    const closed = trades.filter((t) => t.pnl != null && t.pnl !== "");
-    const pnl = closed.reduce((a, t) => a + (+t.pnl || 0), 0);
-    const wins = closed.filter((t) => +t.pnl > 0).length;
+    const raw = peekDay(ds).pnl;
+    const pnl = raw === "" || raw == null ? null : Number(raw);
     return {
       count: trades.length,
       offPlan: offPlanTrades(ds).length,
-      closed: closed.length,
-      pnl,
-      wins,
-      winRate: closed.length ? Math.round((wins / closed.length) * 100) : null,
+      pnl: Number.isFinite(pnl) ? pnl : null,   // 하루 손익 (선택 입력, 중단 규칙용)
     };
   }
   // 가드레일 상태: 계획외 매매 / 매매 횟수 / 손실 한도
@@ -350,8 +349,8 @@
     if (g.maxTrades > 0 && st.count >= g.maxTrades) {
       hits.push({ kind: "maxTrades", msg: `오늘 매매 ${st.count}건 — 상한(${g.maxTrades}건) 도달` });
     }
-    if (g.maxLossPct > 0 && st.pnl < 0 && Math.abs(st.pnl) >= g.maxLossPct) {
-      hits.push({ kind: "maxLoss", msg: `손실 ${st.pnl} — 하루 한도(${g.maxLossPct}) 도달` });
+    if (g.maxLossPct > 0 && st.pnl != null && st.pnl < 0 && Math.abs(st.pnl) >= g.maxLossPct) {
+      hits.push({ kind: "maxLoss", msg: `오늘 손익 ${st.pnl} — 하루 손실 한도(${g.maxLossPct}) 도달` });
     }
     return { hits, blocked: hits.length > 0 && g.planViolation === "block", stats: st };
   }

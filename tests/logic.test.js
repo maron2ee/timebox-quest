@@ -272,6 +272,23 @@ t("가드레일 — 계획외 매매", () => {
   S.state.settings.guard.planViolation = "off";
   eq(S.guardState("2026-07-17").hits.length, 0, "off 모드는 무시");
 });
+t("가드레일 — 하루 손실 한도는 day.pnl 한 칸으로", () => {
+  S.reset();
+  S.state.settings.guard.planViolation = "off";
+  S.state.settings.guard.maxLossPct = 300000;
+  const d = S.getDay("2026-07-17");
+  d.plans.push({ id: "p1" });
+  d.trades.push({ id: "t1", planId: "p1" });
+  eq(S.tradeStats("2026-07-17").pnl, null, "안 적으면 null");
+  eq(S.guardState("2026-07-17").hits.length, 0, "손익 미입력이면 한도 판정 안 함");
+  d.pnl = "-120000";
+  eq(S.guardState("2026-07-17").hits.length, 0, "한도 미만이면 통과");
+  d.pnl = "-350000";
+  eq(S.guardState("2026-07-17").hits.length, 1, "한도 초과면 중단");
+  d.pnl = "500000";
+  eq(S.guardState("2026-07-17").hits.length, 0, "수익이면 걸리지 않음");
+  S.state.settings.guard.maxLossPct = 0;
+});
 t("가드레일 — 매매 횟수 상한", () => {
   S.reset();
   S.state.settings.guard.planViolation = "off";

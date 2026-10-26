@@ -119,7 +119,7 @@
     const d = S().getDay(ds);
     d.trades.push({
       id: U.uid("tr"), planId: p.id, ticker: p.ticker || p.name,
-      at: U.toHHMM(U.nowMin()), entry: p.entry, pnl: "", note: "",
+      at: U.toHHMM(U.nowMin()), entry: p.entry,
     });
     S().touch(ds);
     render(ds);
@@ -133,7 +133,7 @@
     if (!ticker) { App.ui.toast("종목을 입력해 주세요"); return; }
     if (!confirm(`“${ticker}” 은 오늘 계획에 없던 종목입니다.\n계획외 매매로 기록할까요?`)) return;
     const d = S().getDay(ds);
-    d.trades.push({ id: U.uid("tr"), planId: null, ticker, at: U.toHHMM(U.nowMin()), entry: "", pnl: "", note: "" });
+    d.trades.push({ id: U.uid("tr"), planId: null, ticker, at: U.toHHMM(U.nowMin()) });
     S().touch(ds);
     inp.value = "";
     render(ds);
@@ -159,7 +159,7 @@
     const d = day(ds);
     const trades = d.trades || [];
     host.innerHTML = "";
-    if (!trades.length) { host.appendChild(U.el("div", "empty", "오늘 기록된 매매가 없어요")); return; }
+    if (!trades.length) { host.appendChild(U.el("div", "empty", "오늘 집행한 매매가 없어요")); return; }
 
     trades.forEach((t) => {
       const row = U.el("div", "trade" + (t.planId ? "" : " off"));
@@ -167,17 +167,6 @@
         `<span class="trade-at">${U.esc(t.at)}</span>` +
         `<span class="trade-tk">${U.esc(t.ticker)}</span>` +
         `<span class="trade-tag">${t.planId ? "계획대로" : "계획외"}</span>`;
-      const pnl = U.el("input", "trade-pnl");
-      pnl.placeholder = "손익(선택)";
-      pnl.value = t.pnl || "";
-      pnl.title = "시트에서 관리 중이면 비워두세요. 하루 손실 한도를 쓸 때만 필요합니다.";
-      pnl.onchange = () => {
-        const dd = S().getDay(ds);
-        const x = dd.trades.find((q) => q.id === t.id);
-        if (x) x.pnl = pnl.value;
-        S().touch(ds); render(ds);
-      };
-      row.appendChild(pnl);
       const del = U.el("button", "task-del", "✕");
       del.style.opacity = "1";
       del.onclick = () => {
@@ -249,8 +238,8 @@
     U.setText("tradeDate", U.fmtFull(ds));
     const st = S().tradeStats(ds);
     U.setText("tradeSummary",
-      `계획 ${(day(ds).plans || []).length}종목 · 매매 ${st.count}건 · 계획외 ${st.offPlan}건` +
-      (st.winRate == null ? "" : ` · 승률 ${st.winRate}%`));
+      `계획 ${(day(ds).plans || []).length}종목 · 집행 ${st.count}건 · 계획외 ${st.offPlan}건` +
+      (st.pnl == null ? "" : ` · 손익 ${st.pnl}`));
   }
 
   function render(ds) {
@@ -263,6 +252,8 @@
     renderWatch(ds);
     const link = U.byId("tradeSheetLink");
     if (link) link.value = (day(ds).links || {}).journal || "";
+    const pnl = U.byId("dayPnl");
+    if (pnl) pnl.value = day(ds).pnl || "";
   }
 
   function init() {
@@ -279,6 +270,11 @@
       const ds = App.day.date();
       S().getDay(ds).noTradeIf = e.target.value;
       S().touch(ds);
+    });
+    U.on("dayPnl", "change", (e) => {
+      const ds = App.day.date();
+      S().getDay(ds).pnl = e.target.value.trim();
+      S().touch(ds); render(ds);
     });
     U.on("tradeSheetLink", "change", (e) => {
       const ds = App.day.date();
