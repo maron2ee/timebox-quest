@@ -67,11 +67,19 @@
     if (!enabled() || !p) { host.innerHTML = ""; host.className = "mode-banner off"; return; }
     const m = MODE[p.mode];
     host.className = "mode-banner tone-" + m.tone;
-    const isNow = U.isToday(ds) && nowPhase() && nowPhase().id === p.id;
+    const nowP = nowPhase();
+    const isNow = U.isToday(ds) && nowP && nowP.id === p.id;
+    let leftHtml = "";
+    if (isNow) {
+      const left = p.endMin - U.nowMin();
+      const cls = left <= 5 ? " urgent" : left <= 15 ? " soon" : "";
+      leftHtml = `<span class="mode-left${cls}">${U.minToKo(left)} 남음</span>`;
+    }
     host.innerHTML =
       `<span class="mode-tag">${m.label}</span>` +
       `<b>${U.esc(p.name)}</b>` +
       `<span class="mode-time">${p.start}~${p.end}</span>` +
+      leftHtml +
       `<span class="mode-hint">${U.esc(m.hint)}</span>`;
     if (!isNow) {
       const back = U.el("button", "btn sm ml-auto", "지금 구간으로");
@@ -101,7 +109,7 @@
 
     if (p.readonly) {
       host.appendChild(U.el("div", "ro-note", "장중에는 기록하지 않고 <b>읽기만</b> 합니다"));
-      p.items.forEach((text) => host.appendChild(U.el("div", "ro-item", U.esc(text))));
+      p.items.forEach((it) => host.appendChild(U.el("div", "ro-item", U.esc(it.text))));
       // 장중 구간엔 계획외 매매 건수를 라이브로
       const st = S().tradeStats(ds);
       if (p.mode !== "observe") {
@@ -112,10 +120,18 @@
       return;
     }
 
-    p.items.forEach((text, i) => {
+    const budget = S().phaseBudget(p);
+    if (budget.alloc) {
+      host.appendChild(U.el("div", "ro-note" + (budget.over ? " bad" : ""),
+        `배분 <b>${budget.alloc}분</b> / 구간 ${budget.len}분` +
+        (budget.over ? " — 배분이 구간보다 깁니다" : "")));
+    }
+
+    p.items.forEach((it, i) => {
       const key = p.id + ":" + i;
       const on = !!checks[key];
       const row = U.el("div", "task" + (on ? " done" : ""));
+
       const cb = U.el("button", "cb", "✓");
       cb.onclick = () => {
         const d = S().getDay(ds);
@@ -124,9 +140,27 @@
         App.day.refresh();
       };
       row.appendChild(cb);
-      row.appendChild(U.el("span", "task-text", U.esc(text)));
+      row.appendChild(U.el("span", "task-text", U.esc(it.text)));
+
+      if (it.min > 0) {
+        const t = U.el("span", "it-timer");
+        t.dataset.pomoKey = key;
+        t.dataset.pomoIdle = it.min + "분";
+        t.textContent = it.min + "분";
+        row.appendChild(t);
+
+        // 오늘·현재 구간에서만 타이머를 돌린다 (지난 날짜엔 의미 없음)
+        if (U.isToday(ds)) {
+          const btn = U.el("button", "it-play", "▶");
+          btn.dataset.pomoBtn = key;
+          btn.title = "이 항목 타이머 시작";
+          btn.onclick = () => App.pomo.toggleItem(key, it.min, p.catId, it.text);
+          row.appendChild(btn);
+        }
+      }
       host.appendChild(row);
     });
+    if (U.isToday(ds)) App.pomo.paint();   // 돌고 있는 타이머 상태 반영
 
   }
 
@@ -165,7 +199,7 @@
     // 구간이 바뀌면 화면 갱신
     setInterval(() => {
       if (!selected && U.isToday(App.day.date()) && App.nav.current === "day") render(App.day.date());
-    }, 30000);
+    }, 20000);
   }
 
   App.routine = { init, render, applyToTimeline, MODE, nowPhase, viewPhase,

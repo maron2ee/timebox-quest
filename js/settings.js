@@ -39,6 +39,8 @@
   /* ---------- 루틴 구간 ---------- */
   function phasesRaw() { return S().state.settings.routine.phases; }
 
+  let openPhase = null;   // 항목을 펼쳐 둔 구간 id
+
   function renderPhases() {
     const host = U.byId("phaseRows");
     if (!host) return;
@@ -46,26 +48,113 @@
     if (cb) cb.checked = S().state.settings.routine.enabled !== false;
 
     const cats = S().state.categories;
-    host.innerHTML = phasesRaw().map((p, i) => `
-      <div class="row" style="gap:8px;margin-bottom:6px;flex-wrap:wrap" data-i="${i}">
-        <input class="inp p-name" value="${U.esc(p.name)}" style="max-width:150px">
-        <input class="inp p-s" type="time" value="${U.esc(p.start)}" style="max-width:116px">
-        <span style="color:var(--faint)">~</span>
-        <input class="inp p-e" type="time" value="${U.esc(p.end)}" style="max-width:116px">
-        <select class="inp p-cat" style="max-width:130px">
-          ${cats.map((c) => `<option value="${U.esc(c.id)}"${c.id === p.catId ? " selected" : ""}>${U.esc(c.name)}</option>`).join("")}
-        </select>
-        <span class="mode-tag sm">${U.esc((App.routine.MODE[p.mode] || {}).label || p.mode)}</span>
-        ${p.readonly ? `<span class="stat-sub">읽기 전용</span>` : ""}
-      </div>`).join("");
+    host.innerHTML = "";
 
-    U.$$("#phaseRows .row").forEach((row) => {
-      const i = +row.dataset.i;
-      row.querySelector(".p-name").onchange = (e) => { phasesRaw()[i].name = e.target.value.trim() || "구간"; S().save(); App.day.refresh(); };
-      row.querySelector(".p-s").onchange = (e) => { phasesRaw()[i].start = e.target.value; S().save(); App.day.refresh(); };
-      row.querySelector(".p-e").onchange = (e) => { phasesRaw()[i].end = e.target.value; S().save(); App.day.refresh(); };
-      row.querySelector(".p-cat").onchange = (e) => { phasesRaw()[i].catId = e.target.value; S().save(); App.day.refresh(); };
+    phasesRaw().forEach((p, i) => {
+      const wrap = U.el("div", "phase-edit");
+      const row = U.el("div", "row");
+      row.style.cssText = "gap:8px;flex-wrap:wrap";
+
+      const mk = (cls, val, type, w) => {
+        const e = U.el("input", "inp " + cls);
+        if (type) e.type = type;
+        e.value = val;
+        e.style.maxWidth = w;
+        return e;
+      };
+      const name = mk("p-name", p.name, "", "140px");
+      name.onchange = () => { p.name = name.value.trim() || "구간"; S().save(); renderPhases(); App.day.refresh(); };
+      row.appendChild(name);
+
+      const st = mk("p-s", p.start, "time", "116px");
+      st.onchange = () => { p.start = st.value; S().save(); renderPhases(); App.day.refresh(); };
+      row.appendChild(st);
+      row.appendChild(U.el("span", null, "~"));
+      const en = mk("p-e", p.end, "time", "116px");
+      en.onchange = () => { p.end = en.value; S().save(); renderPhases(); App.day.refresh(); };
+      row.appendChild(en);
+
+      const sel = U.el("select", "inp p-cat");
+      sel.style.maxWidth = "120px";
+      cats.forEach((c) => {
+        const o = U.el("option", null, U.esc(c.name));
+        o.value = c.id;
+        if (c.id === p.catId) o.selected = true;
+        sel.appendChild(o);
+      });
+      sel.onchange = () => { p.catId = sel.value; S().save(); App.day.refresh(); };
+      row.appendChild(sel);
+
+      row.appendChild(U.el("span", "mode-tag sm", U.esc((App.routine.MODE[p.mode] || {}).label || p.mode)));
+
+      const live = S().phaseById(p.id);
+      if (p.readonly) {
+        row.appendChild(U.el("span", "stat-sub", "읽기 전용 · 타이머 없음"));
+      } else if (live) {
+        const b = S().phaseBudget(live);
+        row.appendChild(U.el("span", "budget" + (b.over ? " over" : ""), `배분 ${b.alloc}/${b.len}분`));
+      }
+
+      const tog = U.el("button", "btn sm ml-auto",
+        `항목 ${(p.items || []).length} ${openPhase === p.id ? "▴" : "▾"}`);
+      tog.onclick = () => { openPhase = openPhase === p.id ? null : p.id; renderPhases(); };
+      row.appendChild(tog);
+      wrap.appendChild(row);
+
+      if (openPhase === p.id) wrap.appendChild(itemEditor(p));
+      host.appendChild(wrap);
     });
+  }
+
+  // 구간 항목 편집 — 텍스트 + 배분 시간(분)
+  function itemEditor(p) {
+    const box = U.el("div", "phase-items");
+    if (p.readonly) {
+      box.appendChild(U.el("div", "stat-sub",
+        "장중 구간이라 체크박스·타이머 없이 읽기만 합니다. 문구만 고칠 수 있어요."));
+    }
+    (p.items || []).forEach((it, i) => {
+      const r = U.el("div", "row");
+      r.style.cssText = "gap:6px;margin-bottom:5px";
+
+      const text = U.el("input", "inp");
+      text.value = it.text;
+      text.style.flex = "1";
+      text.style.minWidth = "180px";
+      text.onchange = () => { it.text = text.value.trim(); S().save(); App.day.refresh(); };
+      r.appendChild(text);
+
+      if (!p.readonly) {
+        const min = U.el("input", "inp it-min");
+        min.type = "number"; min.min = "0"; min.max = "240";
+        min.value = it.min || 0;
+        min.title = "배분 시간(분) · 0이면 타이머 없음";
+        min.onchange = () => {
+          it.min = Math.max(0, Math.min(240, Math.round(+min.value || 0)));
+          min.value = it.min;
+          S().save(); renderPhases(); App.day.refresh();
+        };
+        r.appendChild(min);
+        r.appendChild(U.el("span", "stat-sub", "분"));
+      }
+
+      const del = U.el("button", "icon-btn", "✕");
+      del.title = "항목 삭제";
+      del.onclick = () => {
+        p.items.splice(i, 1);
+        S().save(); renderPhases(); App.day.refresh();
+      };
+      r.appendChild(del);
+      box.appendChild(r);
+    });
+
+    const add = U.el("button", "btn sm", "＋ 항목 추가");
+    add.onclick = () => {
+      p.items.push({ text: "새 항목", min: 0 });
+      S().save(); renderPhases(); App.day.refresh();
+    };
+    box.appendChild(add);
+    return box;
   }
 
   /* ---------- 외부 기록 링크 ---------- */

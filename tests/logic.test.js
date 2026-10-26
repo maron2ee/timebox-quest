@@ -521,6 +521,54 @@ t("아이콘은 4자로 자른다", () => {
   ok(fixed.settings.links[0].icon.length <= 4);
 });
 
+
+/* ---------- 구간 항목 배분 시간 ---------- */
+t("기본 배분이 구간 길이와 정확히 맞는다", () => {
+  S.load();
+  S.phases().filter((p) => !p.readonly && p.items.length).forEach((p) => {
+    const b = S.phaseBudget(p);
+    eq(b.alloc, b.len, `${p.name} 배분`);
+    ok(!b.over, `${p.name} 초과 아님`);
+  });
+});
+t("장중 구간은 배분 0 (타이머 없음)", () => {
+  ["obs", "exec", "hold", "close"].forEach((id) => {
+    eq(S.phaseBudget(S.phaseById(id)).alloc, 0, id);
+  });
+});
+t("배분이 구간보다 길면 over", () => {
+  S.load();
+  const p = S.state.settings.routine.phases.find((x) => x.id === "pre2");
+  p.items[0].min = 999;
+  const b = S.phaseBudget(S.phaseById("pre2"));
+  ok(b.over, "초과 감지");
+  ok(b.alloc > b.len);
+});
+t("예전 문자열 항목을 {text,min} 으로 올린다", () => {
+  const fixed = S.migrate(Object.assign(S.defaults(), {
+    settings: { routine: { enabled: true, phases: [
+      { id: "pre1", name: "a", start: "07:00", end: "08:00", mode: "input", catId: "market",
+        items: ["문자열 항목", "또 다른 항목"] },
+    ] } },
+  }));
+  const items = fixed.settings.routine.phases[0].items;
+  eq(items.length, 2);
+  eq(items[0], { text: "문자열 항목", min: 0 }, "문자열 → 객체, 배분은 0");
+  eq(S.phaseBudget({ items, startMin: 420, endMin: 480 }).alloc, 0);
+});
+t("빈 항목과 이상한 min 은 보정", () => {
+  const fixed = S.migrate(Object.assign(S.defaults(), {
+    settings: { routine: { enabled: true, phases: [
+      { id: "x", name: "a", start: "07:00", end: "08:00", mode: "input", catId: "market",
+        items: [{ text: "정상", min: "12.6" }, { text: "", min: 5 }, { text: "음수", min: -3 }] },
+    ] } },
+  }));
+  const items = fixed.settings.routine.phases[0].items;
+  eq(items.length, 2, "빈 텍스트 항목은 버린다");
+  eq(items[0].min, 13, "문자열 숫자는 반올림");
+  eq(items[1].min, 0, "음수는 0");
+});
+
 /* ---------- 결과 ---------- */
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

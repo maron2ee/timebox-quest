@@ -84,6 +84,9 @@ sw.js, manifest.webmanifest, icon.svg   PWA
   categories[] { id, name, color, study }      // study:true 만 '학습시간'에 합산
   projects[]   { id, name, tab:'study'|'plan', collapsed }   // 전역 그룹
   settings.routine { enabled, phases[] }       // 구간 정의(기본 10개)
+  phases[].items[] { text, min }               // min = 배분 시간(분). 0이면 타이머 없음
+                      // 장중(readonly) 구간은 전부 min:0 — 장중엔 타이머를 돌리지 않는다
+                      // store.phaseBudget(p) → {alloc, len, over}
   settings.guard { planViolation: off|warn|block, maxTrades, maxLossPct }
   days['YYYY-MM-DD'] {
     goal, big3[3],
@@ -149,7 +152,17 @@ sw.js, manifest.webmanifest, icon.svg   PWA
   - `onTimeRate(ds)` — 계획한 슬롯 '그 시간에' 실행된 비율. 밀리면 떨어진다. 보조 지표로만 표시.
   - 왜: 계획대로 다 했는데 1시간 밀린 날이 슬롯 기준으로는 47%로 찍혔다. 시간 밀림을 '안 함'과
     똑같이 처벌하면 안 된다. 통계·타임라인 푸터 모두 `adherence` 를 주 지표로 쓴다.
-- **뽀모도로**: 완료/중단 시 시작~현재 구간을 `timeline.applyMinutes(ds,'done',...)`로 기록.
+- **집중 타이머**(`pomodoro.js`) 두 갈래. 어느 쪽이든 끝나거나 중단하면 경과분을 DONE에 기록한다.
+  - **자유 집중**(헤더 🍅) — `pomo.focusMin`(25분). 학습 구간처럼 깊게 파는 시간용.
+  - **구간 항목 타이머**(체크리스트 ▶) — `pomo.toggleItem(key, min, catId, text)`.
+    항목에 배분된 분만큼 돈다. 같은 항목을 다시 누르면 중단.
+  - 돌고 있는 동안 `paint()` 가 `[data-pomo-key]`·`[data-pomo-btn]` 를 직접 갱신한다 —
+    **전체 리렌더를 돌리지 말 것**(입력 포커스가 날아간다).
+  - 왜 포모도로를 장중에 쓰지 않나: 시장은 반응해야 하는 시간이라 25분 터널이 위험하고,
+    사용자 원칙도 "장중엔 읽기만"이다. 장전·기록 구간은 포모도로가 아니라
+    **항목별 배분 시간 카운트다운**이 맞다(뉴스를 무한정 읽다 09시를 넘기는 걸 막는 게 목적).
+- **구간 남은 시간**: 모드 배너에 `13분 남음`. 15분 이하 `soon`(주황), 5분 이하 `urgent`(빨강).
+  지금 구간을 보고 있을 때만 표시하고, 20초마다 갱신한다.
 - **D-day**(`day.js`): `state.ddays[]` 에 **사용자가 직접 입력**한다. 실적·공시 일정을 외부에서
   가져오지 않는다(DART 등은 브라우저 CORS 때문에 중계 서버가 필요). 하루 탭의 D-day 카드를 누르면
   모달에서 이름·날짜를 즉시 수정·삭제할 수 있다.
