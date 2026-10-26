@@ -9,6 +9,7 @@
 
   const KEY = "tbxPlanner.v1";
   const SCHEMA = 1;
+  const SEED = 2;   // 기본 카테고리·할일그룹 보강 버전 (올리면 누락분을 1회 추가)
 
   /* ---------- 카테고리 대분류 ----------
      productive:true = '생산 시간'에 합산 */
@@ -31,6 +32,7 @@
     { id: "english",  name: "영어",     color: "#a7f3d0", group: "growth" },
     { id: "japanese", name: "일본어",   color: "#f9a8d4", group: "growth" },
     { id: "read",     name: "독서",     color: "#d9f99d", group: "invest" },
+    { id: "read2",    name: "일반독서", color: "#a5f3fc", group: "growth" },
     { id: "exercise", name: "운동",     color: "#fdba74", group: "body" },
     { id: "routine",  name: "루틴",     color: "#cbd5e1", group: "life" },
     { id: "rest",     name: "휴식",     color: "#e5e7eb", group: "rest" },
@@ -143,6 +145,7 @@
         slotMin: 10,         // 한 칸 = 10분
         market: { show: true, sessions: null },
         carryOver: true,     // 어제 미완료 할일 이어받기 제안
+        seed: SEED,          // 기본값 보강이 어디까지 적용됐는지
         routine: { enabled: true, phases: PHASES.map((p) => ({ ...p, items: p.items.map((i) => ({ ...i })) })) },
         // 가드레일: 계획외 매매 발생 시 off(무시) / warn(경고 배너) / block(매매 입력 차단)
         guard: { planViolation: "warn", maxTrades: 0, maxLossPct: 0 },
@@ -201,6 +204,8 @@
   function migrate(s) {
     // 누락 필드 보정 (부분 저장본 대비)
     const d = defaults();
+    // seed 는 defaults 를 덮어씌우기 '전에' 읽어야 한다 — 안 그러면 옛 저장본도 최신 seed 로 보여 보강이 건너뛰어진다
+    const rawSeed = s.settings && s.settings.seed != null ? +s.settings.seed || 0 : 0;
     s.settings = Object.assign({}, d.settings, s.settings || {});
     s.settings.market = Object.assign({}, d.settings.market, s.settings.market || {});
     s.settings.guard = Object.assign({}, d.settings.guard, s.settings.guard || {});
@@ -236,24 +241,30 @@
       ).filter((it) => it.text);
     });
     if (!Array.isArray(s.categories) || !s.categories.length) s.categories = d.categories;
-    // 카테고리 대분류: 예전 study(boolean) → group(id)
-    const firstUpgrade = s.categories.some((c) => c && c.group === undefined);
+    // 카테고리 대분류: 예전 study(boolean) → group(id). 멱등.
     s.categories = s.categories.map((c) => {
       if (c.group) return c;
       const def = CATS.find((x) => x.id === c.id);
       return { ...c, group: def ? def.group : (c.study ? "invest" : "life") };
     });
-    // 첫 업그레이드에 한해 새로 생긴 기본 카테고리(영어·일본어 등)를 더해 준다
-    if (firstUpgrade) {
+
+    // 기본값 보강 — SEED 를 올렸을 때 한 번만. 사용자가 지운 건 되살리지 않는다.
+    if (rawSeed < SEED) {
       CATS.forEach((def) => {
         if (!s.categories.some((c) => c.id === def.id)) s.categories.push({ ...def });
       });
+      PROJECTS.forEach((def) => {
+        if (!s.projects.some((p) => p.id === def.id)) s.projects.push({ ...def });
+      });
+      // seed 2 이전에 '독서'가 자기계발로 들어갔던 것 정정.
+      // 그 값은 사용자가 고른 게 아니라 마이그레이션 산물이라 되돌려도 된다.
+      {
+        const r = s.categories.find((c) => c.id === "read");
+        if (r && r.group === "growth") r.group = "invest";
+      }
+      s.settings.seed = SEED;
     }
-    // 기본 할일 그룹 보강 (일본어 등)
-    PROJECTS.forEach((def) => {
-      if (!s.projects.some((p) => p.id === def.id)) s.projects.push({ ...def });
-    });
-    if (!Array.isArray(s.projects) || !s.projects.length) s.projects = d.projects;
+
     if (!s.days || typeof s.days !== "object") s.days = {};
     ["ddays", "terms", "research"].forEach((k) => { if (!Array.isArray(s[k])) s[k] = []; });
     // 리서치는 '링크 인덱스'로 바뀌었다. 예전 앱 내 메모(body)는 지우지 않고 보존한다.

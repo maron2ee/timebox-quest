@@ -580,7 +580,7 @@ t("기본 카테고리의 대분류 배치", () => {
   eq(by.study, "invest"); eq(by.research, "invest"); eq(by.market, "invest");
   eq(by.read, "invest", "독서는 대부분 투자 서적 → 투자공부");
   eq(by.trade, "exec");
-  eq(by.english, "growth"); eq(by.japanese, "growth");
+  eq(by.english, "growth"); eq(by.japanese, "growth"); eq(by.read2, "growth");
   eq(by.exercise, "body");
   eq(by.routine, "life"); eq(by.rest, "rest");
 });
@@ -604,6 +604,7 @@ t("minutesByGroup / productiveMin", () => {
 });
 t("예전 study 플래그를 대분류로 올린다", () => {
   const fixed = S.migrate(Object.assign(S.defaults(), {
+    settings: { dayStartHour: 7 },          // seed 가 없는 옛 저장본
     categories: [
       { id: "study", name: "주식공부", color: "#fff", study: true },
       { id: "custom1", name: "내 공부", color: "#fff", study: true },
@@ -615,14 +616,56 @@ t("예전 study 플래그를 대분류로 올린다", () => {
   eq(by.study, "invest", "알려진 id 는 기본 배치를 따른다");
   eq(by.custom1, "invest", "study:true 커스텀 → 투자공부");
   eq(by.custom2, "life", "study:false 커스텀 → 생활");
-  ok(fixed.categories.some((c) => c.id === "english"), "첫 업그레이드에 영어 카테고리가 추가된다");
+  ok(fixed.categories.some((c) => c.id === "english"), "영어 카테고리가 보강된다");
   ok(fixed.categories.some((c) => c.id === "japanese"), "일본어도");
+  ok(fixed.categories.some((c) => c.id === "read2"), "일반독서도");
 });
-t("이미 group 이 있으면 기본 카테고리를 다시 넣지 않는다", () => {
-  const once = S.migrate(Object.assign(S.defaults(), {
+
+/* ---------- 기본값 보강(SEED) ---------- */
+t("seed 가 최신이면 지운 기본 카테고리를 되살리지 않는다", () => {
+  const d = S.defaults();
+  const once = S.migrate(Object.assign(d, {
+    settings: { seed: 2 },
     categories: [{ id: "study", name: "주식공부", color: "#fff", group: "invest" }],
   }));
-  eq(once.categories.length, 1, "지운 기본 카테고리가 되살아나지 않는다");
+  eq(once.categories.length, 1, "되살아나지 않음");
+});
+t("seed 필드가 아예 없던 저장본도 정정된다", () => {
+  const d0 = S.defaults();
+  const none = S.migrate(Object.assign(d0, {
+    settings: { dayStartHour: 7 },                                   // seed 없음 = 현재 배포본
+    categories: [{ id: "read", name: "독서", color: "#fff", group: "growth" }],
+  }));
+  const byN = {};
+  none.categories.forEach((c) => (byN[c.id] = c.group));
+  eq(byN.read, "invest", "독서 정정");
+  eq(byN.read2, "growth", "일반독서 추가");
+  eq(none.settings.seed, 2);
+});
+t("seed 1 → 2 업그레이드: 일반독서 추가 + 독서 대분류 정정", () => {
+  const d = S.defaults();
+  const old = S.migrate(Object.assign(d, {
+    settings: { seed: 1 },
+    categories: [
+      { id: "study", name: "주식공부", color: "#fff", group: "invest" },
+      { id: "read",  name: "독서",    color: "#fff", group: "growth" },  // seed1 마이그레이션 산물
+    ],
+  }));
+  const by = {};
+  old.categories.forEach((c) => (by[c.id] = c.group));
+  eq(by.read, "invest", "독서는 투자공부로 정정");
+  eq(by.read2, "growth", "일반독서가 추가됨");
+  eq(old.settings.seed, 2, "seed 가 올라간다");
+});
+t("seed 보강은 두 번 돌지 않는다", () => {
+  const d = S.defaults();
+  const first = S.migrate(Object.assign(d, {
+    settings: { seed: 1 },
+    categories: [{ id: "read", name: "독서", color: "#fff", group: "growth" }],
+  }));
+  first.categories = first.categories.filter((c) => c.id !== "read2");   // 사용자가 일반독서를 지움
+  const second = S.migrate(first);
+  ok(!second.categories.some((c) => c.id === "read2"), "다시 추가되지 않는다");
 });
 t("기본 할일 그룹에 일본어가 있다", () => {
   S.load();
