@@ -36,6 +36,47 @@
     });
   }
 
+  /* ---------- 루틴 구간 ---------- */
+  function phasesRaw() { return S().state.settings.routine.phases; }
+
+  function renderPhases() {
+    const host = U.byId("phaseRows");
+    if (!host) return;
+    const cb = U.byId("setRoutine");
+    if (cb) cb.checked = S().state.settings.routine.enabled !== false;
+
+    const cats = S().state.categories;
+    host.innerHTML = phasesRaw().map((p, i) => `
+      <div class="row" style="gap:8px;margin-bottom:6px;flex-wrap:wrap" data-i="${i}">
+        <input class="inp p-name" value="${U.esc(p.name)}" style="max-width:150px">
+        <input class="inp p-s" type="time" value="${U.esc(p.start)}" style="max-width:116px">
+        <span style="color:var(--faint)">~</span>
+        <input class="inp p-e" type="time" value="${U.esc(p.end)}" style="max-width:116px">
+        <select class="inp p-cat" style="max-width:130px">
+          ${cats.map((c) => `<option value="${U.esc(c.id)}"${c.id === p.catId ? " selected" : ""}>${U.esc(c.name)}</option>`).join("")}
+        </select>
+        <span class="mode-tag sm">${U.esc((App.routine.MODE[p.mode] || {}).label || p.mode)}</span>
+        ${p.readonly ? `<span class="stat-sub">읽기 전용</span>` : ""}
+      </div>`).join("");
+
+    U.$$("#phaseRows .row").forEach((row) => {
+      const i = +row.dataset.i;
+      row.querySelector(".p-name").onchange = (e) => { phasesRaw()[i].name = e.target.value.trim() || "구간"; S().save(); App.day.refresh(); };
+      row.querySelector(".p-s").onchange = (e) => { phasesRaw()[i].start = e.target.value; S().save(); App.day.refresh(); };
+      row.querySelector(".p-e").onchange = (e) => { phasesRaw()[i].end = e.target.value; S().save(); App.day.refresh(); };
+      row.querySelector(".p-cat").onchange = (e) => { phasesRaw()[i].catId = e.target.value; S().save(); App.day.refresh(); };
+    });
+  }
+
+  /* ---------- 가설 · 가드레일 ---------- */
+  function renderGuard() {
+    const s = S().state.settings;
+    const hp = U.byId("setHypoPolicy"); if (hp) hp.value = s.hypothesisPolicy || "mark";
+    const gm = U.byId("setGuardMode");  if (gm) gm.value = s.guard.planViolation || "warn";
+    const mt = U.byId("setMaxTrades");  if (mt) mt.value = s.guard.maxTrades || 0;
+    const ml = U.byId("setMaxLoss");    if (ml) ml.value = s.guard.maxLossPct || 0;
+  }
+
   /* ---------- 카테고리 ---------- */
   function renderCats() {
     const host = U.byId("catRows");
@@ -142,6 +183,8 @@
     if (en) en.value = s.dayEndHour;
     if (sl) sl.value = String(s.slotMin);
     renderMarket();
+    renderPhases();
+    renderGuard();
     renderCats();
     info();
   }
@@ -168,6 +211,26 @@
     U.on("setMarket", "change", (e) => {
       S().state.settings.market.show = e.target.checked;
       S().save(); App.day.refresh();
+    });
+    U.on("setRoutine", "change", (e) => {
+      S().state.settings.routine.enabled = e.target.checked;
+      S().save(); App.day.refresh();
+    });
+    U.on("setHypoPolicy", "change", (e) => {
+      S().state.settings.hypothesisPolicy = e.target.value;
+      S().save(); App.day.refresh();
+    });
+    U.on("setGuardMode", "change", (e) => {
+      S().state.settings.guard.planViolation = e.target.value;
+      S().save(); App.trades.render(App.day.date());
+    });
+    U.on("setMaxTrades", "change", (e) => {
+      S().state.settings.guard.maxTrades = Math.max(0, +e.target.value || 0);
+      S().save(); App.trades.render(App.day.date());
+    });
+    U.on("setMaxLoss", "change", (e) => {
+      S().state.settings.guard.maxLossPct = Math.max(0, +e.target.value || 0);
+      S().save(); App.trades.render(App.day.date());
     });
     U.on("catAdd", "click", () => {
       S().state.categories.push({ id: U.uid("c"), name: "새 카테고리", color: "#dbeafe", study: false });

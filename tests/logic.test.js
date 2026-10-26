@@ -35,7 +35,7 @@ sandbox.window = sandbox;
 sandbox.globalThis = sandbox;
 vm.createContext(sandbox);
 
-["util.js", "store.js", "market.js"].forEach((f) => {
+["util.js", "store.js", "market.js", "hypothesis.js"].forEach((f) => {
   const code = fs.readFileSync(path.join(__dirname, "..", "js", f), "utf8");
   vm.runInContext(code, sandbox, { filename: f });
 });
@@ -212,6 +212,101 @@ t("toneFor 는 비거래일에 null", () => {
   eq(App.market.toneFor("2026-07-18", U.toMin("10:00"), 60), null);
   eq(App.market.toneFor("2026-07-17", U.toMin("10:00"), 60), "core");
   eq(App.market.toneFor("2026-07-17", U.toMin("17:00"), 60), "after");
+});
+
+
+/* ---------- 루틴 구간 ---------- */
+t("기본 구간은 10개, 시간순", () => {
+  S.load();
+  const ps = S.phases();
+  eq(ps.length, 10);
+  for (let i = 1; i < ps.length; i++) ok(ps[i].startMin >= ps[i - 1].endMin, "구간이 겹치지 않음");
+});
+t("phaseAt 이 맞는 구간을 찾는다", () => {
+  eq(S.phaseAt(U.toMin("09:15")).id, "obs");
+  eq(S.phaseAt(U.toMin("10:00")).id, "exec");
+  eq(S.phaseAt(U.toMin("12:00")).id, "rest");
+  eq(S.phaseAt(U.toMin("16:00")).id, "rec");
+  eq(S.phaseAt(U.toMin("03:00")), null, "구간 밖은 null");
+});
+t("장중 구간은 읽기 전용", () => {
+  ["obs", "exec", "hold", "close"].forEach((id) => ok(S.phaseById(id).readonly, id));
+  ["pre1", "pre3", "rec", "learn"].forEach((id) => ok(!S.phaseById(id).readonly, id));
+});
+t("phaseProgress 체크 집계", () => {
+  S.reset();
+  const d = S.getDay("2026-07-17");
+  d.checks["pre1:0"] = Date.now();
+  d.checks["pre1:2"] = Date.now();
+  const pr = S.phaseProgress("2026-07-17", S.phaseById("pre1"));
+  eq(pr, { done: 2, total: 3 });
+});
+
+/* ---------- 매매: 손익비 · 가드레일 ---------- */
+t("손익비 계산", () => {
+  eq(S.riskReward({ entry: 70000, stop: 68000, target: 76000 }), 3);
+  eq(S.riskReward({ entry: 200000, stop: 195000, target: 205000 }), 1);
+  eq(S.riskReward({ entry: 100, stop: 100, target: 120 }), null, "손절=진입이면 계산 불가");
+  eq(S.riskReward({ entry: "", stop: 1, target: 2 }), null);
+});
+t("계획외 매매 집계", () => {
+  S.reset();
+  const d = S.getDay("2026-07-17");
+  d.plans.push({ id: "p1", ticker: "005930" });
+  d.trades.push({ id: "t1", planId: "p1", ticker: "005930" });
+  d.trades.push({ id: "t2", planId: null, ticker: "알테오젠" });
+  eq(S.tradeStats("2026-07-17").offPlan, 1);
+  eq(S.tradeStats("2026-07-17").count, 2);
+});
+t("가드레일 — 계획외 매매", () => {
+  S.reset();
+  S.state.settings.guard.planViolation = "warn";
+  const d = S.getDay("2026-07-17");
+  d.trades.push({ id: "t1", planId: null, ticker: "X" });
+  let g = S.guardState("2026-07-17");
+  eq(g.hits.length, 1);
+  ok(!g.blocked, "warn 모드는 차단 안 함");
+  S.state.settings.guard.planViolation = "block";
+  ok(S.guardState("2026-07-17").blocked, "block 모드는 차단");
+  S.state.settings.guard.planViolation = "off";
+  eq(S.guardState("2026-07-17").hits.length, 0, "off 모드는 무시");
+});
+t("가드레일 — 매매 횟수 상한", () => {
+  S.reset();
+  S.state.settings.guard.planViolation = "off";
+  S.state.settings.guard.maxTrades = 2;
+  const d = S.getDay("2026-07-17");
+  d.plans.push({ id: "p1" });
+  d.trades.push({ id: "t1", planId: "p1" });
+  eq(S.guardState("2026-07-17").hits.length, 0, "1건은 통과");
+  d.trades.push({ id: "t2", planId: "p1" });
+  eq(S.guardState("2026-07-17").hits.length, 1, "2건이면 상한 도달");
+  S.state.settings.guard.maxTrades = 0;
+});
+
+/* ---------- 가설 적중률 ---------- */
+t("가설 적중률은 장 시작 전 확정분만 집계", () => {
+  S.reset();
+  const mk = (ds, over) => {
+    const h = S.blankHypothesis();
+    h.bias = "bull"; h.reason = "x"; h.savedAt = 1;
+    h.verdict = { hit: true, sectorHit: null, note: "" };
+    Object.assign(h, over || {});
+    S.getDay(ds).hypothesis = h;
+  };
+  mk("2026-07-13");                                  // 정상 적중
+  mk("2026-07-14", { verdict: { hit: false, sectorHit: null, note: "" } }); // 정상 빗나감
+  mk("2026-07-15", { lateFirstWrite: true });        // 사후 작성 → clean 에서 제외
+  mk("2026-07-16", { editedAfterOpen: true });       // 장중 수정 → clean 에서 제외
+
+  const a = App.hypo.accuracy("2026-07-13", "2026-07-17");
+  eq(a.written, 4);
+  eq(a.lateFirst, 1);
+  eq(a.edited, 1);
+  eq(a.judged, 4, "전체 판정 건수");
+  eq(a.rate, 75, "전체 적중률 3/4");
+  eq(a.cleanJudged, 2, "깨끗한 가설만 2건");
+  eq(a.cleanRate, 50, "그 중 1건 적중");
 });
 
 /* ---------- 결과 ---------- */

@@ -9,11 +9,26 @@
   const U = App.util;
   const S = () => App.store;
 
-  let tab = "study";
+  let tab = "routine";   // routine | study | plan
 
-  function groupsOfTab() { return S().state.projects.filter((p) => p.tab === tab); }
+  function groupsOfTab() {
+    const t = tab === "routine" ? "study" : tab;
+    return S().state.projects.filter((p) => p.tab === t);
+  }
+
+  // 패널은 '루틴 체크리스트'와 '할 일 그룹' 두 화면을 번갈아 보여준다
+  function applyPanelMode() {
+    const isRoutine = tab === "routine";
+    const checks = U.byId("phaseChecks"), groups = U.byId("groupList"), add = U.byId("addGroupBtn"), carry = U.byId("carryBtn");
+    if (checks) checks.hidden = !isRoutine;
+    if (groups) groups.hidden = isRoutine;
+    if (add) add.hidden = isRoutine;
+    if (carry) carry.hidden = isRoutine;
+  }
 
   function render(ds) {
+    applyPanelMode();
+    if (tab === "routine") return;   // 체크리스트는 routine.render 가 그린다
     const host = U.byId("groupList");
     if (!host) return;
     const day = S().peekDay(ds);
@@ -159,7 +174,7 @@
     if (name == null) return;
     const n = name.trim();
     if (!n) return;
-    S().state.projects.push({ id: U.uid("p"), name: n, tab, collapsed: false });
+    S().state.projects.push({ id: U.uid("p"), name: n, tab: tab === "routine" ? "study" : tab, collapsed: false });
     S().save();
     render(ds);
   }

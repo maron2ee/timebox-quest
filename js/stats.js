@@ -112,9 +112,44 @@
       </div>`).join("");
   }
 
+  // 가설 적중률 + 계획 준수
+  function renderHypo() {
+    const host = U.byId("hypoStats");
+    if (!host) return;
+    const [from, to] = bounds();
+    const a = App.hypo.accuracy(from, to);
+    const days = U.rangeDays(from, to);
+    let trades = 0, offPlan = 0, planDays = 0;
+    days.forEach((ds) => {
+      const st = S().tradeStats(ds);
+      trades += st.count; offPlan += st.offPlan;
+      if ((S().peekDay(ds).plans || []).length) planDays++;
+    });
+
+    const pct = (v) => (v == null ? "—" : v + "%");
+    host.innerHTML = `
+      <div class="row" style="margin-bottom:12px">
+        <div class="card-title">가설 · 계획 준수</div>
+        <div class="stat-sub ml-auto">${range === "week" ? "이번 주" : "이번 달"}</div>
+      </div>
+      <div class="hypo-stats">
+        <div class="hs"><div class="hs-v">${pct(a.cleanRate)}</div><div class="hs-k">가설 적중률</div>
+          <div class="hs-s">장 시작 전 확정분 ${a.cleanJudged}건</div></div>
+        <div class="hs"><div class="hs-v">${pct(a.sectorRate)}</div><div class="hs-k">섹터 적중률</div>
+          <div class="hs-s">예상 주도 섹터</div></div>
+        <div class="hs"><div class="hs-v">${a.written}일</div><div class="hs-k">가설 작성</div>
+          <div class="hs-s">${a.lateFirst ? `사후 작성 ${a.lateFirst}일 · ` : ""}수정 ${a.edited}일</div></div>
+        <div class="hs${offPlan ? " bad" : ""}"><div class="hs-v">${offPlan}건</div><div class="hs-k">계획외 매매</div>
+          <div class="hs-s">전체 ${trades}건 · 계획 세운 날 ${planDays}일</div></div>
+      </div>
+      ${a.lateFirst ? `<div class="stat-sub" style="margin-top:10px;color:var(--danger)">
+        장이 열린 뒤에 처음 쓴 가설 ${a.lateFirst}일 — 적중률 집계에서 제외했어요.</div>` : ""}`;
+  }
+
   function render() {
     const rows = series();
     renderCards(rows);
+    renderHypo();
     renderChart(rows);
     renderCats(rows);
     renderAdh(rows);

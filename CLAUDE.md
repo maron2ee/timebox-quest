@@ -3,10 +3,16 @@
 > Claude Code가 이 저장소에서 작업할 때 자동으로 읽는 프로젝트 설명서.
 
 ## 한 줄 소개
-**하루 계획** — 초보 전업투자자를 위한 타임박스 플래너.
-하루를 **PLAN(계획) / DONE(실행)** 두 열로 나란히 기록해 "계획대로 살았는지"를 눈으로 확인하고,
-공부시간·실천율을 추적한다. 국내 장 시간(정규장·애프터마켓)이 타임라인에 겹쳐 보인다.
-경제용어 노트와 종목 리서치 메모를 함께 쌓는다.
+**하루 계획** — 초보 전업투자자를 위한 타임박스 플래너 + 매매 프로세스 러너.
+하루를 **PLAN(계획) / DONE(실행)** 두 열로 나란히 기록하고, 그 위에 **데일리 루틴 구간**을 얹어
+시각에 따라 앱의 모드가 바뀐다(입력→계획→매매금지→집행→휴식→관리→기록→학습).
+핵심 루프는 **아침 가설 → 장 마감 판정**과 **매매 계획 → 집행 → 계획외 카운터**다.
+국내 장 시간(정규장·애프터마켓)이 타임라인에 겹쳐 보인다.
+
+> **역할 분담(중요).** 사용자는 AM/PM 시장 노트와 **상세 매매일지를 구글시트에서** 쓴다.
+> 앱은 *루프를 돌리는 것*(가설·판정, 매매계획·집행체크, 구간 체크리스트)만 맡고,
+> *쓰고 보관하는 것*(표·수식·누적손익)은 시트에 둔다. **중복 입력을 만들지 말 것.**
+> 각 구간에서 시트/노션 링크를 저장해 1클릭으로 연다(`day.links`).
 
 > 2026-10 전면 재작성. 이전 버전(TamaBox: 다마고치 캐릭터 육성형)은 git 히스토리에 있음.
 > 캐릭터·게임화 요소는 전부 제거됨.
@@ -30,13 +36,16 @@ git add -A && git commit -m "..." && git push    # ~1분 뒤 GitHub Pages 반영
 
 ## 파일 구조
 ```
-index.html          전체 화면 구조(6개 뷰 + 모달)
+index.html          전체 화면 구조(7개 뷰: 하루·매매·통계·회고·용어·리서치·설정 + 모달)
 css/app.css         디자인 시스템 + 모든 컴포넌트 스타일
 js/util.js          날짜·시간·DOM 헬퍼 (App.util, 보통 U로 참조)
 js/store.js         데이터 모델·저장·마이그레이션·파생값 (App.store)
 js/market.js        KRX 거래시간 정의/판정 (App.market)
 js/ui.js            토스트·모달·카테고리 팔레트 (App.ui)
 js/timeline.js      PLAN|DONE 타임라인 — 칠하기·블록편집·드롭 (App.timeline)
+js/routine.js       데일리 루틴 구간 엔진 — 레일·모드배너·구간 체크리스트 (App.routine)
+js/hypothesis.js    아침 가설 → 장 마감 판정 + 적중률 (App.hypo)
+js/trades.js        매매 계획·집행 체크·계획외 카운터·관찰목록 (App.trades)
 js/tasks.js         프로젝트 그룹별 오늘 할 일 (App.tasks)
 js/pomodoro.js      집중 타이머 → 끝나면 DONE에 자동 기록 (App.pomo)
 js/day.js           하루 뷰 총괄: 날짜네비·스탯·Goal·Big3·Review (App.day)
@@ -56,11 +65,21 @@ sw.js, manifest.webmanifest, icon.svg   PWA
   settings { dayStartHour:7, dayEndHour:24, slotMin:10, market{show,sessions}, carryOver }
   categories[] { id, name, color, study }      // study:true 만 '학습시간'에 합산
   projects[]   { id, name, tab:'study'|'plan', collapsed }   // 전역 그룹
+  settings.routine { enabled, phases[] }       // 구간 정의(기본 10개)
+  settings.hypothesisPolicy  free | mark | lock
+  settings.guard { planViolation: off|warn|block, maxTrades, maxLossPct }
   days['YYYY-MM-DD'] {
     goal, big3[3],
     plan { 'HH:MM': {c:catId, t:'제목'} },      // 계획
     done { 'HH:MM': {c:catId, t:'제목'} },      // 실행
     tasks[] { id, projectId, text, done },      // 그날의 할 일
+    hypothesis { bias, reason, sectors[], savedAt,
+                 openSnapshot, editedAfterOpen, lateFirstWrite,
+                 verdict{hit, sectorHit, note} },
+    plans[] { id, ticker, name, entry, stop, target, qty, reason },
+    trades[] { id, planId|null, ticker, at, entry, pnl },
+    noTradeIf, checks{'phaseId:index'}, links{am,pm,journal},
+    watch { today[], tomorrow[] },
     review { k, p, t }, mtime
   }
   ddays[] / terms[] / research[] / pomo
@@ -73,6 +92,19 @@ sw.js, manifest.webmanifest, icon.svg   PWA
 - **장 시간**(`market.js`, 2026-09-14 개편 반영)
   장전 동시호가 08:30–09:00 / **정규장 09:00–15:30** / 시간외 종가 15:40–16:00 / **애프터마켓 16:00–20:00**.
   (옛 시간외단일가 16–18시는 폐지) 가운데 시각 열에 tone(`core`/`pre`/`after`)으로 음영 표시. 설정에서 수정 가능.
+- **루틴 구간**(`routine.js`): 기본 10구간. `mode` 가 앱 동작을 바꾼다 —
+  `input`/`plan`(장전 입력) · `observe`(매매금지) · `exec`(집행) · `rest`(강제휴식) ·
+  `manage`(관리) · `record`(기록) · `learn`(학습).
+  **장중 구간(observe/exec/manage)의 체크리스트는 `readonly: true`** — 사용자 원칙이
+  "장중에는 기록하지 않고 읽기만"이므로 체크박스를 주지 말 것. 대신 계획외 매매 건수를 라이브로 보여준다.
+  지난 구간에 체크가 하나도 없으면 레일에 **누락** 배지가 남는다(사후 보정을 유도하지 않음).
+- **가설 루프**(`hypothesis.js`): 09:00(정규장 시작) 기준으로 동작이 갈린다.
+  - `lateFirstWrite` — 장 시작 **후에 처음** 쓴 가설. 가설이 아니라 사후 해석이므로 적중률 집계에서 제외.
+  - `editedAfterOpen` + `openSnapshot` — 장 시작 후 수정 시 09:00 원본을 보존하고 배지로 표시.
+  - 통계의 **가설 적중률은 `cleanRate`**(사후작성·장중수정 제외)를 쓴다. 전체 `rate` 와 구분할 것.
+- **매매 가드레일**(`trades.js` + `store.guardState`): 계획외 매매 1건이라도 생기면 경고.
+  `settings.guard.planViolation` 이 `block` 이면 집행 버튼이 비활성된다. 매매 횟수 상한·손실 한도도 같은 함수에서 판정.
+  **손익비(`store.riskReward`)가 1:2 미만이면 계획 카드가 빨갛게 '후보 제외'** 로 표시된다.
 - **실천율(adherence)**: 계획한 슬롯 중 같은 슬롯이 실행에도 찍힌 비율.
 - **뽀모도로**: 완료/중단 시 시작~현재 구간을 `timeline.applyMinutes(ds,'done',...)`로 기록.
 
