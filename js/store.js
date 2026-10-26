@@ -9,7 +9,7 @@
 
   const KEY = "tbxPlanner.v1";
   const SCHEMA = 1;
-  const SEED = 2;   // 기본 카테고리·할일그룹 보강 버전 (올리면 누락분을 1회 추가)
+  const SEED = 3;   // 기본 카테고리·할일그룹 보강 버전 (올리면 누락분을 1회 추가)
 
   /* ---------- 카테고리 대분류 ----------
      productive:true = '생산 시간'에 합산 */
@@ -31,8 +31,8 @@
     { id: "trade",    name: "매매",     color: "#fecaca", group: "exec" },
     { id: "english",  name: "영어",     color: "#a7f3d0", group: "growth" },
     { id: "japanese", name: "일본어",   color: "#f9a8d4", group: "growth" },
-    { id: "read",     name: "독서",     color: "#d9f99d", group: "invest" },
-    { id: "read2",    name: "일반독서", color: "#a5f3fc", group: "growth" },
+    { id: "read",     name: "투자독서", color: "#d9f99d", group: "invest" },
+    { id: "read2",    name: "독서",     color: "#a5f3fc", group: "growth" },
     { id: "exercise", name: "운동",     color: "#fdba74", group: "body" },
     { id: "routine",  name: "루틴",     color: "#cbd5e1", group: "life" },
     { id: "rest",     name: "휴식",     color: "#e5e7eb", group: "rest" },
@@ -261,6 +261,14 @@
       {
         const r = s.categories.find((c) => c.id === "read");
         if (r && r.group === "growth") r.group = "invest";
+      }
+      // seed 3: 이름 정리 — 독서(투자) → 투자독서, 일반독서 → 독서
+      // 기본 이름 그대로일 때만 바꾼다. 직접 고쳐 쓰던 이름은 건드리지 않는다.
+      if (rawSeed < 3) {
+        const r1 = s.categories.find((c) => c.id === "read");
+        if (r1 && r1.name === "독서") r1.name = "투자독서";
+        const r2 = s.categories.find((c) => c.id === "read2");
+        if (r2 && r2.name === "일반독서") r2.name = "독서";
       }
       s.settings.seed = SEED;
     }

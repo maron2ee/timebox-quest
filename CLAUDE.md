@@ -82,11 +82,15 @@ sw.js, manifest.webmanifest, icon.svg   PWA
   ```
   settings { dayStartHour:7, dayEndHour:24, slotMin:10, market{show,sessions}, carryOver }
   categories[] { id, name, color, group }      // group = 대분류 id (store.CAT_GROUPS)
-  CAT_GROUPS   invest(투자공부: 주식공부·리서치·시황체크·독서) exec(매매)
-               growth(자기계발: 영어·일본어) body(운동) | life(생활) rest(휴식)
+  CAT_GROUPS   invest(투자공부: 주식공부·리서치·시황체크·투자독서) exec(매매)
+               growth(자기계발: 영어·일본어·독서) body(운동) | life(생활) rest(휴식)
                       // 앞의 4개가 productive:true → '생산 시간'에 합산
                       // 학습시간 카드 = invest 그룹만 (언어는 growth 로 분리해 숫자를 흐리지 않는다)
-                      // 독서는 대부분 투자 서적이라 invest 에 둔다 (사용자 확인)
+                      // 독서는 둘로 나뉜다: '투자독서'(invest) / '독서'(growth, 일반서)
+  settings.seed  기본 카테고리·할일그룹 보강 버전 (store.SEED)
+                      // 올리면 누락된 기본값을 1회만 추가하고, 이름·배치 정정도 여기서 한다
+                      // 사용자가 지운 기본값은 되살리지 않고, 직접 고친 이름은 덮지 않는다
+                      // ⚠️ migrate 는 seed 를 defaults 병합 '전에' 읽어야 한다
   projects[]   { id, name, tab:'study'|'plan', collapsed }   // 전역 그룹
   settings.routine { enabled, phases[] }       // 구간 정의(기본 10개)
   phases[].items[] { text, min }               // min = 배분 시간(분). 0이면 타이머 없음

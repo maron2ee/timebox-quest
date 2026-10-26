@@ -581,6 +581,8 @@ t("기본 카테고리의 대분류 배치", () => {
   eq(by.read, "invest", "독서는 대부분 투자 서적 → 투자공부");
   eq(by.trade, "exec");
   eq(by.english, "growth"); eq(by.japanese, "growth"); eq(by.read2, "growth");
+  const nameOf = (id) => S.state.categories.find((c) => c.id === id).name;
+  eq(nameOf("read"), "투자독서"); eq(nameOf("read2"), "독서");
   eq(by.exercise, "body");
   eq(by.routine, "life"); eq(by.rest, "rest");
 });
@@ -625,7 +627,7 @@ t("예전 study 플래그를 대분류로 올린다", () => {
 t("seed 가 최신이면 지운 기본 카테고리를 되살리지 않는다", () => {
   const d = S.defaults();
   const once = S.migrate(Object.assign(d, {
-    settings: { seed: 2 },
+    settings: { seed: 3 },
     categories: [{ id: "study", name: "주식공부", color: "#fff", group: "invest" }],
   }));
   eq(once.categories.length, 1, "되살아나지 않음");
@@ -640,7 +642,7 @@ t("seed 필드가 아예 없던 저장본도 정정된다", () => {
   none.categories.forEach((c) => (byN[c.id] = c.group));
   eq(byN.read, "invest", "독서 정정");
   eq(byN.read2, "growth", "일반독서 추가");
-  eq(none.settings.seed, 2);
+  eq(none.settings.seed, 3);
 });
 t("seed 1 → 2 업그레이드: 일반독서 추가 + 독서 대분류 정정", () => {
   const d = S.defaults();
@@ -655,7 +657,7 @@ t("seed 1 → 2 업그레이드: 일반독서 추가 + 독서 대분류 정정",
   old.categories.forEach((c) => (by[c.id] = c.group));
   eq(by.read, "invest", "독서는 투자공부로 정정");
   eq(by.read2, "growth", "일반독서가 추가됨");
-  eq(old.settings.seed, 2, "seed 가 올라간다");
+  eq(old.settings.seed, 3, "seed 가 올라간다");
 });
 t("seed 보강은 두 번 돌지 않는다", () => {
   const d = S.defaults();
@@ -671,6 +673,36 @@ t("기본 할일 그룹에 일본어가 있다", () => {
   S.load();
   ok(S.state.projects.some((p) => p.name === "일본어"), "일본어 그룹");
   ok(S.state.projects.some((p) => p.name === "영어공부"), "영어공부 그룹");
+});
+
+
+t("seed 3: 독서 이름 정리", () => {
+  const d = S.defaults();
+  const up = S.migrate(Object.assign(d, {
+    settings: { seed: 2 },
+    categories: [
+      { id: "read",  name: "독서",     color: "#fff", group: "invest" },
+      { id: "read2", name: "일반독서", color: "#fff", group: "growth" },
+    ],
+  }));
+  const by = {};
+  up.categories.forEach((c) => (by[c.id] = { name: c.name, group: c.group }));
+  eq(by.read, { name: "투자독서", group: "invest" });
+  eq(by.read2, { name: "독서", group: "growth" });
+});
+t("직접 고친 이름은 건드리지 않는다", () => {
+  const d = S.defaults();
+  const up = S.migrate(Object.assign(d, {
+    settings: { seed: 2 },
+    categories: [
+      { id: "read",  name: "투자서적", color: "#fff", group: "invest" },
+      { id: "read2", name: "소설",    color: "#fff", group: "growth" },
+    ],
+  }));
+  const by = {};
+  up.categories.forEach((c) => (by[c.id] = c.name));
+  eq(by.read, "투자서적", "사용자 이름 보존");
+  eq(by.read2, "소설");
 });
 
 /* ---------- 결과 ---------- */
