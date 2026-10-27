@@ -147,8 +147,6 @@
         carryOver: true,     // 어제 미완료 할일 이어받기 제안
         seed: SEED,          // 기본값 보강이 어디까지 적용됐는지
         routine: { enabled: true, phases: PHASES.map((p) => ({ ...p, items: p.items.map((i) => ({ ...i })) })) },
-        // 가드레일: 계획외 매매 발생 시 off(무시) / warn(경고 배너) / block(매매 입력 차단)
-        guard: { planViolation: "warn", maxTrades: 0, maxLossPct: 0 },
         // 외부 기록 링크 — 이름·URL 모두 편집 가능. daily:true 면 URL 을 날짜별(day.links[id])로 저장
         // quick:true 면 주소칸 없이 '바로가기' 아이콘 버튼으로만 보인다
         links: [
@@ -208,7 +206,6 @@
     const rawSeed = s.settings && s.settings.seed != null ? +s.settings.seed || 0 : 0;
     s.settings = Object.assign({}, d.settings, s.settings || {});
     s.settings.market = Object.assign({}, d.settings.market, s.settings.market || {});
-    s.settings.guard = Object.assign({}, d.settings.guard, s.settings.guard || {});
     s.settings.routine = Object.assign({}, d.settings.routine, s.settings.routine || {});
     // 링크: 예전 객체형 {sheet,notes,rules} 을 목록형으로 올린다
     if (!Array.isArray(s.settings.links)) {
@@ -298,14 +295,9 @@
       goal: "", big3: ["", "", ""],
       plan: {}, done: {}, tasks: [],
       review: { k: "", p: "", t: "" },
-      plans: [],            // 매매 계획 [{id, ticker, name, entry, stop, target, qty, reason}]
-      trades: [],           // 체결 [{id, planId|null, ticker, side, price, qty, time, pnl, emotion, note}]
-      noTradeIf: "",        // 오늘 매매하지 않는 조건
-      pnl: "",              // 하루 손익 (선택 — 상세는 구글시트 매매일지)
       judged: {},           // 계획 블록 판정 {startKey: 'done'|'skip'|'other'}
       checks: {},           // 구간 체크리스트 {'phaseId:index': true}
-      links: {},            // 외부 문서 {am:'url', pm:'url'}
-      watch: { today: [], tomorrow: [] },
+      links: {},            // 날짜별 외부 링크 {linkId: url}
       mtime: 0,
     };
   }
@@ -320,15 +312,9 @@
     if (!Array.isArray(d.tasks)) d.tasks = [];
     if (!Array.isArray(d.big3)) d.big3 = ["", "", ""];
     if (!d.review) d.review = { k: "", p: "", t: "" };
-    if (!Array.isArray(d.plans)) d.plans = [];
-    if (!Array.isArray(d.trades)) d.trades = [];
-    if (typeof d.noTradeIf !== "string") d.noTradeIf = "";
-    if (d.pnl == null) d.pnl = "";
     if (!d.checks) d.checks = {};
     if (!d.judged) d.judged = {};
     if (!d.links) d.links = {};
-    if (!d.watch || !Array.isArray(d.watch.today)) d.watch = { today: [], tomorrow: [] };
-    if (!Array.isArray(d.watch.tomorrow)) d.watch.tomorrow = [];
     return d;
   }
   function touch(ds) { getDay(ds).mtime = Date.now(); save(); }
@@ -507,47 +493,6 @@
     return { phase: p, done, total, complete: total > 0 && done === total, at: last || null, atMin, late };
   }
 
-  /* ---------- 매매 ---------- */
-  // 손익비 = (목표가-진입가) / (진입가-손절가), 매도 방향이면 부호 반전
-  function riskReward(p) {
-    const e = +p.entry, s = +p.stop, t = +p.target;
-    if (!e || !s || !t) return null;
-    const risk = Math.abs(e - s), reward = Math.abs(t - e);
-    if (!risk) return null;
-    return reward / risk;
-  }
-  // 계획에 없던 매매 건수
-  function offPlanTrades(ds) {
-    return (peekDay(ds).trades || []).filter((t) => !t.planId);
-  }
-  // 손익/승률은 구글시트의 매매일지에서 관리한다. 여기선 '계획대로 했는가'만 센다.
-  function tradeStats(ds) {
-    const trades = peekDay(ds).trades || [];
-    const raw = peekDay(ds).pnl;
-    const pnl = raw === "" || raw == null ? null : Number(raw);
-    return {
-      count: trades.length,
-      offPlan: offPlanTrades(ds).length,
-      pnl: Number.isFinite(pnl) ? pnl : null,   // 하루 손익 (선택 입력, 중단 규칙용)
-    };
-  }
-  // 가드레일 상태: 계획외 매매 / 매매 횟수 / 손실 한도
-  function guardState(ds) {
-    const g = state.settings.guard || {};
-    const st = tradeStats(ds);
-    const hits = [];
-    if (g.planViolation !== "off" && st.offPlan > 0) {
-      hits.push({ kind: "offPlan", msg: `계획에 없던 매매 ${st.offPlan}건 — 오늘은 여기까지` });
-    }
-    if (g.maxTrades > 0 && st.count >= g.maxTrades) {
-      hits.push({ kind: "maxTrades", msg: `오늘 매매 ${st.count}건 — 상한(${g.maxTrades}건) 도달` });
-    }
-    if (g.maxLossPct > 0 && st.pnl != null && st.pnl < 0 && Math.abs(st.pnl) >= g.maxLossPct) {
-      hits.push({ kind: "maxLoss", msg: `오늘 손익 ${st.pnl} — 하루 손실 한도(${g.maxLossPct}) 도달` });
-    }
-    return { hits, blocked: hits.length > 0 && g.planViolation === "block", stats: st };
-  }
-
   /* ---------- D-day ---------- */
   function upcomingDdays(limit) {
     const t = U.today();
@@ -570,7 +515,6 @@
     blocksOf, verdictOf, judgeProgress,
     tasksOf, taskStats, upcomingDdays,
     phases, phaseAt, phaseById, phaseProgress,
-    riskReward, offPlanTrades, tradeStats, guardState,
     phaseStamp, phaseBudget,
     links, linkById, linkUrl, setLinkUrl,
     RS_KINDS, RS_STANCES, rsKind, rsStance,

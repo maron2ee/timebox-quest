@@ -8,7 +8,6 @@
 
   const VIEWS = {
     day: () => App.day.refresh(),
-    trade: () => App.trades.render(App.day.date()),
     stats: () => App.stats.render(),
     archive: () => App.archive.render(),
     terms: () => App.terms.render(),
@@ -42,7 +41,6 @@
 
     App.timeline.init();
     App.routine.init();
-    App.trades.init();
     App.judge.init();
     App.tasks.init();
     App.pomo.init();

@@ -110,13 +110,6 @@
     if (p.readonly) {
       host.appendChild(U.el("div", "ro-note", "장중에는 기록하지 않고 <b>읽기만</b> 합니다"));
       p.items.forEach((it) => host.appendChild(U.el("div", "ro-item", U.esc(it.text))));
-      // 장중 구간엔 계획외 매매 건수를 라이브로
-      const st = S().tradeStats(ds);
-      if (p.mode !== "observe") {
-        const line = U.el("div", "ro-live" + (st.offPlan ? " bad" : ""),
-          st.offPlan ? `계획에 없던 매매 <b>${st.offPlan}건</b> — 오늘은 여기까지` : `계획에 없던 매매 <b>0건</b> · 좋습니다`);
-        host.appendChild(line);
-      }
       return;
     }
 

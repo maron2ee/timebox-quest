@@ -253,14 +253,6 @@
     U.setText("notifyState", msg);
   }
 
-  /* ---------- 가설 · 가드레일 ---------- */
-  function renderGuard() {
-    const s = S().state.settings;
-    const gm = U.byId("setGuardMode");  if (gm) gm.value = s.guard.planViolation || "warn";
-    const mt = U.byId("setMaxTrades");  if (mt) mt.value = s.guard.maxTrades || 0;
-    const ml = U.byId("setMaxLoss");    if (ml) ml.value = s.guard.maxLossPct || 0;
-  }
-
   /* ---------- 카테고리 ---------- */
   function renderCats() {
     const host = U.byId("catRows");
@@ -372,7 +364,6 @@
     renderPhases();
     renderNotify();
     renderLinks();
-    renderGuard();
     renderCats();
     info();
   }
@@ -430,18 +421,6 @@
     U.on("linkAdd", "click", () => {
       S().links().push({ id: U.uid("lk"), label: "새 링크", icon: "🔗", url: "", daily: false, quick: false });
       S().save(); renderLinks(); App.day.refresh();
-    });
-    U.on("setGuardMode", "change", (e) => {
-      S().state.settings.guard.planViolation = e.target.value;
-      S().save(); App.trades.render(App.day.date());
-    });
-    U.on("setMaxTrades", "change", (e) => {
-      S().state.settings.guard.maxTrades = Math.max(0, +e.target.value || 0);
-      S().save(); App.trades.render(App.day.date());
-    });
-    U.on("setMaxLoss", "change", (e) => {
-      S().state.settings.guard.maxLossPct = Math.max(0, +e.target.value || 0);
-      S().save(); App.trades.render(App.day.date());
     });
     U.on("catAdd", "click", () => {
       S().state.categories.push({ id: U.uid("c"), name: "새 카테고리", color: "#dbeafe", group: "life" });

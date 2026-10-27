@@ -2,6 +2,7 @@
    record.js — '오늘의 기록' 허브
    숫자는 2층(구글시트), 서술은 3층(노션 데일리 노트)에 있다.
    앱은 그 둘로 가는 길 + 시트가 못 하는 '언제 확정했는가'만 담당한다.
+   링크는 전부 아이콘 버튼으로만 보인다 — 주소는 화면에 노출하지 않는다.
    Exposes: window.App.record
    =========================================================== */
 (function () {
@@ -42,22 +43,37 @@
     return row;
   }
 
-  function linkRow(ds, entry) {
-    const row = U.el("div", "rec-row");
-    row.appendChild(U.el("span", "rec-k", `${U.esc(entry.icon || "🔗")} ${U.esc(entry.label)}`));
+  // 주소를 입력받아 저장한다. 비우면 취소.
+  function promptUrl(ds, entry) {
     const cur = S().linkUrl(ds, entry);
-    const inp = U.el("input", "rec-link" + (cur && !isUrl(cur) ? " bad" : ""));
-    inp.value = cur;
-    inp.placeholder = entry.daily ? "오늘 페이지 링크 (날짜별)" : "https://...";
-    inp.onchange = () => { S().setLinkUrl(ds, entry, inp.value); render(ds); };
-    row.appendChild(inp);
-    if (entry.daily) row.appendChild(U.el("span", "rec-daily", "날짜별"));
-    if (isUrl(cur)) {
-      const a = U.el("a", "btn sm", "열기");
-      a.href = cur; a.target = "_blank"; a.rel = "noopener noreferrer";
-      row.appendChild(a);
+    const v = window.prompt(`${entry.label} 링크`, cur || "https://");
+    if (v == null) return;
+    S().setLinkUrl(ds, entry, v.trim());
+    render(ds);
+  }
+
+  // 링크 하나 = 아이콘 버튼 하나(+ 작은 수정 버튼). 주소는 화면에 노출하지 않는다.
+  function linkButton(ds, entry) {
+    const url = S().linkUrl(ds, entry);
+    const label = `${entry.icon || "🔗"} ${entry.label}`;
+    const group = U.el("span", "link-btn-group");
+
+    const btn = U.el("button", "quick-btn" + (isUrl(url) ? "" : " off"), U.esc(label));
+    if (isUrl(url)) {
+      btn.title = entry.daily ? "오늘 링크 열기" : "열기";
+      btn.onclick = () => window.open(url, "_blank", "noopener,noreferrer");
+    } else {
+      btn.title = "눌러서 링크 추가";
+      btn.onclick = () => promptUrl(ds, entry);
     }
-    return row;
+    group.appendChild(btn);
+
+    const edit = U.el("button", "link-edit-btn", "✎");
+    edit.title = "링크 바꾸기";
+    edit.onclick = (e) => { e.stopPropagation(); promptUrl(ds, entry); };
+    group.appendChild(edit);
+
+    return group;
   }
 
   function render(ds) {
@@ -70,34 +86,15 @@
     host.appendChild(head);
 
     host.appendChild(stampEl(ds));
-    const all = S().links();
-    all.filter((e) => !e.quick).forEach((e) => host.appendChild(linkRow(ds, e)));
 
-    const quick = all.filter((e) => e.quick);
-    if (quick.length) {
-      const row = U.el("div", "rec-row");
-      row.appendChild(U.el("span", "rec-k", "바로가기"));
-      const wrap = U.el("span", "rec-quick");
-      quick.forEach((e) => {
-        const url = S().linkUrl(ds, e);
-        const label = `${e.icon || "🔗"} ${e.label}`;
-        if (isUrl(url)) {
-          const a = U.el("a", "quick-btn", U.esc(label));
-          a.href = url; a.target = "_blank"; a.rel = "noopener noreferrer";
-          a.title = url;
-          wrap.appendChild(a);
-        } else {
-          const b = U.el("span", "quick-btn off", U.esc(label));
-          b.title = "설정 → 외부 기록 링크에서 주소를 넣어주세요";
-          wrap.appendChild(b);
-        }
-      });
-      row.appendChild(wrap);
-      host.appendChild(row);
-    }
+    const all = S().links();
     if (!all.length) {
       host.appendChild(U.el("div", "rec-sub", "설정 → 외부 기록 링크에서 추가하세요"));
+      return;
     }
+    const links = U.el("div", "rec-links");
+    all.forEach((e) => links.appendChild(linkButton(ds, e)));
+    host.appendChild(links);
   }
 
   App.record = { render, STAMP_PHASE, isUrl };

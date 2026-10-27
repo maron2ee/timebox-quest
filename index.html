@@ -18,7 +18,6 @@
     <div class="brand">📋 하루 계획</div>
     <nav class="tabs" id="tabs">
       <button class="tab active" data-view="day">하루</button>
-      <button class="tab" data-view="trade">매매</button>
       <button class="tab" data-view="stats">통계</button>
       <button class="tab" data-view="archive">회고</button>
       <button class="tab" data-view="terms">용어</button>
@@ -136,84 +135,6 @@
   </section>
 
   <!-- ===================== 매매 ===================== -->
-  <section class="view" id="view-trade">
-    <div class="card card-pad" style="margin-bottom:12px">
-      <div class="row">
-        <div class="card-title" id="tradeDate">—</div>
-        <div class="stat-sub ml-auto" id="tradeSummary"></div>
-      </div>
-    </div>
-
-    <div class="guard ok" id="guardBanner"></div>
-
-    <div class="card card-pad" style="margin:12px 0">
-      <div class="card-label">오늘 매매하지 않는 조건</div>
-      <input class="inp" id="noTradeIf" placeholder="어떤 시장 상황이면 손을 뗄 것인가 — 장 시작 전에 적어두세요">
-    </div>
-
-    <div class="work">
-      <section class="card">
-        <div class="panel-head"><div class="card-title">매매 계획</div>
-          <span class="stat-sub ml-auto">08:30~09:00 · 3~5종목</span></div>
-        <div class="card-pad plan-form">
-          <input class="inp" id="plTicker" placeholder="티커/코드">
-          <input class="inp" id="plName" placeholder="종목명">
-          <input class="inp" id="plEntry" placeholder="진입가">
-          <input class="inp" id="plStop" placeholder="손절가">
-          <input class="inp" id="plTarget" placeholder="목표가">
-          <input class="inp" id="plQty" placeholder="수량">
-          <input class="inp wide" id="plReason" placeholder="매수 근거 한 문장">
-          <button class="btn primary wide" id="plAdd">계획 추가</button>
-        </div>
-        <div id="planList" class="card-pad"></div>
-      </section>
-
-      <div class="col-right">
-        <section class="card card-pad">
-          <div class="card-label">계획에 없던 종목이 눈에 들어왔다면</div>
-          <div class="row" style="gap:8px;flex-wrap:wrap">
-            <input class="inp" id="offTicker" placeholder="종목" style="max-width:160px">
-            <button class="btn" id="offTomorrow">내일 관찰목록으로</button>
-            <button class="btn" id="offAdd" style="color:var(--danger)">계획외 매매로 기록</button>
-          </div>
-          <div class="stat-sub" style="margin-top:8px">원칙: 적어두지 않은 종목은 <b>내일 관찰목록에만</b> 적습니다.</div>
-        </section>
-
-        <section class="card">
-          <div class="panel-head"><div class="card-title">집행 체크</div>
-            <span class="stat-sub ml-auto">계획대로 했는지만 — 상세 일지는 시트</span></div>
-          <div id="tradeList" class="card-pad"></div>
-          <div class="card-pad" style="border-top:1px solid var(--line)">
-            <div class="row" style="gap:8px;margin-bottom:8px">
-              <span class="stat-sub" style="margin:0;flex:0 0 auto">오늘 손익</span>
-              <input class="inp" id="dayPnl" placeholder="시트에서 숫자 하나만 (중단 규칙 확인용 · 선택)">
-            </div>
-            <input class="inp" id="tradeSheetLink" placeholder="매매일지 구글시트 링크 붙여넣기">
-          </div>
-        </section>
-
-        <section class="card card-pad">
-          <div class="row" style="margin-bottom:8px">
-            <div class="card-label" style="margin:0">관찰목록</div>
-            <button class="btn sm ml-auto" id="watchCarry">어제 것 가져오기</button>
-          </div>
-          <div class="watch-k">오늘</div>
-          <div class="wlist" id="watchToday"></div>
-          <div class="row" style="gap:6px;margin:6px 0 12px">
-            <input class="inp" id="watchTodayInp" placeholder="종목 추가">
-            <button class="btn sm" id="watchTodayAdd">추가</button>
-          </div>
-          <div class="watch-k">내일</div>
-          <div class="wlist" id="watchTomorrow"></div>
-          <div class="row" style="gap:6px;margin-top:6px">
-            <input class="inp" id="watchTomorrowInp" placeholder="종목 추가">
-            <button class="btn sm" id="watchTomorrowAdd">추가</button>
-          </div>
-        </section>
-      </div>
-    </div>
-  </section>
-
   <!-- ===================== 통계 ===================== -->
   <section class="view" id="view-stats">
     <div class="statrow" id="statsCards"></div>
@@ -337,26 +258,6 @@
     </div>
 
     <div class="card card-pad" style="margin-bottom:12px">
-      <div class="card-title" style="margin-bottom:12px">매매 가드레일</div>
-      <div class="row" style="gap:10px;flex-wrap:wrap">
-        <label class="row" style="gap:6px">계획외 매매 시
-          <select class="inp" id="setGuardMode" style="width:190px">
-            <option value="off">아무것도 안 함</option>
-            <option value="warn">경고 배너만</option>
-            <option value="block">매매 입력 차단</option>
-          </select>
-        </label>
-        <label class="row" style="gap:6px">하루 매매 상한
-          <input class="inp" id="setMaxTrades" type="number" min="0" style="width:90px"> 건
-        </label>
-        <label class="row" style="gap:6px">하루 손실 한도
-          <input class="inp" id="setMaxLoss" type="number" min="0" style="width:110px">
-        </label>
-      </div>
-      <div class="stat-sub" style="margin-top:8px">0이면 해당 한도를 쓰지 않습니다. 손실 한도는 ‘오늘 체결’에 손익을 적을 때만 작동해요.</div>
-    </div>
-
-    <div class="card card-pad" style="margin-bottom:12px">
       <div class="row" style="margin-bottom:4px">
         <div class="card-title">구간 알림</div>
         <label class="row ml-auto" style="gap:6px;font-size:13px">
@@ -443,7 +344,6 @@
 <script src="js/ui.js"></script>
 <script src="js/timeline.js"></script>
 <script src="js/routine.js"></script>
-<script src="js/trades.js"></script>
 <script src="js/judge.js"></script>
 <script src="js/record.js"></script>
 <script src="js/notify.js"></script>

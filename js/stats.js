@@ -169,7 +169,6 @@
 
     let tracked = 0, onTime = 0, lateStamp = 0;
     let checkDone = 0, checkTotal = 0, missedPhases = 0;
-    let trades = 0, offPlan = 0;
 
     days.forEach((ds) => {
       const d = S().peekDay(ds);
@@ -186,9 +185,6 @@
         checkDone += pr.done; checkTotal += pr.total;
         if (pr.done === 0) missedPhases++;
       });
-
-      const ts = S().tradeStats(ds);
-      trades += ts.count; offPlan += ts.offPlan;
     });
 
     const stamped = onTime + lateStamp;
@@ -199,7 +195,7 @@
         <div class="card-title">루틴 준수</div>
         <div class="stat-sub ml-auto">${range === "week" ? "이번 주" : "이번 달"} · 기록한 ${tracked}일</div>
       </div>
-      <div class="quad-stats">
+      <div class="quad-stats cols-3">
         <div class="hs${lateStamp ? " bad" : ""}"><div class="hs-v">${pct(onTime, stamped)}</div>
           <div class="hs-k">제시간 확정</div>
           <div class="hs-s">${stamped ? `장 시작 전 ${onTime}일 · 이후 ${lateStamp}일` : "아직 확정 기록 없음"}</div></div>
@@ -209,9 +205,6 @@
         <div class="hs${missedPhases ? " bad" : ""}"><div class="hs-v">${missedPhases}</div>
           <div class="hs-k">누락 구간</div>
           <div class="hs-s">하나도 체크 안 한 구간</div></div>
-        <div class="hs${offPlan ? " bad" : ""}"><div class="hs-v">${offPlan}건</div>
-          <div class="hs-k">계획외 매매</div>
-          <div class="hs-s">전체 ${trades}건</div></div>
       </div>
       <div class="stat-sub" style="margin-top:10px">
         가설·섹터 적중률은 <b>2층 시트</b>의 월말 집계(<code>AL</code>·<code>AM</code>)에서 보세요.

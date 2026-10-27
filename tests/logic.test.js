@@ -245,65 +245,6 @@ t("phaseProgress 체크 집계", () => {
   eq(pr, { done: 2, total: 3 });
 });
 
-/* ---------- 매매: 손익비 · 가드레일 ---------- */
-t("손익비 계산", () => {
-  eq(S.riskReward({ entry: 70000, stop: 68000, target: 76000 }), 3);
-  eq(S.riskReward({ entry: 200000, stop: 195000, target: 205000 }), 1);
-  eq(S.riskReward({ entry: 100, stop: 100, target: 120 }), null, "손절=진입이면 계산 불가");
-  eq(S.riskReward({ entry: "", stop: 1, target: 2 }), null);
-});
-t("계획외 매매 집계", () => {
-  S.reset();
-  const d = S.getDay("2026-07-17");
-  d.plans.push({ id: "p1", ticker: "005930" });
-  d.trades.push({ id: "t1", planId: "p1", ticker: "005930" });
-  d.trades.push({ id: "t2", planId: null, ticker: "알테오젠" });
-  eq(S.tradeStats("2026-07-17").offPlan, 1);
-  eq(S.tradeStats("2026-07-17").count, 2);
-});
-t("가드레일 — 계획외 매매", () => {
-  S.reset();
-  S.state.settings.guard.planViolation = "warn";
-  const d = S.getDay("2026-07-17");
-  d.trades.push({ id: "t1", planId: null, ticker: "X" });
-  let g = S.guardState("2026-07-17");
-  eq(g.hits.length, 1);
-  ok(!g.blocked, "warn 모드는 차단 안 함");
-  S.state.settings.guard.planViolation = "block";
-  ok(S.guardState("2026-07-17").blocked, "block 모드는 차단");
-  S.state.settings.guard.planViolation = "off";
-  eq(S.guardState("2026-07-17").hits.length, 0, "off 모드는 무시");
-});
-t("가드레일 — 하루 손실 한도는 day.pnl 한 칸으로", () => {
-  S.reset();
-  S.state.settings.guard.planViolation = "off";
-  S.state.settings.guard.maxLossPct = 300000;
-  const d = S.getDay("2026-07-17");
-  d.plans.push({ id: "p1" });
-  d.trades.push({ id: "t1", planId: "p1" });
-  eq(S.tradeStats("2026-07-17").pnl, null, "안 적으면 null");
-  eq(S.guardState("2026-07-17").hits.length, 0, "손익 미입력이면 한도 판정 안 함");
-  d.pnl = "-120000";
-  eq(S.guardState("2026-07-17").hits.length, 0, "한도 미만이면 통과");
-  d.pnl = "-350000";
-  eq(S.guardState("2026-07-17").hits.length, 1, "한도 초과면 중단");
-  d.pnl = "500000";
-  eq(S.guardState("2026-07-17").hits.length, 0, "수익이면 걸리지 않음");
-  S.state.settings.guard.maxLossPct = 0;
-});
-t("가드레일 — 매매 횟수 상한", () => {
-  S.reset();
-  S.state.settings.guard.planViolation = "off";
-  S.state.settings.guard.maxTrades = 2;
-  const d = S.getDay("2026-07-17");
-  d.plans.push({ id: "p1" });
-  d.trades.push({ id: "t1", planId: "p1" });
-  eq(S.guardState("2026-07-17").hits.length, 0, "1건은 통과");
-  d.trades.push({ id: "t2", planId: "p1" });
-  eq(S.guardState("2026-07-17").hits.length, 1, "2건이면 상한 도달");
-  S.state.settings.guard.maxTrades = 0;
-});
-
 /* ---------- 구간 '도장' — 언제 확정했는가 ---------- */
 t("phaseStamp 는 마지막 체크 시각을 쓴다", () => {
   S.reset();

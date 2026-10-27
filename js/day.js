@@ -189,7 +189,6 @@
     App.routine.render(ds);    // 레일·배너는 항상
     App.timeline.render(ds);
     App.judge.render(ds);
-    if (App.nav && App.nav.current === "trade") App.trades.render(ds);
   }
 
   function init() {

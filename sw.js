@@ -1,9 +1,9 @@
 /* 하루 계획 — 서비스워커 (network-first: 배포 직후 최신 코드가 바로 반영되게) */
-const CACHE = "plan-v5";
+const CACHE = "plan-v6";
 const ASSETS = [
   "./", "./index.html", "./css/app.css", "./manifest.webmanifest", "./icon.svg",
   "./js/util.js", "./js/store.js", "./js/market.js", "./js/ui.js",
-  "./js/timeline.js", "./js/routine.js", "./js/trades.js", "./js/judge.js", "./js/record.js", "./js/notify.js",
+  "./js/timeline.js", "./js/routine.js", "./js/judge.js", "./js/record.js", "./js/notify.js",
   "./js/tasks.js", "./js/pomodoro.js", "./js/day.js",
   "./js/stats.js", "./js/archive.js", "./js/terms.js", "./js/research.js",
   "./js/settings.js", "./js/app.js",

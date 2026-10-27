@@ -3,10 +3,11 @@
 > Claude Code가 이 저장소에서 작업할 때 자동으로 읽는 프로젝트 설명서.
 
 ## 한 줄 소개
-**하루 계획** — 초보 전업투자자를 위한 타임박스 플래너 + 매매 프로세스 러너.
+**하루 계획** — 초보 전업투자자를 위한 타임박스 플래너.
 하루를 **PLAN(계획) / DONE(실행)** 두 열로 나란히 기록하고, 그 위에 **데일리 루틴 구간**을 얹어
 시각에 따라 앱의 모드가 바뀐다(입력→계획→매매금지→집행→휴식→관리→기록→학습).
-핵심 루프는 **매매 계획 → 집행 → 계획외 카운터**와 **계획 → 탭 판정(DONE)**이다.
+핵심 루프는 **계획 → 탭 판정(DONE)**과 **구간 알림/타이머**다. 매매 계획·집행·가드레일 기능은
+2026-10 말 제거됨 — 매매일지는 전적으로 구글시트에서 관리한다 (아래 역할 분담 참고).
 국내 장 시간(정규장·애프터마켓)이 타임라인에 겹쳐 보인다.
 
 > **역할 분담(가장 중요). 앱은 허브이지 저장소가 아니다.**
@@ -26,9 +27,11 @@
 > 코드에 `"2층 시트"` 같은 **라벨을 하드코딩하지 말 것**. 기본 id 는 sheet·note·notes·rules·journal.
 >
 > 앱이 맡는 것은 **시트·노션이 구조적으로 못 하는 것**뿐이다:
-> 시계(지금 어느 구간인지) · 타임박스 PLAN/판정 · 장중 가드레일(계획외 카운터·손익비 게이트) ·
-> **확정 시각 도장**(언제 썼는가) · 용어 복습 · 링크 허브.
+> 시계(지금 어느 구간인지) · 타임박스 PLAN/판정 · **확정 시각 도장**(언제 썼는가) ·
+> 용어 복습 · 링크 허브(아이콘 버튼, 주소는 화면에 노출하지 않음).
 > 긴 글·표·누적손익을 앱에 들이면 중복 입력이 생기고, 그 순간 둘 다 안 쓰게 된다.
+> 매매 계획·집행·가드레일은 전에 있었지만 걷어냈다 — "매매탭은 없애주고" (2026-10-27).
+> 되살릴 땐 git log 의 trades.js 관련 커밋을 참고할 것, 다시 만들지 말고.
 
 > 2026-10 전면 재작성. 이전 버전(TamaBox: 다마고치 캐릭터 육성형)은 git 히스토리에 있음.
 > 캐릭터·게임화 요소는 전부 제거됨.
@@ -52,7 +55,7 @@ git add -A && git commit -m "..." && git push    # ~1분 뒤 GitHub Pages 반영
 
 ## 파일 구조
 ```
-index.html          전체 화면 구조(7개 뷰: 하루·매매·통계·회고·용어·리서치·설정 + 모달)
+index.html          전체 화면 구조(6개 뷰: 하루·통계·회고·용어·리서치·설정 + 모달)
 css/app.css         디자인 시스템 + 모든 컴포넌트 스타일
 js/util.js          날짜·시간·DOM 헬퍼 (App.util, 보통 U로 참조)
 js/store.js         데이터 모델·저장·마이그레이션·파생값 (App.store)
@@ -60,9 +63,8 @@ js/market.js        KRX 거래시간 정의/판정 (App.market)
 js/ui.js            토스트·모달·카테고리 팔레트 (App.ui)
 js/timeline.js      PLAN|DONE 타임라인 — 칠하기·블록편집·드롭 (App.timeline)
 js/routine.js       데일리 루틴 구간 엔진 — 레일·모드배너·구간 체크리스트 (App.routine)
-js/trades.js        매매 계획·집행 체크·계획외 카운터·관찰목록 (App.trades)
 js/judge.js         오늘 판정 — 계획 블록을 탭으로 확정해 DONE 생성 (App.judge)
-js/record.js        '오늘의 기록' 허브 — 확정 시각 도장 + 시트·노션 링크 (App.record)
+js/record.js        '오늘의 기록' 허브 — 확정 시각 도장 + 링크 버튼 (App.record)
 js/notify.js        구간 알림 — 탭이 열려 있을 때만 (App.notify)
 js/tasks.js         프로젝트 그룹별 오늘 할 일 (App.tasks)
 js/pomodoro.js      집중 타이머 → 끝나면 DONE에 자동 기록 (App.pomo)
@@ -71,7 +73,7 @@ js/stats.js         주간/월간 통계 (App.stats)
 js/archive.js       회고(K/P/T) 모아보기 (App.archive)
 js/terms.js         경제용어 노트 (App.terms)
 js/research.js      리서치 '링크 인덱스' — 2축 분류, 본문은 노션 (App.research)
-js/settings.js      타임라인·장시간·루틴구간·링크·알림·가드레일·카테고리·데이터 (App.settings)
+js/settings.js      타임라인·장시간·루틴구간·링크·알림·카테고리·데이터 (App.settings)
 js/app.js           부트스트랩 + 탭 전환 (App.nav)
 tests/logic.test.js 회귀 테스트 (util/store/market만, DOM 스텁)
 sw.js, manifest.webmanifest, icon.svg   PWA
@@ -96,18 +98,14 @@ sw.js, manifest.webmanifest, icon.svg   PWA
   phases[].items[] { text, min }               // min = 배분 시간(분). 0이면 타이머 없음
                       // 장중(readonly) 구간은 전부 min:0 — 장중엔 타이머를 돌리지 않는다
                       // store.phaseBudget(p) → {alloc, len, over}
-  settings.guard { planViolation: off|warn|block, maxTrades, maxLossPct }
   days['YYYY-MM-DD'] {
     goal, big3[3],
     plan { 'HH:MM': {c:catId, t:'제목'} },      // 계획
     done { 'HH:MM': {c:catId, t:'제목'} },      // 실행
     tasks[] { id, projectId, text, done },      // 그날의 할 일
-    plans[] { id, ticker, name, entry, stop, target, qty, reason },
-    trades[] { id, planId|null, ticker, at, entry, pnl },
-    noTradeIf, pnl, checks{'phaseId:index'},
+    checks{'phaseId:index'},         // 체크 시각(ms) — phaseStamp 가 읽는다
     links{ '<linkId>': url },        // daily:true 인 링크의 그날 주소만
     judged { '<블록시작슬롯>': 'done'|'skip'|'other' },
-    watch { today[], tomorrow[] },
     review { k, p, t }, mtime
   }
   ddays[] / terms[] / pomo
@@ -118,6 +116,7 @@ sw.js, manifest.webmanifest, icon.svg   PWA
                       // quick:true → 주소칸 없이 '바로가기' 아이콘 버튼으로만 표시 (daily 와 배타)
                       // store.linkUrl(ds,e) / setLinkUrl(ds,e,url) 로만 읽고 쓸 것
   research[] { id, ticker, name, kind, stance, sector, url, note, body?, date, updated }
+               // (매매 계획과는 다른 기능 — 종목 리서치 '링크 인덱스'. 혼동 주의)
                // 2축 — kind: stock|theme|macro|report|event
                //       stance: watch|cand|hold|pause|drop  (store.RS_KINDS / RS_STANCES)
                // 목록은 스탠스 우선순위(후보→보유→관심→보류→폐기) 다음 최근 수정순
@@ -135,17 +134,14 @@ sw.js, manifest.webmanifest, icon.svg   PWA
   `input`/`plan`(장전 입력) · `observe`(매매금지) · `exec`(집행) · `rest`(강제휴식) ·
   `manage`(관리) · `record`(기록) · `learn`(학습).
   **장중 구간(observe/exec/manage)의 체크리스트는 `readonly: true`** — 사용자 원칙이
-  "장중에는 기록하지 않고 읽기만"이므로 체크박스를 주지 말 것. 대신 계획외 매매 건수를 라이브로 보여준다.
+  "장중에는 기록하지 않고 읽기만"이므로 체크박스를 주지 말 것. 그 구간은 문구만 읽고 넘어간다.
   지난 구간에 체크가 하나도 없으면 레일에 **누락** 배지가 남는다(사후 보정을 유도하지 않음).
 - **확정 시각 도장**(`store.phaseStamp` + `record.js`): 시트가 못 하는 유일한 것 — *언제* 확정했는가.
   `day.checks` 에 체크 시각(ms)이 들어 있으므로, `매매 계획 확정`(pre3) 구간의 **가장 늦은 체크 시각**을
   그날의 확정 시각으로 쓴다. 구간 종료(09:00)를 넘겨 체크했으면 `late` → "장 시작 후" 로 빨갛게 표시.
   사용자 원칙: *"순서가 반대가 되면 가설이 아니라 사후 합리화"*.
-  통계의 **루틴 준수** 카드가 제시간 확정 비율·구간 체크율·누락 구간·계획외 매매를 집계한다.
+  통계의 **루틴 준수** 카드(3칸)가 제시간 확정 비율·구간 체크율·누락 구간을 집계한다.
   가설 **내용**은 받지 않는다 (시트 `O`·`P`·`R`).
-- **매매 가드레일**(`trades.js` + `store.guardState`): 계획외 매매 1건이라도 생기면 경고.
-  `settings.guard.planViolation` 이 `block` 이면 집행 버튼이 비활성된다. 매매 횟수 상한·손실 한도도 같은 함수에서 판정.
-  **손익비(`store.riskReward`)가 1:2 미만이면 계획 카드가 빨갛게 '후보 제외'** 로 표시된다.
 - **DONE은 그리는 게 아니라 판정한다**(`judge.js`). 사용자 원칙이 "장중엔 기록 안 함 + 사후 추정 금지"라
   DONE을 두 번째 그리드로 칠하게 하면 둘 다 어기게 된다. 그래서 15:30 기록 구간에
   **계획 블록 목록을 띄우고 `했음 / 안 함 / 다른 걸 함`을 탭**하면 DONE 슬롯이 생성된다.
@@ -181,6 +177,12 @@ sw.js, manifest.webmanifest, icon.svg   PWA
 - **D-day**(`day.js`): `state.ddays[]` 에 **사용자가 직접 입력**한다. 실적·공시 일정을 외부에서
   가져오지 않는다(DART 등은 브라우저 CORS 때문에 중계 서버가 필요). 하루 탭의 D-day 카드를 누르면
   모달에서 이름·날짜를 즉시 수정·삭제할 수 있다.
+- **링크 버튼은 주소를 화면에 노출하지 않는다**(`record.js`). 모든 `settings.links[]` 항목이
+  아이콘+이름 버튼 하나로 렌더된다 — daily/quick 구분 없이 전부 버튼형. 주소가 있으면 클릭 시
+  새 탭으로 열고, 없으면 `window.prompt()` 로 입력받아 저장 후 연다. 버튼 옆 작은 `✎` 로 언제든
+  재설정. **URL을 input 으로 노출하는 코드를 다시 넣지 말 것** — "링크는 안 보이게 버튼형으로"
+  가 명시적 요구사항이다. 설정 화면(`settings.js` 의 `renderLinks`)은 예외로, 거기선 편집을 위해
+  주소 input 을 그대로 보여준다(전역 항목만; daily 항목은 거기서도 비활성).
 
 ## 작업 규칙
 - 코드 수정 후 **`node tests/logic.test.js` 통과** 확인.
