@@ -10,8 +10,8 @@
   const S = () => App.store;
 
   const MODE = {
-    input:   { label: "입력",      tone: "blue",   hint: "정보 수집은 제한하고, 08:30에 가설과 계획을 확정합니다." },
-    plan:    { label: "계획",      tone: "indigo", hint: "08:30에 가설을 잠급니다. 이후엔 고치지 않아요." },
+    input:   { label: "입력",      tone: "blue",   hint: "정보 수집은 제한하고, 09:00에 가설과 계획을 확정합니다." },
+    plan:    { label: "계획",      tone: "indigo", hint: "09:00에 가설을 잠급니다. 이후엔 고치지 않아요." },
     observe: { label: "매매 금지", tone: "red",    hint: "관찰만. 신규 진입 금지 — 시장 강도만 확인합니다." },
     exec:    { label: "집행",      tone: "green",  hint: "우선순위는 계획 매매 → 관찰 → 입력 순입니다." },
     rest:    { label: "휴식",      tone: "gray",   hint: "쉬는 시간입니다." },   // 예전 저장본 호환용(이제 어떤 기본 구간도 쓰지 않음)
@@ -26,7 +26,12 @@
   function enabled() { return (S().state.settings.routine || {}).enabled !== false; }
   function nowPhase() { return S().phaseAt(U.nowMin()); }
   function viewPhase(ds) {
-    if (selected) return S().phaseById(selected);
+    if (selected) {
+      // 다른 날짜로 넘어가면서 선택이 그 날엔 적용되지 않는 구간일 수 있다(요일 제한) — 그럴 땐 버린다.
+      const p = S().phasesOn(ds).find((x) => x.id === selected);
+      if (p) return p;
+      selected = null;
+    }
     if (U.isToday(ds)) return nowPhase();
     return null;
   }
@@ -41,7 +46,7 @@
     const shown = viewPhase(ds);
     host.innerHTML = "";
 
-    S().phases().forEach((p) => {
+    S().phasesOn(ds).forEach((p) => {
       const pr = S().phaseProgress(ds, p);
       const isNow = now && now.id === p.id;
       const isSel = shown && shown.id === p.id;
@@ -172,7 +177,7 @@
     const step = S().slotMin();
     const snap = (min) => Math.round(min / step) * step;
     let painted = 0;
-    S().phases().forEach((p) => {
+    S().phasesOn(ds).forEach((p) => {
       const cat = S().catById(p.catId) ? p.catId : (S().state.categories[0] || {}).id;
       const start = Math.max(S().startMin(), snap(p.startMin));
       const end = Math.min(S().endMin(), snap(p.endMin));

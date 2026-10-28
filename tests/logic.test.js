@@ -218,21 +218,20 @@ t("toneFor 는 비거래일에 null", () => {
 });
 
 
-/* ---------- 루틴 구간 (2026-10-28 최종 시간표) ---------- */
-t("기본 구간은 10개, 시간순", () => {
+/* ---------- 루틴 구간 (2026-10-29: exec·hold 제거, 가설 잠금 09:00으로) ---------- */
+t("기본 구간은 8개, 시간순", () => {
   S.load();
   const ps = S.phases();
-  eq(ps.length, 10);
+  eq(ps.length, 8);
   for (let i = 1; i < ps.length; i++) ok(ps[i].startMin >= ps[i - 1].endMin, "구간이 겹치지 않음");
 });
 t("phaseAt 이 맞는 구간을 찾는다", () => {
   eq(S.phaseAt(U.toMin("07:40")).id, "pre1");
-  eq(S.phaseAt(U.toMin("08:00")).id, "pre2");
-  eq(S.phaseAt(U.toMin("08:20")).id, "pre3");
+  eq(S.phaseAt(U.toMin("08:10")).id, "pre2");
+  eq(S.phaseAt(U.toMin("08:45")).id, "pre3");
   eq(S.phaseAt(U.toMin("09:15")).id, "obs");
-  eq(S.phaseAt(U.toMin("10:00")).id, "exec");
-  eq(S.phaseAt(U.toMin("12:00")).id, "exec", "09:30~13:00 는 전부 집행·입력 구간");
-  eq(S.phaseAt(U.toMin("14:00")).id, "hold");
+  eq(S.phaseAt(U.toMin("10:00")), null, "exec·hold 를 뺐으니 09:30~14:50 는 빈 시간");
+  eq(S.phaseAt(U.toMin("12:00")), null);
   eq(S.phaseAt(U.toMin("15:00")).id, "close");
   eq(S.phaseAt(U.toMin("16:00")).id, "rec");
   eq(S.phaseAt(U.toMin("19:30")).id, "evening1");
@@ -240,8 +239,14 @@ t("phaseAt 이 맞는 구간을 찾는다", () => {
   eq(S.phaseAt(U.toMin("03:00")), null, "구간 밖은 null");
   eq(S.phaseAt(U.toMin("17:30")), null, "16:40~19:00 는 빈 시간");
 });
+t("가설 잠금은 09:00 — pre3 가 거기서 끝나고 obs 가 이어받는다", () => {
+  const pre3 = S.phaseById("pre3"), obs = S.phaseById("obs");
+  eq(pre3.end, "09:00");
+  eq(obs.start, "09:00");
+  eq(pre3.note, "09:00에 가설을 잠급니다. 이후엔 고치지 않아요.");
+});
 t("장중 구간은 읽기 전용", () => {
-  ["obs", "exec", "hold", "close"].forEach((id) => ok(S.phaseById(id).readonly, id));
+  ["obs", "close"].forEach((id) => ok(S.phaseById(id).readonly, id));
   ["pre1", "pre2", "pre3", "rec", "evening1", "learn"].forEach((id) => ok(!S.phaseById(id).readonly, id));
 });
 t("phaseProgress 체크 집계", () => {
@@ -253,9 +258,46 @@ t("phaseProgress 체크 집계", () => {
   eq(pr, { done: 2, total: 5 });
 });
 t("구간에 달린 원칙(note)은 체크 항목이 아니다", () => {
-  const exec = S.phaseById("exec");
-  ok(exec.note.includes("계획 매매 → 관찰 → 입력"));
-  eq(S.phaseBudget(exec).alloc, 0, "note 는 items 가 아니라 배분에 안 들어간다");
+  const close = S.phaseById("close");
+  ok(close.note.includes("종가배팅"));
+  eq(S.phaseBudget(close).alloc, 0, "note 는 items 가 아니라 배분에 안 들어간다");
+});
+
+/* ---------- 요일 제한 (phase.days) ---------- */
+t("days 가 없으면 매일 적용", () => {
+  S.load();
+  const ds = "2026-10-26";  // 월요일
+  eq(S.weekdayOf(ds), 1);
+  const all = S.phases().map((p) => p.id).sort();
+  const on = S.phasesOn(ds).map((p) => p.id).sort();
+  eq(on, all, "days 를 아무도 안 쓰면 phasesOn 은 phases 와 같다");
+});
+t("days 를 주면 그 요일에만 phasesOn 에 나온다", () => {
+  S.reset();
+  const p = S.state.settings.routine.phases.find((x) => x.id === "rec");
+  p.days = [5];  // 금요일만
+  eq(S.weekdayOf("2026-10-30"), 5, "2026-10-30 은 금요일");
+  eq(S.weekdayOf("2026-10-29"), 4, "2026-10-29 는 목요일");
+  ok(S.phasesOn("2026-10-30").some((x) => x.id === "rec"), "금요일엔 포함");
+  ok(!S.phasesOn("2026-10-29").some((x) => x.id === "rec"), "목요일엔 빠짐");
+  ok(S.phases().some((x) => x.id === "rec"), "phases() 는 요일과 무관하게 전부 보여준다(편집용)");
+});
+t("phaseAt 은 그 날짜 기준으로 요일 필터를 적용한다", () => {
+  S.reset();
+  const p = S.state.settings.routine.phases.find((x) => x.id === "rec");
+  p.days = [5];
+  eq(S.phaseAt(U.toMin("16:00"), "2026-10-30").id, "rec", "금요일엔 찾는다");
+  eq(S.phaseAt(U.toMin("16:00"), "2026-10-29"), null, "목요일엔 못 찾는다");
+});
+t("applyToTimeline 은 그 날짜에 적용되는 구간만 칠한다", () => {
+  S.reset();
+  const p = S.state.settings.routine.phases.find((x) => x.id === "rec");
+  p.days = [5];
+  App.routine.applyToTimeline("2026-10-29");   // 목요일
+  const blocks = S.blocksOf("2026-10-29", "plan");
+  ok(!blocks.some((b) => b.t === "기록·마감 분석"), "목요일엔 금요일 전용 구간이 안 칠해진다");
+  App.routine.applyToTimeline("2026-10-30");   // 금요일
+  ok(S.blocksOf("2026-10-30", "plan").some((b) => b.t === "기록·마감 분석"), "금요일엔 칠해진다");
 });
 
 /* ---------- 구간 '도장' — 언제 확정했는가 ---------- */
@@ -278,11 +320,11 @@ t("구간 종료 후 체크하면 late", () => {
   S.reset();
   const ds = "2026-07-17";
   const d = S.getDay(ds);
-  // pre3(08:15~08:30) 종료를 넘겨서 체크 — "08:30에 가설을 잠근다"
-  d.checks["pre3:0"] = new Date(2026, 6, 17, 8, 45).getTime();
+  // pre3(08:30~09:00) 종료를 넘겨서 체크 — "09:00에 가설을 잠근다"
+  d.checks["pre3:0"] = new Date(2026, 6, 17, 9, 14).getTime();
   const st = S.phaseStamp(ds, "pre3");
-  ok(st.late, "08:45 는 08:30 구간을 넘김 — 사후 작성");
-  eq(U.toHHMM(st.atMin), "08:45");
+  ok(st.late, "09:14 는 09:00 구간을 넘김 — 사후 작성");
+  eq(U.toHHMM(st.atMin), "09:14");
 });
 t("체크가 없으면 도장도 없다", () => {
   S.reset();
@@ -490,7 +532,7 @@ t("기본 배분이 구간 길이와 정확히 맞는다", () => {
   });
 });
 t("장중 구간은 배분 0 (타이머 없음)", () => {
-  ["obs", "exec", "hold", "close"].forEach((id) => {
+  ["obs", "close"].forEach((id) => {
     eq(S.phaseBudget(S.phaseById(id)).alloc, 0, id);
   });
 });

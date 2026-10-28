@@ -100,10 +100,34 @@
       tog.onclick = () => { openPhase = openPhase === p.id ? null : p.id; renderPhases(); };
       row.appendChild(tog);
       wrap.appendChild(row);
+      wrap.appendChild(daysRow(p));
 
       if (openPhase === p.id) wrap.appendChild(itemEditor(p));
       host.appendChild(wrap);
     });
+  }
+
+  // 요일 선택 — 생략(undefined)이면 매일. 전부 선택된 상태로 되돌아가면 다시 '매일'로 접는다.
+  const WD_LABELS = ["일", "월", "화", "수", "목", "금", "토"];
+  function daysRow(p) {
+    const row = U.el("div", "row p-days");
+    row.appendChild(U.el("span", "stat-sub", "요일"));
+    const active = Array.isArray(p.days) && p.days.length ? p.days : [0, 1, 2, 3, 4, 5, 6];
+    WD_LABELS.forEach((label, dow) => {
+      const b = U.el("button", "wd-btn" + (active.includes(dow) ? " on" : ""), label);
+      b.onclick = () => {
+        const cur = (Array.isArray(p.days) && p.days.length ? p.days : [0, 1, 2, 3, 4, 5, 6]).slice();
+        const idx = cur.indexOf(dow);
+        if (idx >= 0) cur.splice(idx, 1); else cur.push(dow);
+        if (!cur.length) { App.ui.toast("최소 하루는 남겨야 해요"); return; }
+        if (cur.length === 7) delete p.days; else p.days = cur.sort((a, b2) => a - b2);
+        S().save(); renderPhases(); App.day.refresh();
+      };
+      row.appendChild(b);
+    });
+    row.appendChild(U.el("span", "stat-sub",
+      Array.isArray(p.days) && p.days.length ? "" : "매일"));
+    return row;
   }
 
   // 구간 항목 편집 — 텍스트 + 배분 시간(분)

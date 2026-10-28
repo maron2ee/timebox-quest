@@ -54,35 +54,23 @@
      매매 계획·집행·종가배팅 조건·중단 규칙은 전부 '읽기용 리마인드'다.
      (매매 계획/계획외 카운터를 추적하는 자동화는 2026-10-27에 걷어냈다 — 되살리지 말 것) */
   const PHASES = [
-    { id: "pre1", name: "뉴스·미국장", start: "07:30", end: "07:50", mode: "input", catId: "market",
+    { id: "pre1", name: "뉴스·미국장", start: "07:30", end: "08:00", mode: "input", catId: "market",
       items: [
-        { text: "전일 미국 뉴스·미국장 숫자 확인 → 시트 AM 숫자, 미국 주도섹터, 오늘 일정", min: 20 },
+        { text: "전일 미국 뉴스·미국장 숫자 확인 → 시트 AM 숫자, 미국 주도섹터, 오늘 일정", min: 30 },
       ] },
-    { id: "pre2", name: "리포트·관심종목", start: "07:50", end: "08:15", mode: "input", catId: "research",
+    { id: "pre2", name: "리포트·관심종목", start: "08:00", end: "08:30", mode: "input", catId: "research",
       items: [
-        { text: "돈 몰릴 뉴스 예고 + 모닝 리포트 원문 → 환경 예상·예상 섹터·아침 가설", min: 15 },
+        { text: "돈 몰릴 뉴스 예고 + 모닝 리포트 원문 → 환경 예상·예상 섹터·아침 가설", min: 20 },
         { text: "텔레그램 스크리너 + 경제뉴스 제목만 → 관심종목 Top3", min: 10 },
       ] },
-    { id: "pre3", name: "매매 계획 확정", start: "08:15", end: "08:30", mode: "plan", catId: "research",
-      note: "08:30에 가설을 잠급니다. 이후엔 고치지 않아요.",
+    { id: "pre3", name: "매매 계획 확정", start: "08:30", end: "09:00", mode: "plan", catId: "research",
+      note: "09:00에 가설을 잠급니다. 이후엔 고치지 않아요.",
       items: [
-        { text: "가설 확정·무효화 조건·매매 계획(진입가·손절가·수량) → 시트 기록", min: 15 },
+        { text: "가설 확정·무효화 조건·매매 계획(진입가·손절가·수량) → 시트 기록", min: 30 },
       ] },
     { id: "obs", name: "관찰만", start: "09:00", end: "09:30", mode: "observe", catId: "market", readonly: true,
       items: [
         { text: "코스피·코스닥 방향, 거래대금 상위 확인 (입력 없음)", min: 0 },
-      ] },
-    { id: "exec", name: "집행·입력", start: "09:30", end: "13:00", mode: "exec", catId: "trade", readonly: true,
-      note: "우선순위: 계획 매매 → 관찰 → 입력. 계획 외 매매는 1건만 나와도 그날 종료예요 — 수익이어도.",
-      items: [
-        { text: "매매할 게 없으면: 증권사 리포트 1개 + 뉴스레터·경제뉴스·유튜브(30분 이내) + 남으면 독서 — 합계 90분 이내", min: 0 },
-        { text: "읽은 것 3줄 기록 — 스터디는 Study Archive, 뉴스는 데일리 노트 뉴스 칸", min: 0 },
-        { text: "체결 즉시 매매일지 한 줄", min: 0 },
-      ] },
-    { id: "hold", name: "보유 종목 관리", start: "13:00", end: "14:50", mode: "manage", catId: "trade", readonly: true,
-      note: "연속 3회 손절 또는 하루 −2%(약 9만원)면 그날 종료예요.",
-      items: [
-        { text: "신규 진입 금지", min: 0 },
       ] },
     { id: "close", name: "마감 대응", start: "14:50", end: "15:30", mode: "manage", catId: "trade", readonly: true,
       note: "종가배팅 최종 판단 — 계획에 있던 후보만, 4조건을 모두 확인하세요.",
@@ -443,14 +431,25 @@
     else { entry.url = url; save(); }
   }
 
-  /* ---------- 루틴 구간 ---------- */
+  /* ---------- 루틴 구간 ----------
+     phase.days: 요일 제한 — [0=일,1=월,...,6=토] 의 부분집합. 생략(undefined)이면 매일 적용.
+     phases()      — 설정에 정의된 전부(편집용, 요일 무관하게 다 보여줘야 함)
+     phasesOn(ds)  — 그 날짜의 요일에 실제로 적용되는 구간만(화면 표시·타임라인 적용용) */
   function phases() {
     const r = state.settings.routine || {};
     return (r.phases || []).map((p) => ({ ...p, startMin: U.toMin(p.start), endMin: U.toMin(p.end) }));
   }
-  function phaseAt(min) {
-    return phases().find((p) => min >= p.startMin && min < p.endMin) || null;
+  function weekdayOf(ds) { return U.parseYmd(ds).getDay(); }
+  function phaseActiveOn(p, dow) { return !Array.isArray(p.days) || !p.days.length || p.days.includes(dow); }
+  function phasesOn(ds) {
+    const dow = weekdayOf(ds);
+    return phases().filter((p) => phaseActiveOn(p, dow));
   }
+  // min(분)에 해당하는 구간. ds 를 생략하면 '오늘'의 요일 기준(가장 흔한 용례: 지금 구간 찾기).
+  function phaseAt(min, ds) {
+    return phasesOn(ds || U.today()).find((p) => min >= p.startMin && min < p.endMin) || null;
+  }
+  // 요일 제한과 무관하게 id 로 직접 찾는다 — 수동 선택·phaseStamp 등 '그 구간 자체'를 다룰 때 씀.
   function phaseById(id) { return phases().find((p) => p.id === id) || null; }
   // 항목 배분 시간 합계 vs 구간 길이
   function phaseBudget(p) {
@@ -511,7 +510,7 @@
     CAT_GROUPS, catGroup, minutesByGroup, groupMin, productiveMin,
     blocksOf, verdictOf, judgeProgress,
     tasksOf, taskStats, upcomingDdays,
-    phases, phaseAt, phaseById, phaseProgress,
+    phases, phasesOn, weekdayOf, phaseAt, phaseById, phaseProgress,
     phaseStamp, phaseBudget,
     links, linkById, linkUrl, setLinkUrl,
     RS_KINDS, RS_STANCES, rsKind, rsStance,
