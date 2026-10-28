@@ -51,6 +51,7 @@
     App.research.init();
     App.settings.init();
     App.notify.init();
+    App.sync.init();
 
     initTabs();
     show((location.hash || "").replace("#", "") || "day");

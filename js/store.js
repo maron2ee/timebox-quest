@@ -151,6 +151,7 @@
       terms: [],      // 경제용어 노트
       research: [],   // 종목 리서치 메모
       pomo: { focusMin: 25, breakMin: 5, catId: "study" },
+      updatedAt: 0,    // 기기 간 동기화용 — 저장될 때마다 갱신(day.mtime 과는 별개로 문서 전체 기준)
     };
   }
 
@@ -169,7 +170,19 @@
     }
   }, 150);
 
-  function save() { persist(); }
+  function save() {
+    state.updatedAt = Date.now();
+    persist();
+    if (window.App && App.sync && App.sync.pushSoon) App.sync.pushSoon();
+  }
+
+  // 동기화 병합 결과를 그대로 반영 — save() 와 달리 updatedAt 을 다시 찍지 않고
+  // (병합이 이미 정했으므로) 클라우드로 되돌려 보내지도 않는다. 그건 호출한 쪽(sync.js)이 결정한다.
+  function replaceState(next) {
+    state = migrate(Object.assign(defaults(), next || {}));
+    persist();
+    return state;
+  }
 
   function load() {
     let raw = null;
@@ -502,7 +515,7 @@
   App.store = {
     KEY, SCHEMA,
     get state() { return state; },
-    load, save, reset, migrate, defaults,
+    load, save, reset, migrate, defaults, replaceState,
     blankDay, peekDay, getDay, touch,
     catById, projectById,
     slotMin, startMin, endMin, slotKeys,

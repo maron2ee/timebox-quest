@@ -75,9 +75,11 @@ js/archive.js       회고(K/P/T) 모아보기 (App.archive)
 js/terms.js         경제용어 노트 (App.terms)
 js/research.js      리서치 '링크 인덱스' — 2축 분류, 본문은 노션 (App.research)
 js/settings.js      타임라인·장시간·루틴구간·링크·알림·카테고리·데이터 (App.settings)
+js/sync.js          기기 간 동기화 — 본인 소유 Supabase 프로젝트로 PC↔모바일 (App.sync)
 js/app.js           부트스트랩 + 탭 전환 (App.nav)
-tests/logic.test.js 회귀 테스트 (util/store/market만, DOM 스텁)
+tests/logic.test.js 회귀 테스트 (util/store/market/judge/routine/sync, DOM 스텁)
 sw.js, manifest.webmanifest, icon.svg   PWA
+supabase.sql         동기화용 테이블 DDL — 사용자가 본인 프로젝트 SQL Editor에서 1회 실행
 ```
 
 ## 핵심 개념
@@ -110,6 +112,8 @@ sw.js, manifest.webmanifest, icon.svg   PWA
     review { k, p, t }, mtime
   }
   ddays[] / terms[] / pomo
+  updatedAt    문서 전체가 마지막으로 save() 된 시각(ms) — day.mtime 과는 별개,
+               동기화(sync.js)의 "이 기기 전체가 더 최신인가"를 가르는 유일한 기준
   settings.notify { enabled, lead(분), sound }
   settings.links[] { id, label, icon, url, daily, quick }
                       // 외부 기록 링크. 이름·아이콘·순서·개수 모두 사용자가 바꾼다
@@ -216,6 +220,38 @@ sw.js, manifest.webmanifest, icon.svg   PWA
   재설정. **URL을 input 으로 노출하는 코드를 다시 넣지 말 것** — "링크는 안 보이게 버튼형으로"
   가 명시적 요구사항이다. 설정 화면(`settings.js` 의 `renderLinks`)은 예외로, 거기선 편집을 위해
   주소 input 을 그대로 보여준다(전역 항목만; daily 항목은 거기서도 비활성).
+- **기기 간 동기화**(`sync.js`, 2026-10-28 신설). localStorage 는 기기별이라 PC·폰이 저절로 맞춰지지
+  않는다는 질문에서 시작 — 사용자가 "③ 진짜 동기화"를 골라서 만들었다.
+  - **앱이 백엔드를 소유하지 않는다.** 사용자가 본인 명의 무료 Supabase 프로젝트를 직접 만들고
+    (`supabase.sql` 을 그 프로젝트 SQL Editor에서 1회 실행), Project URL + **anon(publishable) key**
+    만 설정 화면에 붙여넣는다. 이 key 는 RLS 로 보호되는 클라이언트 공개용이라 노출돼도 안전하다
+    (서비스 role key 를 요구하지 않는다 — 절대 쓰지 말 것).
+    URL/key 는 메인 데이터와 분리된 `localStorage['tbxPlanner.sync.v1']` 에 저장 — "전체 초기화"에
+    영향받지 않는다(의도적 분리).
+  - **로그인은 비밀번호 없이 이메일 매직링크만** 쓴다(`signInWithOtp`). 계정 생성·비밀번호 관리
+    부담을 없애려는 선택 — 다시 비밀번호 로그인으로 바꾸지 말 것.
+  - **SDK는 CDN에서 지연 로드**한다(`@supabase/supabase-js@2` UMD, jsdelivr) — 동기화를 안 쓰는
+    사용자는 그 스크립트를 아예 받지 않는다.
+  - **저장 모델**: `user_state(user_id pk, data jsonb, updated_at)` 1행 = 사용자의 전체 state 스냅샷.
+  - **병합 전략(v1, 의도적 단순화)** — `App.sync.mergeStates(local, remote)`:
+    - `days{}` **밖**(settings·categories·projects·ddays·terms·research·pomo 등)은 **문서 전체
+      `updatedAt` 이 더 큰 쪽을 통째로** 쓴다.
+    - `days{}` **안**은 **날짜마다** `day.mtime` 이 더 큰 쪽을 고른다(한쪽에만 있는 날짜는 그대로 살림).
+    - ⚠️ 알려진 한계: 같은 동기화 구간 안에 두 기기가 `days` **밖**의 서로 다른 설정(예: PC에서 루틴
+      구간 수정, 폰에서 링크 수정)을 동시에 고치면 뒤처진 쪽 변경이 버려질 수 있다. 1인 2기기 기준으로
+      감내 가능하다고 보고 단순화했다 — 늘리려면(CRDT/필드별 병합 등) 먼저 사용자와 상의할 것.
+    - 순수 함수라 `tests/logic.test.js` 에서 DOM 없이 바로 검증한다.
+  - **`App.store.save()`** 가 모든 로컬 변경의 유일한 공통 경로다(`touch()`도 내부에서 `save()` 호출) —
+    그래서 `save()` 안에서 `state.updatedAt = Date.now()` 를 찍고 `App.sync.pushSoon()` 을 부르는
+    것만으로 앱 전체의 모든 수정이 자동으로 업로드 대상이 된다. **새 저장 경로를 추가할 때도 반드시
+    `save()`/`touch()` 를 거칠 것** — localStorage 를 직접 건드리면 동기화에서 빠진다.
+  - **`App.store.replaceState(next)`** 는 병합 결과를 되돌려 쓸 때만 쓴다. `save()` 와 달리
+    `updatedAt` 을 다시 찍지 않고(병합이 이미 결정했으므로) 자동으로 푸시하지도 않는다 — 풀 직후
+    "로컬에만 있던 날짜를 되돌려 올리기" 푸시는 `pullAndMerge()` 가 **명시적으로 한 번** 부른다.
+  - 풀은 로그인 직후, 수동 버튼, 그리고 **탭이 다시 보일 때마다**(`visibilitychange`/`focus`) 조용히
+    일어난다. 서버 푸시가 없는 `notify.js` 와 같은 한계 — 탭을 안 열어두면 그 기기는 안 받는다.
+  - 설정 화면 카드는 상태 점(꺼짐/로그인 필요/연결됨/동기화 중)과 수동 가져오기·올리기·로그아웃·
+    연결 끊기 버튼을 둔다 — 자동 동기화를 믿지 못할 상황(오프라인 작업 후 등)의 탈출구.
 
 ## 작업 규칙
 - 코드 수정 후 **`node tests/logic.test.js` 통과** 확인.

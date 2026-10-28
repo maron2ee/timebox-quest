@@ -36,7 +36,7 @@ sandbox.globalThis = sandbox;
 vm.createContext(sandbox);
 
 sandbox.window.App = sandbox.window.App || {};
-["util.js", "store.js", "market.js", "judge.js", "routine.js"].forEach((f) => {
+["util.js", "store.js", "market.js", "judge.js", "routine.js", "sync.js"].forEach((f) => {
   const code = fs.readFileSync(path.join(__dirname, "..", "js", f), "utf8");
   vm.runInContext(code, sandbox, { filename: f });
 });
@@ -717,6 +717,37 @@ t("applyToTimeline 은 10분 격자에 안 맞는 경계도 스냅해서 전부 
   const pre3 = blocks.find((b) => b.t === "매매 계획 확정");
   ok(pre2 && pre3, "두 구간 모두 칠해짐");
   eq(pre2.endMin, pre3.startMin, "맞닿은 경계가 같은 값으로 스냅되어 틈/겹침이 없다");
+});
+
+/* ---------- 동기화 병합 (mergeStates) ---------- */
+t("mergeStates: 상대가 없으면 로컬 그대로", () => {
+  const local = { updatedAt: 5, days: { a: { mtime: 1 } } };
+  eq(App.sync.mergeStates(local, null), local);
+});
+t("mergeStates: days 밖은 updatedAt 더 큰 쪽 전체를 쓴다", () => {
+  const local = { updatedAt: 10, settings: { x: "local" }, days: {} };
+  const remote = { updatedAt: 20, settings: { x: "remote" }, days: {} };
+  const m = App.sync.mergeStates(local, remote);
+  eq(m.settings.x, "remote", "더 최신인 remote 의 설정을 쓴다");
+  eq(m.updatedAt, 20);
+});
+t("mergeStates: days 는 날짜별로 mtime 더 큰 쪽을 고른다", () => {
+  const local = {
+    updatedAt: 10, settings: {},
+    days: { "2026-01-01": { mtime: 100, goal: "local-only" }, "2026-01-02": { mtime: 5, goal: "local-old" } },
+  };
+  const remote = {
+    updatedAt: 20, settings: {},
+    days: { "2026-01-02": { mtime: 50, goal: "remote-new" }, "2026-01-03": { mtime: 1, goal: "remote-only" } },
+  };
+  const m = App.sync.mergeStates(local, remote);
+  eq(m.days["2026-01-01"].goal, "local-only", "한쪽에만 있던 날은 그대로 살아남는다");
+  eq(m.days["2026-01-02"].goal, "remote-new", "같은 날은 mtime 더 큰 쪽이 이긴다");
+  eq(m.days["2026-01-03"].goal, "remote-only");
+});
+t("mergeStates: updatedAt 은 둘 중 더 큰 값", () => {
+  const m = App.sync.mergeStates({ updatedAt: 999, days: {} }, { updatedAt: 1, days: {} });
+  eq(m.updatedAt, 999);
 });
 
 /* ---------- 결과 ---------- */

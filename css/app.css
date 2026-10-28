@@ -603,3 +603,12 @@ input, textarea, select { font: inherit; color: inherit; }
 }
 .wd-btn.on { background: var(--surface); color: var(--ink-2); border-color: var(--line-strong); }
 .wd-btn:hover { border-color: var(--accent); }
+
+/* ---------- 동기화 상태 칩 ---------- */
+.sync-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); font-weight: 600; }
+.sync-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--faint); flex: 0 0 8px; }
+.sync-dot.off { background: var(--faint); }
+.sync-dot.warn { background: var(--warn); }
+.sync-dot.ok { background: var(--ok); }
+.sync-dot.busy { background: var(--accent); animation: syncPulse 1s ease-in-out infinite; }
+@keyframes syncPulse { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
