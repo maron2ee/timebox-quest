@@ -36,7 +36,7 @@ sandbox.globalThis = sandbox;
 vm.createContext(sandbox);
 
 sandbox.window.App = sandbox.window.App || {};
-["util.js", "store.js", "market.js", "judge.js"].forEach((f) => {
+["util.js", "store.js", "market.js", "judge.js", "routine.js"].forEach((f) => {
   const code = fs.readFileSync(path.join(__dirname, "..", "js", f), "utf8");
   vm.runInContext(code, sandbox, { filename: f });
 });
@@ -218,7 +218,7 @@ t("toneFor 는 비거래일에 null", () => {
 });
 
 
-/* ---------- 루틴 구간 ---------- */
+/* ---------- 루틴 구간 (2026-10-28 최종 시간표) ---------- */
 t("기본 구간은 10개, 시간순", () => {
   S.load();
   const ps = S.phases();
@@ -226,23 +226,36 @@ t("기본 구간은 10개, 시간순", () => {
   for (let i = 1; i < ps.length; i++) ok(ps[i].startMin >= ps[i - 1].endMin, "구간이 겹치지 않음");
 });
 t("phaseAt 이 맞는 구간을 찾는다", () => {
+  eq(S.phaseAt(U.toMin("07:40")).id, "pre1");
+  eq(S.phaseAt(U.toMin("08:00")).id, "pre2");
+  eq(S.phaseAt(U.toMin("08:20")).id, "pre3");
   eq(S.phaseAt(U.toMin("09:15")).id, "obs");
   eq(S.phaseAt(U.toMin("10:00")).id, "exec");
-  eq(S.phaseAt(U.toMin("12:00")).id, "rest");
+  eq(S.phaseAt(U.toMin("12:00")).id, "exec", "09:30~13:00 는 전부 집행·입력 구간");
+  eq(S.phaseAt(U.toMin("14:00")).id, "hold");
+  eq(S.phaseAt(U.toMin("15:00")).id, "close");
   eq(S.phaseAt(U.toMin("16:00")).id, "rec");
+  eq(S.phaseAt(U.toMin("19:30")).id, "evening1");
+  eq(S.phaseAt(U.toMin("21:30")).id, "learn");
   eq(S.phaseAt(U.toMin("03:00")), null, "구간 밖은 null");
+  eq(S.phaseAt(U.toMin("17:30")), null, "16:40~19:00 는 빈 시간");
 });
 t("장중 구간은 읽기 전용", () => {
   ["obs", "exec", "hold", "close"].forEach((id) => ok(S.phaseById(id).readonly, id));
-  ["pre1", "pre3", "rec", "learn"].forEach((id) => ok(!S.phaseById(id).readonly, id));
+  ["pre1", "pre2", "pre3", "rec", "evening1", "learn"].forEach((id) => ok(!S.phaseById(id).readonly, id));
 });
 t("phaseProgress 체크 집계", () => {
   S.reset();
   const d = S.getDay("2026-07-17");
-  d.checks["pre1:0"] = Date.now();
-  d.checks["pre1:2"] = Date.now();
-  const pr = S.phaseProgress("2026-07-17", S.phaseById("pre1"));
-  eq(pr, { done: 2, total: 3 });
+  d.checks["rec:0"] = Date.now();
+  d.checks["rec:2"] = Date.now();
+  const pr = S.phaseProgress("2026-07-17", S.phaseById("rec"));
+  eq(pr, { done: 2, total: 5 });
+});
+t("구간에 달린 원칙(note)은 체크 항목이 아니다", () => {
+  const exec = S.phaseById("exec");
+  ok(exec.note.includes("계획 매매 → 관찰 → 입력"));
+  eq(S.phaseBudget(exec).alloc, 0, "note 는 items 가 아니라 배분에 안 들어간다");
 });
 
 /* ---------- 구간 '도장' — 언제 확정했는가 ---------- */
@@ -251,23 +264,25 @@ t("phaseStamp 는 마지막 체크 시각을 쓴다", () => {
   const ds = "2026-07-17";
   const d = S.getDay(ds);
   const at = (h, m) => new Date(2026, 6, 17, h, m).getTime();
-  d.checks["pre3:0"] = at(8, 35);
-  d.checks["pre3:1"] = at(8, 42);
-  const st = S.phaseStamp(ds, "pre3");
+  // rec 구간(15:40~16:40, 5항목)으로 '부분 완료 + 마지막 체크시각' 을 검증
+  d.checks["rec:0"] = at(15, 45);
+  d.checks["rec:1"] = at(15, 58);
+  const st = S.phaseStamp(ds, "rec");
   eq(st.done, 2);
-  eq(st.total, 4);
-  eq(st.complete, false, "4개 중 2개면 미완료");
-  eq(U.toHHMM(st.atMin), "08:42", "가장 늦은 체크 시각");
-  eq(st.late, false, "구간(~09:00) 안이면 제시간");
+  eq(st.total, 5);
+  eq(st.complete, false, "5개 중 2개면 미완료");
+  eq(U.toHHMM(st.atMin), "15:58", "가장 늦은 체크 시각");
+  eq(st.late, false, "구간(~16:40) 안이면 제시간");
 });
 t("구간 종료 후 체크하면 late", () => {
   S.reset();
   const ds = "2026-07-17";
   const d = S.getDay(ds);
-  d.checks["pre3:0"] = new Date(2026, 6, 17, 9, 14).getTime();
+  // pre3(08:15~08:30) 종료를 넘겨서 체크 — "08:30에 가설을 잠근다"
+  d.checks["pre3:0"] = new Date(2026, 6, 17, 8, 45).getTime();
   const st = S.phaseStamp(ds, "pre3");
-  ok(st.late, "09:14 는 09:00 구간을 넘김 — 사후 작성");
-  eq(U.toHHMM(st.atMin), "09:14");
+  ok(st.late, "08:45 는 08:30 구간을 넘김 — 사후 작성");
+  eq(U.toHHMM(st.atMin), "08:45");
 });
 t("체크가 없으면 도장도 없다", () => {
   S.reset();
@@ -644,6 +659,22 @@ t("직접 고친 이름은 건드리지 않는다", () => {
   up.categories.forEach((c) => (by[c.id] = c.name));
   eq(by.read, "투자서적", "사용자 이름 보존");
   eq(by.read2, "소설");
+});
+
+
+/* ---------- 루틴 → 타임라인: 격자에 안 맞는 경계도 전부 칠해진다 ---------- */
+t("applyToTimeline 은 10분 격자에 안 맞는 경계도 스냅해서 전부 칠한다", () => {
+  S.reset();
+  const ds = "2026-07-17";
+  App.routine.applyToTimeline(ds);
+  const blocks = S.blocksOf(ds, "plan");
+  eq(blocks.length, S.phases().length, "모든 구간이 빠짐없이 칠해진다");
+  // pre2(07:50~08:15)/pre3(08:15~08:30) 는 08:15 가 10분 격자가 아니라서
+  // 08:20 으로 스냅된다 — 어느 한쪽도 사라지거나 겹치지 않아야 한다
+  const pre2 = blocks.find((b) => b.t === "리포트·관심종목");
+  const pre3 = blocks.find((b) => b.t === "매매 계획 확정");
+  ok(pre2 && pre3, "두 구간 모두 칠해짐");
+  eq(pre2.endMin, pre3.startMin, "맞닿은 경계가 같은 값으로 스냅되어 틈/겹침이 없다");
 });
 
 /* ---------- 결과 ---------- */

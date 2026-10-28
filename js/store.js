@@ -46,73 +46,70 @@
     { id: "p_life",   name: "일정",     tab: "plan",  collapsed: false },
   ];
 
-  /* ---------- 전업투자자 데일리 루틴 구간 ----------
+  /* ---------- 전업투자자 데일리 루틴 구간 (2026-10-28 최종본) ----------
      mode: input(입력) / plan(계획) / observe(매매금지) / exec(집행)
-           rest(휴식) / manage(관리) / record(기록) / learn(학습)
-     장중(observe·exec·manage) 체크리스트는 읽기 전용 — "장중엔 기록하지 않고 읽기만" 원칙 */
+           manage(관리) / record(기록) / watch(저녁관찰) / learn(학습)
+     장중(observe·exec·manage) 체크리스트는 읽기 전용 — "장중엔 기록하지 않고 읽기만" 원칙.
+     note: 체크 항목이 아닌 한 줄 원칙 — 구간 상단에 그대로 보여준다.
+     매매 계획·집행·종가배팅 조건·중단 규칙은 전부 '읽기용 리마인드'다.
+     (매매 계획/계획외 카운터를 추적하는 자동화는 2026-10-27에 걷어냈다 — 되살리지 말 것) */
   const PHASES = [
-    { id: "pre1", name: "뉴스·미국장", start: "07:00", end: "08:00", mode: "input", catId: "market",
+    { id: "pre1", name: "뉴스·미국장", start: "07:30", end: "07:50", mode: "input", catId: "market",
       items: [
-        { text: "전일 미국장 3지수·금리·환율·원자재 확인", min: 15 },
-        { text: "경제뉴스 제목만 훑고 정독은 5개까지", min: 35 },
-        { text: "오늘 유리한 요인 1개 / 불리한 요인 1개 적기", min: 10 },
+        { text: "전일 미국 뉴스·미국장 숫자 확인 → 시트 AM 숫자, 미국 주도섹터, 오늘 일정", min: 20 },
       ] },
-    { id: "pre2", name: "리포트·관심종목", start: "08:00", end: "08:30", mode: "input", catId: "research",
+    { id: "pre2", name: "리포트·관심종목", start: "07:50", end: "08:15", mode: "input", catId: "research",
       items: [
-        { text: "증권사 신규 리포트 2개 (관심종목·섹터 관련만)", min: 12 },
-        { text: "오늘 예정된 지표·실적·정책 일정 확인", min: 6 },
-        { text: "밤사이 공시 확인 (보유 종목 중심)", min: 6 },
-        { text: "전일 관찰목록에서 오늘 볼 종목 3~5개만 남기기", min: 6 },
+        { text: "돈 몰릴 뉴스 예고 + 모닝 리포트 원문 → 환경 예상·예상 섹터·아침 가설", min: 15 },
+        { text: "텔레그램 스크리너 + 경제뉴스 제목만 → 관심종목 Top3", min: 10 },
       ] },
-    { id: "pre3", name: "매매 계획 확정", start: "08:30", end: "09:00", mode: "plan", catId: "research",
+    { id: "pre3", name: "매매 계획 확정", start: "08:15", end: "08:30", mode: "plan", catId: "research",
+      note: "08:30에 가설을 잠급니다. 이후엔 고치지 않아요.",
       items: [
-        { text: "종목별 진입가·손절가·목표가·수량을 숫자로 적기", min: 13 },
-        { text: "손익비 1:2 미만이면 후보에서 제외", min: 5 },
-        { text: "‘오늘 매매하지 않는 조건’ 적기", min: 5 },
-        { text: "아침 가설 한 줄(강세/중립/약세)과 근거", min: 7 },
+        { text: "가설 확정·무효화 조건·매매 계획(진입가·손절가·수량) → 시트 기록", min: 15 },
       ] },
     { id: "obs", name: "관찰만", start: "09:00", end: "09:30", mode: "observe", catId: "market", readonly: true,
       items: [
-        { text: "코스피·코스닥 방향과 상승/하락 종목 수로 시장 강도 확인", min: 0 },
-        { text: "거래대금 상위에 어떤 섹터가 반복해서 올라오는지", min: 0 },
-        { text: "아침 가설이 맞는지 한 줄로 판정", min: 0 },
-        { text: "계획한 종목이 계획한 가격대에 왔는지만 확인", min: 0 },
+        { text: "코스피·코스닥 방향, 거래대금 상위 확인 (입력 없음)", min: 0 },
       ] },
-    { id: "exec", name: "계획대로 집행", start: "09:30", end: "11:00", mode: "exec", catId: "trade", readonly: true,
+    { id: "exec", name: "집행·입력", start: "09:30", end: "13:00", mode: "exec", catId: "trade", readonly: true,
+      note: "우선순위: 계획 매매 → 관찰 → 입력. 계획 외 매매는 1건만 나와도 그날 종료예요 — 수익이어도.",
       items: [
-        { text: "진입 전 — 08:30에 적어둔 종목인가", min: 0 },
-        { text: "진입 전 — 진입가·손절가·수량이 적어둔 그대로인가", min: 0 },
-        { text: "진입 전 — 매수 근거를 한 문장으로 말할 수 있는가", min: 0 },
-        { text: "진입 직후 — 손절 주문을 바로 걸어둔다", min: 0 },
-        { text: "적어두지 않은 종목이 눈에 들어오면 → 내일 관찰목록에만", min: 0 },
+        { text: "매매할 게 없으면: 증권사 리포트 1개 + 뉴스레터·경제뉴스·유튜브(30분 이내) + 남으면 독서 — 합계 90분 이내", min: 0 },
+        { text: "읽은 것 3줄 기록 — 스터디는 Study Archive, 뉴스는 데일리 노트 뉴스 칸", min: 0 },
+        { text: "체결 즉시 매매일지 한 줄", min: 0 },
       ] },
-    { id: "rest", name: "강제 휴식", start: "11:00", end: "13:00", mode: "rest", catId: "rest", items: [] },
-    { id: "hold", name: "보유 종목 관리", start: "13:00", end: "14:30", mode: "manage", catId: "trade", readonly: true,
+    { id: "hold", name: "보유 종목 관리", start: "13:00", end: "14:50", mode: "manage", catId: "trade", readonly: true,
+      note: "연속 3회 손절 또는 하루 −2%(약 9만원)면 그날 종료예요.",
       items: [
-        { text: "손절가 이탈 종목이 있는가 → 있으면 고민 없이 실행", min: 0 },
-        { text: "주도 섹터가 오전 강도를 유지하는가", min: 0 },
-        { text: "신규 진입 금지 — 보유 종목만", min: 0 },
+        { text: "신규 진입 금지", min: 0 },
       ] },
-    { id: "close", name: "마감 대응", start: "14:30", end: "15:30", mode: "manage", catId: "trade", readonly: true,
+    { id: "close", name: "마감 대응", start: "14:50", end: "15:30", mode: "manage", catId: "trade", readonly: true,
+      note: "종가배팅 최종 판단 — 계획에 있던 후보만, 4조건을 모두 확인하세요.",
       items: [
-        { text: "마감 대응 · 종가 베팅", min: 0 },
-        { text: "종가 기준 내일 관찰목록 정리", min: 0 },
+        { text: "① 외국인 코스피 순매수", min: 0 },
+        { text: "② 전일까지 외국인 3일 연속 매도가 아닐 것", min: 0 },
+        { text: "③ 종가위치 95% 이상", min: 0 },
+        { text: "④ 1회 비중 5% 이하", min: 0 },
       ] },
-    { id: "rec", name: "기록·마감 분석", start: "15:30", end: "16:30", mode: "record", catId: "research",
+    { id: "rec", name: "기록·마감 분석", start: "15:40", end: "16:40", mode: "record", catId: "research",
+      note: "순서: 사실 기록 → 내 판정 → 남의 해석. 텔레그램·마감 리포트는 판정을 쓴 뒤에 — 다른 점은 가설 DB 후보로만.",
       items: [
-        { text: "오늘 체결 거래를 매매일지에 입력 (당일 입력 원칙)", min: 10 },
-        { text: "마감 숫자 4종 — 투자자별 수급·개별 수급·섹터·매크로", min: 15 },
-        { text: "아침 가설 판정 + 달랐다면 왜 달랐는지 한 줄", min: 5 },
-        { text: "데일리 노트 4블록 작성 (노션)", min: 20 },
-        { text: "오늘 손익·누적 손익 → 중단 규칙에 걸리는지 확인", min: 5 },
-        { text: "내일 관찰목록 / 오늘 안 할 것 정리", min: 5 },
+        { text: "당일 체결 매매일지: 계획 여부 O/X, 손절 준수 → 매매일지", min: 10 },
+        { text: "마감 숫자: 지수, 투자자별 매매동향, 거래대금 → 시트 PM", min: 15 },
+        { text: "개별종목 수급, 섹터 특이사항 → 시트 PM", min: 10 },
+        { text: "가설 판정: 환경 실제, 핵심 결론 (틀렸으면 이유 한 줄) → 시트 PM", min: 10 },
+        { text: "데일리 노트 4블록 + 뉴스 칸 → 노션", min: 15 },
       ] },
-    { id: "learn", name: "학습", start: "16:30", end: "18:00", mode: "learn", catId: "read",
+    { id: "evening1", name: "종배 후보 관찰", start: "19:00", end: "20:00", mode: "watch", catId: "research",
       items: [
-        { text: "증권사 산업 리포트 → 업종 노트 1개", min: 30 },
-        { text: "독서·경제 공부 → 공부 로그 한 줄", min: 30 },
-        { text: "투자 시나리오 점검 → 유지/폐기", min: 15 },
-        { text: "텔레그램 분석 → 채널별 적중/실패 (하루 1회)", min: 15 },
+        { text: "종배 후보 관찰 — 8501 대시보드 한 곳에만", min: 40 },
+        { text: "내일 관찰 가격대 → 데일리 노트 4번 블록", min: 10 },
+        { text: "텔레그램 새 실적·뉴스 → 가설로 키울 만하면 가설 DB, 아니면 뉴스 칸 한 줄", min: 10 },
+      ] },
+    { id: "learn", name: "리포트·독서", start: "21:00", end: "22:00", mode: "learn", catId: "read",
+      items: [
+        { text: "산업 리포트·독서·기업 분석 → Study Archive", min: 60 },
       ] },
   ];
 

@@ -10,14 +10,15 @@
   const S = () => App.store;
 
   const MODE = {
-    input:   { label: "입력",      tone: "blue",   hint: "정보 수집은 제한하고, 09:00 전에 가설과 위험 한도를 확정합니다." },
-    plan:    { label: "계획",      tone: "indigo", hint: "오늘의 마지막 5분이 오전의 목적입니다. 가설을 먼저 적으세요." },
-    observe: { label: "매매 금지", tone: "red",    hint: "관찰만. 신규 진입 금지 — 시장 강도와 주도 섹터만 확인합니다." },
-    exec:    { label: "집행",      tone: "green",  hint: "08:30에 적어둔 것만 실행합니다. 새로운 분석은 하지 않습니다." },
-    rest:    { label: "강제 휴식", tone: "gray",   hint: "화면을 끄세요. 이 시간의 매매는 계획이 아니라 충동입니다." },
-    manage:  { label: "관리",      tone: "amber",  hint: "보유 종목만. 신규 진입 금지." },
-    record:  { label: "기록",      tone: "purple", hint: "당일 입력 원칙 — 미루면 기억이 아니라 추정이 됩니다." },
-    learn:   { label: "학습",      tone: "teal",   hint: "산업 리포트·독서·시나리오 점검. 텔레그램은 하루 1회 여기서." },
+    input:   { label: "입력",      tone: "blue",   hint: "정보 수집은 제한하고, 08:30에 가설과 계획을 확정합니다." },
+    plan:    { label: "계획",      tone: "indigo", hint: "08:30에 가설을 잠급니다. 이후엔 고치지 않아요." },
+    observe: { label: "매매 금지", tone: "red",    hint: "관찰만. 신규 진입 금지 — 시장 강도만 확인합니다." },
+    exec:    { label: "집행",      tone: "green",  hint: "우선순위는 계획 매매 → 관찰 → 입력 순입니다." },
+    rest:    { label: "휴식",      tone: "gray",   hint: "쉬는 시간입니다." },   // 예전 저장본 호환용(이제 어떤 기본 구간도 쓰지 않음)
+    manage:  { label: "관리",      tone: "amber",  hint: "신규 진입 금지. 보유 종목만 관리합니다." },
+    record:  { label: "기록",      tone: "purple", hint: "순서는 사실 기록 → 내 판정 → 남의 해석입니다." },
+    watch:   { label: "관찰",      tone: "gray",   hint: "종배 후보를 지켜보는 시간입니다." },
+    learn:   { label: "학습",      tone: "teal",   hint: "산업 리포트·독서·기업 분석 — 하루를 마무리합니다." },
   };
 
   let selected = null;   // 사용자가 눌러서 보고 있는 구간 id (null이면 '지금')
@@ -108,10 +109,13 @@
     host.innerHTML = "";
 
     if (p.readonly) {
-      host.appendChild(U.el("div", "ro-note", "장중에는 기록하지 않고 <b>읽기만</b> 합니다"));
+      host.appendChild(U.el("div", "ro-note",
+        p.note ? U.esc(p.note) : "장중에는 기록하지 않고 <b>읽기만</b> 합니다"));
       p.items.forEach((it) => host.appendChild(U.el("div", "ro-item", U.esc(it.text))));
       return;
     }
+
+    if (p.note) host.appendChild(U.el("div", "ro-note", U.esc(p.note)));
 
     const budget = S().phaseBudget(p);
     if (budget.alloc) {
@@ -157,17 +161,24 @@
 
   }
 
-  /* ---------- 루틴을 타임라인 PLAN에 깔기 ---------- */
+  /* ---------- 루틴을 타임라인 PLAN에 깔기 ----------
+     구간 경계가 slotMin 격자(dayStartHour 기준 10분 단위 등)에 안 맞을 수 있다
+     (예: 08:15는 10분 격자가 아님). 안 맞춰 그대로 칠하면 격자에 없는 키("08:15")에
+     써서 타임라인에는 안 보이고, 그 자리를 이전 구간이 밀고 들어가며 과대 점유한다.
+     그래서 여기서만 경계를 가장 가까운 격자로 스냅한다 — phaseAt/phaseStamp 등
+     실제 시각 판정 로직은 원래의(스냅 안 한) startMin/endMin 을 그대로 쓴다. */
   function applyToTimeline(ds) {
     const day = S().getDay(ds);
+    const step = S().slotMin();
+    const snap = (min) => Math.round(min / step) * step;
     let painted = 0;
     S().phases().forEach((p) => {
       const cat = S().catById(p.catId) ? p.catId : (S().state.categories[0] || {}).id;
-      for (let m = p.startMin; m < p.endMin; m += S().slotMin()) {
-        const k = U.toHHMM(m);
-        if (m < S().startMin() || m >= S().endMin()) continue;
-        day.plan[k] = { c: cat, t: p.name };
-        painted += S().slotMin();
+      const start = Math.max(S().startMin(), snap(p.startMin));
+      const end = Math.min(S().endMin(), snap(p.endMin));
+      for (let m = start; m < end; m += step) {
+        day.plan[U.toHHMM(m)] = { c: cat, t: p.name };
+        painted += step;
       }
     });
     S().touch(ds);
