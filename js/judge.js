@@ -78,8 +78,9 @@
       row.appendChild(label);
 
       const acts = U.el("span", "jacts");
-      [["done", "했음"], ["skip", "안 함"], ["other", "다른 걸"]].forEach(([kind, text]) => {
-        const btn = U.el("button", "jbtn" + (v === kind ? " on " + kind : ""), text);
+      [["done", "○", "했음"], ["skip", "✕", "안 함"], ["other", "→", "다른 걸 함"]].forEach(([kind, icon, label]) => {
+        const btn = U.el("button", "jbtn" + (v === kind ? " on " + kind : ""), icon);
+        btn.title = label;
         btn.onclick = () => {
           if (kind === "other") {
             openPicker = openPicker === b.key ? null : b.key;

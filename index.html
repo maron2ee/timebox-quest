@@ -252,6 +252,20 @@
           <input type="checkbox" id="setRoutine"> 사용
         </label>
       </div>
+      <div class="stat-sub" style="margin-bottom:6px">시간표 세트 — <b>기본</b>은 늘 적용되는 시간표예요. 특정 달·분기에만 다르게 쓰고 싶으면 세트를 추가하세요.</div>
+      <div class="row" id="schedChips" style="gap:6px;flex-wrap:wrap;margin-bottom:8px"></div>
+      <div class="row" id="schedEdit" style="gap:8px;flex-wrap:wrap;margin-bottom:10px" hidden>
+        <input class="inp" id="schedName" placeholder="이름" style="max-width:160px">
+        <input class="inp" id="schedFrom" type="date" style="max-width:150px">
+        <span>~</span>
+        <input class="inp" id="schedTo" type="date" style="max-width:150px">
+        <button class="btn sm ghost" id="schedDel" style="color:var(--danger)">이 세트 삭제</button>
+      </div>
+      <div class="row" style="gap:8px;margin-bottom:14px">
+        <button class="btn sm" id="schedAddMonth">＋ 이번 달 시간표</button>
+        <button class="btn sm" id="schedAddQuarter">＋ 이번 분기 시간표</button>
+      </div>
+
       <div id="phaseRows"></div>
       <button class="btn sm" id="phaseReset" style="margin-top:8px">기본 시간표로 되돌리기</button>
       <div class="stat-sub" style="margin-top:8px">장중 구간(관찰·집행·관리)의 체크리스트는 읽기 전용이에요 — “장중에는 기록하지 않고 읽기만” 원칙.</div>

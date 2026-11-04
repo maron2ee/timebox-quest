@@ -131,7 +131,9 @@
         market: { show: true, sessions: null },
         carryOver: true,     // 어제 미완료 할일 이어받기 제안
         seed: SEED,          // 기본값 보강이 어디까지 적용됐는지
-        routine: { enabled: true, phases: PHASES.map((p) => ({ ...p, items: p.items.map((i) => ({ ...i })) })) },
+        // schedules[]: 특정 달력 구간(from~to)에만 적용되는 '고정 시간표' 세트.
+        // 그 구간 밖(또는 세트가 전혀 없을 때)은 phases(기본)를 그대로 쓴다.
+        routine: { enabled: true, phases: PHASES.map((p) => ({ ...p, items: p.items.map((i) => ({ ...i })) })), schedules: [] },
         // 외부 기록 링크 — 이름·URL 모두 편집 가능. daily:true 면 URL 을 날짜별(day.links[id])로 저장
         // quick:true 면 주소칸 없이 '바로가기' 아이콘 버튼으로만 보인다
         links: [
@@ -227,14 +229,27 @@
     if (!Array.isArray(s.settings.routine.phases) || !s.settings.routine.phases.length) {
       s.settings.routine.phases = d.settings.routine.phases;
     }
-    // 구간 항목: 예전 문자열 배열 → {text, min} 객체 배열
-    s.settings.routine.phases.forEach((p) => {
+    // 구간 항목: 예전 문자열 배열 → {text, min} 객체 배열. phases/schedules 공용.
+    const normPhaseItems = (list) => (Array.isArray(list) ? list : []).forEach((p) => {
       p.items = (Array.isArray(p.items) ? p.items : []).map((it) =>
         typeof it === "string"
           ? { text: it, min: 0 }
           : { text: (it && it.text) || "", min: Math.max(0, Math.round(+(it && it.min) || 0)) }
       ).filter((it) => it.text);
     });
+    normPhaseItems(s.settings.routine.phases);
+    // 고정 시간표 세트(월/분기별) — 특정 기간(from~to)에만 phases 대신 적용된다.
+    if (!Array.isArray(s.settings.routine.schedules)) s.settings.routine.schedules = [];
+    s.settings.routine.schedules = s.settings.routine.schedules
+      .filter((sc) => sc && typeof sc === "object")
+      .map((sc) => ({
+        id: sc.id || U.uid("sch"),
+        name: (sc.name || "시간표").toString().slice(0, 30),
+        from: sc.from || U.today(),
+        to: sc.to || sc.from || U.today(),
+        phases: Array.isArray(sc.phases) ? sc.phases : [],
+      }));
+    s.settings.routine.schedules.forEach((sc) => normPhaseItems(sc.phases));
     if (!Array.isArray(s.categories) || !s.categories.length) s.categories = d.categories;
     // 카테고리 대분류: 예전 study(boolean) → group(id). 멱등.
     s.categories = s.categories.map((c) => {
@@ -446,23 +461,37 @@
 
   /* ---------- 루틴 구간 ----------
      phase.days: 요일 제한 — [0=일,1=월,...,6=토] 의 부분집합. 생략(undefined)이면 매일 적용.
-     phases()      — 설정에 정의된 전부(편집용, 요일 무관하게 다 보여줘야 함)
-     phasesOn(ds)  — 그 날짜의 요일에 실제로 적용되는 구간만(화면 표시·타임라인 적용용) */
+     schedules[]: 특정 달력 구간(from~to, 'YYYY-MM-DD' 포함)에만 적용되는 '고정 시간표' 세트.
+                  그 구간에 해당하는 날짜는 기본 phases 대신 그 세트의 phases 를 쓴다.
+                  겹치는 세트가 여럿이면 배열의 앞쪽이 이긴다(의도적 단순화 — 1인 사용 기준).
+     phases()        — 기본 시간표 전부(편집용, 요일 무관하게 다 보여줘야 함). 세트 편집 아님.
+     scheduleForDate(ds) — 그 날짜에 적용되는 세트(없으면 null → 기본 phases 사용)
+     phasesOn(ds)    — 그 날짜에 실제로 적용되는 구간만(세트 해석 + 요일 필터까지 끝낸 상태) */
   function phases() {
     const r = state.settings.routine || {};
     return (r.phases || []).map((p) => ({ ...p, startMin: U.toMin(p.start), endMin: U.toMin(p.end) }));
   }
+  function schedules() { return (state.settings.routine || {}).schedules || []; }
+  function scheduleById(id) { return schedules().find((sc) => sc.id === id) || null; }
+  function scheduleForDate(ds) {
+    return schedules().find((sc) => sc.from <= ds && ds <= sc.to) || null;
+  }
   function weekdayOf(ds) { return U.parseYmd(ds).getDay(); }
   function phaseActiveOn(p, dow) { return !Array.isArray(p.days) || !p.days.length || p.days.includes(dow); }
   function phasesOn(ds) {
+    const sc = scheduleForDate(ds);
+    const raw = sc ? sc.phases : (state.settings.routine || {}).phases || [];
     const dow = weekdayOf(ds);
-    return phases().filter((p) => phaseActiveOn(p, dow));
+    return raw
+      .map((p) => ({ ...p, startMin: U.toMin(p.start), endMin: U.toMin(p.end) }))
+      .filter((p) => phaseActiveOn(p, dow));
   }
-  // min(분)에 해당하는 구간. ds 를 생략하면 '오늘'의 요일 기준(가장 흔한 용례: 지금 구간 찾기).
+  // min(분)에 해당하는 구간. ds 를 생략하면 '오늘'의 요일/세트 기준(가장 흔한 용례: 지금 구간 찾기).
   function phaseAt(min, ds) {
     return phasesOn(ds || U.today()).find((p) => min >= p.startMin && min < p.endMin) || null;
   }
-  // 요일 제한과 무관하게 id 로 직접 찾는다 — 수동 선택·phaseStamp 등 '그 구간 자체'를 다룰 때 씀.
+  // 요일 제한과 무관하게 '기본 시간표'에서 id 로 직접 찾는다 — 수동 선택 등 '그 구간 자체'를
+  // 다룰 때 씀. 세트가 적용되는 날짜를 다룰 땐 phasesOn(ds) 를 먼저 쓸 것(phaseStamp 참고).
   function phaseById(id) { return phases().find((p) => p.id === id) || null; }
   // 항목 배분 시간 합계 vs 구간 길이
   function phaseBudget(p) {
@@ -482,7 +511,9 @@
   // 구간을 언제 끝냈는지. checks 에 저장된 timestamp 를 읽는다.
   // late = 구간 종료 시각을 넘겨서 체크함 → 사후 기록
   function phaseStamp(ds, phaseId) {
-    const p = phaseById(phaseId);
+    // 그 날짜에 실제 적용된 세트(있다면) 안에서 먼저 찾는다 — 세트가 같은 id를 다른 시각으로
+    // 재정의했을 수 있기 때문에 기본(phaseById)을 바로 쓰면 틀린 구간 길이로 late 를 판정하게 된다.
+    const p = phasesOn(ds).find((x) => x.id === phaseId) || phaseById(phaseId);
     if (!p) return null;
     const checks = peekDay(ds).checks || {};
     const total = (p.items || []).length;
@@ -524,6 +555,7 @@
     blocksOf, verdictOf, judgeProgress,
     tasksOf, taskStats, upcomingDdays,
     phases, phasesOn, weekdayOf, phaseAt, phaseById, phaseProgress,
+    schedules, scheduleById, scheduleForDate,
     phaseStamp, phaseBudget,
     links, linkById, linkUrl, setLinkUrl,
     RS_KINDS, RS_STANCES, rsKind, rsStance,

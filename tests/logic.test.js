@@ -300,6 +300,53 @@ t("applyToTimeline 은 그 날짜에 적용되는 구간만 칠한다", () => {
   ok(S.blocksOf("2026-10-30", "plan").some((b) => b.t === "기록·마감 분석"), "금요일엔 칠해진다");
 });
 
+/* ---------- 고정 시간표 세트 (routine.schedules — 월/분기별) ---------- */
+t("세트가 없으면 scheduleForDate 는 null, phasesOn 은 기본값", () => {
+  S.reset();
+  eq(S.scheduleForDate("2026-11-15"), null);
+  const all = S.phases().map((p) => p.id).sort();
+  eq(S.phasesOn("2026-11-15").map((p) => p.id).sort(), all);
+});
+t("기간 안의 날짜는 세트의 phases 를, 밖은 기본 phases 를 쓴다", () => {
+  S.reset();
+  S.state.settings.routine.schedules.push({
+    id: "sch1", name: "11월 시간표", from: "2026-11-01", to: "2026-11-30",
+    phases: [{ id: "only-nov", name: "11월 전용", start: "10:00", end: "11:00", mode: "learn", catId: "study", items: [] }],
+  });
+  eq(S.scheduleForDate("2026-11-15").id, "sch1");
+  eq(S.phasesOn("2026-11-15").map((p) => p.id), ["only-nov"], "11월 안이면 세트 전용 구간만 보인다");
+  eq(S.scheduleForDate("2026-10-31"), null, "11월 밖은 세트가 안 걸린다");
+  const baseIds = S.phases().map((p) => p.id).sort();
+  eq(S.phasesOn("2026-10-31").map((p) => p.id).sort(), baseIds, "10월엔 기본 시간표 그대로");
+});
+t("phaseAt 도 세트 기간 안에서는 세트의 구간을 찾는다", () => {
+  S.reset();
+  S.state.settings.routine.schedules.push({
+    id: "sch1", name: "11월 시간표", from: "2026-11-01", to: "2026-11-30",
+    phases: [{ id: "only-nov", name: "11월 전용", start: "10:00", end: "11:00", mode: "learn", catId: "study", items: [] }],
+  });
+  eq(S.phaseAt(U.toMin("10:30"), "2026-11-15").id, "only-nov");
+  eq(S.phaseAt(U.toMin("10:30"), "2026-10-31"), null, "10월엔 그 시각에 아무 구간도 없다(기본 시간표 기준)");
+});
+t("세트 안에서도 phase.days(요일 제한)는 그대로 적용된다", () => {
+  S.reset();
+  S.state.settings.routine.schedules.push({
+    id: "sch1", name: "11월 시간표", from: "2026-11-01", to: "2026-11-30",
+    phases: [{ id: "fri-only", name: "금요일 전용", start: "10:00", end: "11:00", mode: "learn", catId: "study", items: [], days: [5] }],
+  });
+  eq(S.weekdayOf("2026-11-06"), 5, "2026-11-06 은 금요일");
+  ok(S.phasesOn("2026-11-06").some((p) => p.id === "fri-only"), "11월 금요일엔 보인다");
+  ok(!S.phasesOn("2026-11-05").some((p) => p.id === "fri-only"), "11월 목요일엔 안 보인다");
+});
+t("겹치는 세트는 배열 앞쪽이 이긴다", () => {
+  S.reset();
+  S.state.settings.routine.schedules.push(
+    { id: "first", name: "먼저", from: "2026-11-01", to: "2026-11-30", phases: [] },
+    { id: "second", name: "나중", from: "2026-11-10", to: "2026-11-20", phases: [] },
+  );
+  eq(S.scheduleForDate("2026-11-15").id, "first");
+});
+
 /* ---------- 구간 '도장' — 언제 확정했는가 ---------- */
 t("phaseStamp 는 마지막 체크 시각을 쓴다", () => {
   S.reset();
@@ -335,6 +382,19 @@ t("체크가 없으면 도장도 없다", () => {
 });
 t("없는 구간은 null", () => {
   eq(S.phaseStamp("2026-07-17", "없는구간"), null);
+});
+t("phaseStamp 는 그 날짜에 적용된 세트의 구간 시각을 쓴다(기본과 달라도)", () => {
+  S.reset();
+  // 11월 세트에서 pre3 를 08:30~08:45 로 줄여뒀다고 가정(기본은 08:30~09:00)
+  S.state.settings.routine.schedules.push({
+    id: "novSched", name: "11월", from: "2026-11-01", to: "2026-11-30",
+    phases: [{ id: "pre3", name: "매매 계획 확정(11월)", start: "08:30", end: "08:45", mode: "plan", catId: "research", items: [{ text: "x", min: 0 }] }],
+  });
+  const ds = "2026-11-10";
+  const d = S.getDay(ds);
+  d.checks["pre3:0"] = new Date(2026, 10, 10, 8, 50).getTime();   // 11월 세트 기준으론 08:45 넘김 → late
+  const st = S.phaseStamp(ds, "pre3");
+  ok(st.late, "11월 세트의 구간 종료(08:45)를 기준으로 판정해야 한다 — 기본(09:00) 기준이면 안 늦은 걸로 잘못 나온다");
 });
 
 /* ---------- 실천율: 카테고리 분 vs 슬롯 ---------- */

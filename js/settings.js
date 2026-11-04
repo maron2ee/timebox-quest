@@ -37,7 +37,70 @@
   }
 
   /* ---------- 루틴 구간 ---------- */
-  function phasesRaw() { return S().state.settings.routine.phases; }
+  // activeScheduleId: 지금 설정 화면에서 편집 중인 대상. null = 기본 시간표.
+  // 실제 하루 화면에 뭐가 적용되는지는 '보는 날짜'가 그 세트 기간(from~to) 안인지로 정해진다
+  // (store.phasesOn) — 여기서 뭘 선택해 편집 중이든 오늘 화면엔 영향 없다.
+  let activeScheduleId = null;
+  function phasesRaw() {
+    if (activeScheduleId) {
+      const sc = S().scheduleById(activeScheduleId);
+      if (sc) return sc.phases;
+      activeScheduleId = null;
+    }
+    return S().state.settings.routine.phases;
+  }
+  function cloneBasePhases() {
+    return S().state.settings.routine.phases.map((p) => ({ ...p, items: (p.items || []).map((i) => ({ ...i })) }));
+  }
+
+  function renderScheduleChips() {
+    const host = U.byId("schedChips");
+    if (!host) return;
+    host.innerHTML = "";
+    const base = U.el("button", "chip" + (!activeScheduleId ? " active" : ""), "기본");
+    base.onclick = () => { activeScheduleId = null; openPhase = null; render2(); };
+    host.appendChild(base);
+    S().schedules().forEach((sc) => {
+      const chip = U.el("button", "chip" + (activeScheduleId === sc.id ? " active" : ""), U.esc(sc.name));
+      chip.title = `${sc.from} ~ ${sc.to}`;
+      chip.onclick = () => { activeScheduleId = sc.id; openPhase = null; render2(); };
+      host.appendChild(chip);
+    });
+  }
+  function renderScheduleEditRow() {
+    const wrap = U.byId("schedEdit");
+    if (!wrap) return;
+    const sc = activeScheduleId ? S().scheduleById(activeScheduleId) : null;
+    wrap.hidden = !sc;
+    if (!sc) return;
+    const nm = U.byId("schedName"), fr = U.byId("schedFrom"), to = U.byId("schedTo");
+    if (nm && !nm.matches(":focus")) nm.value = sc.name;
+    if (fr) fr.value = sc.from;
+    if (to) to.value = sc.to;
+  }
+  // 세트 선택/추가/삭제 뒤 전부 다시 그린다 (체인 전체를 매번 호출하면 순서 실수를 막기 쉽다)
+  function render2() { renderScheduleChips(); renderScheduleEditRow(); renderPhases(); App.day.refresh(); }
+
+  function monthRange(ds) { return { from: U.monthStart(ds), to: U.monthEnd(ds) }; }
+  function monthName(ds) { const d = U.parseYmd(ds); return `${d.getFullYear()}년 ${d.getMonth() + 1}월`; }
+  function quarterRange(ds) {
+    const d = U.parseYmd(ds);
+    const startMonth = Math.floor(d.getMonth() / 3) * 3;
+    return {
+      from: U.ymd(new Date(d.getFullYear(), startMonth, 1)),
+      to: U.ymd(new Date(d.getFullYear(), startMonth + 3, 0)),
+    };
+  }
+  function quarterName(ds) { const d = U.parseYmd(ds); return `${d.getFullYear()}년 ${Math.floor(d.getMonth() / 3) + 1}분기`; }
+  function addSchedule(name, range) {
+    const sc = { id: U.uid("sch"), name, from: range.from, to: range.to, phases: cloneBasePhases() };
+    S().schedules().push(sc);
+    activeScheduleId = sc.id;
+    openPhase = null;
+    S().save();
+    render2();
+    App.ui.toast(`"${name}" 시간표를 만들었어요 — 지금의 기본 시간표를 복사해서 시작합니다`);
+  }
 
   let openPhase = null;   // 항목을 펼쳐 둔 구간 id
 
@@ -46,6 +109,8 @@
     if (!host) return;
     const cb = U.byId("setRoutine");
     if (cb) cb.checked = S().state.settings.routine.enabled !== false;
+    const resetBtn = U.byId("phaseReset");
+    if (resetBtn) resetBtn.textContent = activeScheduleId ? "이 세트를 기본 시간표로 다시 복사" : "기본 시간표로 되돌리기";
 
     const cats = S().state.categories;
     host.innerHTML = "";
@@ -87,11 +152,12 @@
 
       row.appendChild(U.el("span", "mode-tag sm", U.esc((App.routine.MODE[p.mode] || {}).label || p.mode)));
 
-      const live = S().phaseById(p.id);
       if (p.readonly) {
         row.appendChild(U.el("span", "stat-sub", "읽기 전용 · 타이머 없음"));
-      } else if (live) {
-        const b = S().phaseBudget(live);
+      } else {
+        // phaseById(기본 시간표 전용)를 쓰면 세트 편집 중엔 엉뚱한(기본) 구간 길이로 배분을 계산하게
+        // 된다 — p 자신의 start/end 로 직접 계산한다.
+        const b = S().phaseBudget({ items: p.items, startMin: U.toMin(p.start), endMin: U.toMin(p.end) });
         row.appendChild(U.el("span", "budget" + (b.over ? " over" : ""), `배분 ${b.alloc}/${b.len}분`));
       }
 
@@ -385,6 +451,8 @@
     if (en) en.value = s.dayEndHour;
     if (sl) sl.value = String(s.slotMin);
     renderMarket();
+    renderScheduleChips();
+    renderScheduleEditRow();
     renderPhases();
     renderNotify();
     renderLinks();
@@ -433,10 +501,51 @@
     });
     U.on("notifyTest", "click", () => App.notify.test());
     U.on("phaseReset", "click", () => {
+      if (activeScheduleId) {
+        const sc = S().scheduleById(activeScheduleId);
+        if (!sc) return;
+        if (!confirm(`"${sc.name}" 세트를 지금의 기본 시간표로 다시 복사할까요? (이 세트에서 고친 내용은 사라져요)`)) return;
+        sc.phases = cloneBasePhases();
+        S().save(); renderPhases(); App.day.refresh();
+        App.ui.toast("기본 시간표로 다시 복사했어요");
+        return;
+      }
       if (!confirm("루틴 구간을 기본 시간표로 되돌릴까요? (이름·시간·카테고리가 초기화돼요)")) return;
       S().state.settings.routine.phases = S().defaults().settings.routine.phases;
       S().save(); renderPhases(); App.day.refresh();
       App.ui.toast("기본 시간표로 되돌렸어요");
+    });
+    U.on("schedAddMonth", "click", () => addSchedule(monthName(U.today()), monthRange(U.today())));
+    U.on("schedAddQuarter", "click", () => addSchedule(quarterName(U.today()), quarterRange(U.today())));
+    U.on("schedName", "change", (e) => {
+      const sc = S().scheduleById(activeScheduleId);
+      if (!sc) return;
+      sc.name = e.target.value.trim().slice(0, 30) || "시간표";
+      e.target.value = sc.name;
+      S().save(); renderScheduleChips();
+    });
+    U.on("schedFrom", "change", (e) => {
+      const sc = S().scheduleById(activeScheduleId);
+      if (!sc) return;
+      if (e.target.value > sc.to) { App.ui.toast("시작일이 종료일보다 늦을 수 없어요"); e.target.value = sc.from; return; }
+      sc.from = e.target.value;
+      S().save(); App.day.refresh();
+    });
+    U.on("schedTo", "change", (e) => {
+      const sc = S().scheduleById(activeScheduleId);
+      if (!sc) return;
+      if (e.target.value < sc.from) { App.ui.toast("종료일이 시작일보다 빠를 수 없어요"); e.target.value = sc.to; return; }
+      sc.to = e.target.value;
+      S().save(); App.day.refresh();
+    });
+    U.on("schedDel", "click", () => {
+      const sc = S().scheduleById(activeScheduleId);
+      if (!sc) return;
+      if (!confirm(`"${sc.name}" 시간표 세트를 삭제할까요?`)) return;
+      S().state.settings.routine.schedules = S().schedules().filter((x) => x.id !== sc.id);
+      activeScheduleId = null;
+      S().save(); render2();
+      App.ui.toast("삭제했어요");
     });
     U.on("setRoutine", "change", (e) => {
       S().state.settings.routine.enabled = e.target.checked;
