@@ -9,7 +9,7 @@
 
   const KEY = "tbxPlanner.v1";
   const SCHEMA = 1;
-  const SEED = 3;   // 기본 카테고리·할일그룹 보강 버전 (올리면 누락분을 1회 추가)
+  const SEED = 4;   // 기본 카테고리·할일그룹·루틴 보강 버전 (올리면 누락분을 1회 추가)
 
   /* ---------- 카테고리 대분류 ----------
      productive:true = '생산 시간'에 합산 */
@@ -46,22 +46,28 @@
     { id: "p_life",   name: "일정",     tab: "plan",  collapsed: false },
   ];
 
-  /* ---------- 전업투자자 데일리 루틴 구간 (2026-10-28 최종본) ----------
+  /* ---------- 전업투자자 데일리 루틴 구간 (2026-11-18 개정) ----------
      mode: input(입력) / plan(계획) / observe(매매금지) / exec(집행)
            manage(관리) / record(기록) / watch(저녁관찰) / learn(학습)
-     장중(observe·exec·manage) 체크리스트는 읽기 전용 — "장중엔 기록하지 않고 읽기만" 원칙.
+     장중(observe·manage) 체크리스트는 읽기 전용 — "장중엔 기록하지 않고 읽기만" 원칙.
      note: 체크 항목이 아닌 한 줄 원칙 — 구간 상단에 그대로 보여준다.
      매매 계획·집행·종가배팅 조건·중단 규칙은 전부 '읽기용 리마인드'다.
-     (매매 계획/계획외 카운터를 추적하는 자동화는 2026-10-27에 걷어냈다 — 되살리지 말 것) */
+     (매매 계획/계획외 카운터를 추적하는 자동화는 2026-10-27에 걷어냈다 — 되살리지 말 것)
+     유튜브 라이브 편성(하나TV 7:30, 머니쇼 8:00, 오늘 경제 안녕하십니까 3:50 PM 등)은
+     구간 배치를 맞추는 참고로만 썼고 시간표에는 넣지 않았다(사용자 요청). */
   const PHASES = [
     { id: "pre1", name: "뉴스·미국장", start: "07:30", end: "08:00", mode: "input", catId: "market",
+      note: "국내장·미국장은 Investing.com(매크로)에서 확인합니다.",
       items: [
-        { text: "전일 미국 뉴스·미국장 숫자 확인 → 시트 AM 숫자, 미국 주도섹터, 오늘 일정", min: 30 },
+        { text: "간밤 미국증시·미국 뉴스(시장 분위기) 확인 → 시트 AM 숫자, 미국 주도섹터, 오늘 일정", min: 15 },
+        { text: "미국채 10년물 금리, WTI·금·원달러환율 확인 — 시장 참여자들의 전망 파악", min: 15 },
       ] },
     { id: "pre2", name: "리포트·관심종목", start: "08:00", end: "08:30", mode: "input", catId: "research",
       items: [
-        { text: "돈 몰릴 뉴스 예고 + 모닝 리포트 원문 → 환경 예상·예상 섹터·아침 가설", min: 20 },
-        { text: "텔레그램 스크리너 + 경제뉴스 제목만 → 관심종목 Top3", min: 10 },
+        { text: "호호주주 주요 뉴스 헤드라인 + 모닝 레터·모닝 코멘트 → AM 노트 3줄 (환경 예상·예상 섹터·아침 가설)", min: 15 },
+        { text: "증권사 신규 발행 리포트 확인 — 하나TV·텔레그램", min: 10 },
+        { text: "텔레그램 스크리너 → 관심종목 Top3", min: 5 },
+        { text: "유튜브 라이브 다시보기 (선택 — 놓친 것만)", min: 0 },
       ] },
     { id: "pre3", name: "매매 계획 확정", start: "08:30", end: "09:00", mode: "plan", catId: "research",
       note: "09:00에 가설을 잠급니다. 이후엔 고치지 않아요.",
@@ -70,7 +76,16 @@
       ] },
     { id: "obs", name: "관찰만", start: "09:00", end: "09:30", mode: "observe", catId: "market", readonly: true,
       items: [
-        { text: "코스피·코스닥 방향, 거래대금 상위 확인 (입력 없음)", min: 0 },
+        { text: "주요 지수(코스피·코스닥 방향)·거래대금 상위 확인, 보유 종목 기업 뉴스·공시 확인 — 증권플러스·토스·MTS", min: 0 },
+        { text: "보유·관심·대장주-섹터 5-10-30 = 45개 종목 흐름 파악", min: 0 },
+        { text: "보유 자산 가격 확인 — 싸지면 더 사기 위해", min: 0 },
+        { text: "관리시트에서 계좌 상태 확인", min: 0 },
+      ] },
+    { id: "mid", name: "장중 리포트·공시", start: "13:00", end: "14:50", mode: "manage", catId: "research", readonly: true,
+      note: "장중엔 읽기만 — 정리는 마감 후 기록 구간에서 합니다.",
+      items: [
+        { text: "기업·산업 리포트 분석, 실적·컨센서스 확인 — 네이버증권(리서치·뉴스), 텔레그램 스크리너", min: 0 },
+        { text: "보유 종목 공시 확인 — 증권플러스·아이패드 DART앱·텔레그램 스크리너", min: 0 },
       ] },
     { id: "close", name: "마감 대응", start: "14:50", end: "15:30", mode: "manage", catId: "trade", readonly: true,
       note: "종가배팅 최종 판단 — 계획에 있던 후보만, 4조건을 모두 확인하세요.",
@@ -84,10 +99,11 @@
       note: "순서: 사실 기록 → 내 판정 → 남의 해석. 텔레그램·마감 리포트는 판정을 쓴 뒤에 — 다른 점은 가설 DB 후보로만.",
       items: [
         { text: "당일 체결 매매일지: 계획 여부 O/X, 손절 준수 → 매매일지", min: 10 },
-        { text: "마감 숫자: 지수, 투자자별 매매동향, 거래대금 → 시트 PM", min: 15 },
-        { text: "개별종목 수급, 섹터 특이사항 → 시트 PM", min: 10 },
+        { text: "마감 숫자: 지수, 투자자별 매매동향, 거래대금 → 시트 PM", min: 10 },
+        { text: "개별종목 수급, 섹터 특이사항, 경제 매크로 → 시트 PM", min: 10 },
+        { text: "보유·관심종목 종가 확인 — 사람들의 투심 확인", min: 5 },
         { text: "가설 판정: 환경 실제, 핵심 결론 (틀렸으면 이유 한 줄) → 시트 PM", min: 10 },
-        { text: "데일리 노트 4블록 + 뉴스 칸 → 노션", min: 15 },
+        { text: "호호주주 장마감 코멘트·브리핑 → 데일리 노트 4블록 + 뉴스 칸 → 노션", min: 15 },
       ] },
     { id: "evening1", name: "종배 후보 관찰", start: "19:00", end: "20:00", mode: "watch", catId: "research",
       items: [
@@ -95,9 +111,20 @@
         { text: "내일 관찰 가격대 → 데일리 노트 4번 블록", min: 10 },
         { text: "텔레그램 새 실적·뉴스 → 가설로 키울 만하면 가설 DB, 아니면 뉴스 칸 한 줄", min: 10 },
       ] },
-    { id: "learn", name: "리포트·독서", start: "21:00", end: "22:00", mode: "learn", catId: "read",
+    { id: "evening2", name: "저녁 스터디", start: "20:00", end: "21:00", mode: "learn", catId: "study",
+      note: "주간 목표 — 기업분석 2종목(보유 1·신규 1), 산업분석 1섹터. 이번 주 몫을 하나씩 채워가세요.",
       items: [
-        { text: "산업 리포트·독서·기업 분석 → Study Archive", min: 60 },
+        { text: "경제 공부, 투자 시나리오 점검", min: 20 },
+        { text: "텔레그램 분석 — 기업 분석, 실적·컨센서스 확인", min: 20 },
+        { text: "증권사 산업 리포트 정독", min: 20 },
+        { text: "라이브 유튜브 다시보기 (선택)", min: 0 },
+      ] },
+    { id: "learn", name: "자기 전 미국장·독서", start: "21:00", end: "23:00", mode: "learn", catId: "read",
+      items: [
+        { text: "미국 증시 체크", min: 15 },
+        { text: "유튜브·넷플릭스 — 경제 다큐, 다큐프라임, EBS 다큐", min: 40 },
+        { text: "책", min: 45 },
+        { text: "블로그 — 피우스의 책도둑, 와이민, 메르 블로그 (경제 이야기)", min: 20 },
       ] },
   ];
 
@@ -199,6 +226,15 @@
     return state;
   }
 
+  // 직전 기본 시간표(2026-10-29판, tests/fixtures/phases-2026-10-29.json)의 지문 — '안 고쳤는지' 판별용
+  const PREV_PHASES_FP = -1857876564;
+  function phasesFingerprint(list) {
+    const j = JSON.stringify(list);
+    let h = 5381;
+    for (let i = 0; i < j.length; i++) h = ((h << 5) + h + j.charCodeAt(i)) | 0;
+    return h;
+  }
+
   function migrate(s) {
     // 누락 필드 보정 (부분 저장본 대비)
     const d = defaults();
@@ -279,6 +315,11 @@
         if (r1 && r1.name === "독서") r1.name = "투자독서";
         const r2 = s.categories.find((c) => c.id === "read2");
         if (r2 && r2.name === "일반독서") r2.name = "독서";
+      }
+      // seed 4: 루틴 개정(2026-11-18). 예전 기본 시간표를 한 글자도 안 고치고 쓰던 저장본만 새 기본으로 바꾼다.
+      // 하나라도 직접 고쳤다면(요일 토글 포함) 건드리지 않는다 — 설정의 '기본 시간표로 되돌리기'로 직접 받는다.
+      if (rawSeed < 4 && phasesFingerprint(s.settings.routine.phases) === PREV_PHASES_FP) {
+        s.settings.routine.phases = d.settings.routine.phases;
       }
       s.settings.seed = SEED;
     }

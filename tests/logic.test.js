@@ -218,11 +218,11 @@ t("toneFor 는 비거래일에 null", () => {
 });
 
 
-/* ---------- 루틴 구간 (2026-10-29: exec·hold 제거, 가설 잠금 09:00으로) ---------- */
-t("기본 구간은 8개, 시간순", () => {
-  S.load();
+/* ---------- 루틴 구간 (2026-11-18 개정: 장중 리포트·공시·저녁 스터디 추가) ---------- */
+t("기본 구간은 10개, 시간순", () => {
+  S.reset();
   const ps = S.phases();
-  eq(ps.length, 8);
+  eq(ps.length, 10);
   for (let i = 1; i < ps.length; i++) ok(ps[i].startMin >= ps[i - 1].endMin, "구간이 겹치지 않음");
 });
 t("phaseAt 이 맞는 구간을 찾는다", () => {
@@ -230,12 +230,15 @@ t("phaseAt 이 맞는 구간을 찾는다", () => {
   eq(S.phaseAt(U.toMin("08:10")).id, "pre2");
   eq(S.phaseAt(U.toMin("08:45")).id, "pre3");
   eq(S.phaseAt(U.toMin("09:15")).id, "obs");
-  eq(S.phaseAt(U.toMin("10:00")), null, "exec·hold 를 뺐으니 09:30~14:50 는 빈 시간");
+  eq(S.phaseAt(U.toMin("10:00")), null, "09:30~13:00 는 의도적으로 빈 시간");
   eq(S.phaseAt(U.toMin("12:00")), null);
+  eq(S.phaseAt(U.toMin("13:30")).id, "mid", "장중 리포트·공시");
   eq(S.phaseAt(U.toMin("15:00")).id, "close");
   eq(S.phaseAt(U.toMin("16:00")).id, "rec");
   eq(S.phaseAt(U.toMin("19:30")).id, "evening1");
+  eq(S.phaseAt(U.toMin("20:30")).id, "evening2", "저녁 스터디");
   eq(S.phaseAt(U.toMin("21:30")).id, "learn");
+  eq(S.phaseAt(U.toMin("22:59")).id, "learn", "자기 전은 23:00 까지");
   eq(S.phaseAt(U.toMin("03:00")), null, "구간 밖은 null");
   eq(S.phaseAt(U.toMin("17:30")), null, "16:40~19:00 는 빈 시간");
 });
@@ -246,8 +249,8 @@ t("가설 잠금은 09:00 — pre3 가 거기서 끝나고 obs 가 이어받는�
   eq(pre3.note, "09:00에 가설을 잠급니다. 이후엔 고치지 않아요.");
 });
 t("장중 구간은 읽기 전용", () => {
-  ["obs", "close"].forEach((id) => ok(S.phaseById(id).readonly, id));
-  ["pre1", "pre2", "pre3", "rec", "evening1", "learn"].forEach((id) => ok(!S.phaseById(id).readonly, id));
+  ["obs", "mid", "close"].forEach((id) => ok(S.phaseById(id).readonly, id));
+  ["pre1", "pre2", "pre3", "rec", "evening1", "evening2", "learn"].forEach((id) => ok(!S.phaseById(id).readonly, id));
 });
 t("phaseProgress 체크 집계", () => {
   S.reset();
@@ -255,7 +258,7 @@ t("phaseProgress 체크 집계", () => {
   d.checks["rec:0"] = Date.now();
   d.checks["rec:2"] = Date.now();
   const pr = S.phaseProgress("2026-07-17", S.phaseById("rec"));
-  eq(pr, { done: 2, total: 5 });
+  eq(pr, { done: 2, total: 6 });
 });
 t("구간에 달린 원칙(note)은 체크 항목이 아니다", () => {
   const close = S.phaseById("close");
@@ -358,8 +361,8 @@ t("phaseStamp 는 마지막 체크 시각을 쓴다", () => {
   d.checks["rec:1"] = at(15, 58);
   const st = S.phaseStamp(ds, "rec");
   eq(st.done, 2);
-  eq(st.total, 5);
-  eq(st.complete, false, "5개 중 2개면 미완료");
+  eq(st.total, 6);
+  eq(st.complete, false, "6개 중 2개면 미완료");
   eq(U.toHHMM(st.atMin), "15:58", "가장 늦은 체크 시각");
   eq(st.late, false, "구간(~16:40) 안이면 제시간");
 });
@@ -685,7 +688,7 @@ t("예전 study 플래그를 대분류로 올린다", () => {
 t("seed 가 최신이면 지운 기본 카테고리를 되살리지 않는다", () => {
   const d = S.defaults();
   const once = S.migrate(Object.assign(d, {
-    settings: { seed: 3 },
+    settings: { seed: 4 },
     categories: [{ id: "study", name: "주식공부", color: "#fff", group: "invest" }],
   }));
   eq(once.categories.length, 1, "되살아나지 않음");
@@ -700,7 +703,7 @@ t("seed 필드가 아예 없던 저장본도 정정된다", () => {
   none.categories.forEach((c) => (byN[c.id] = c.group));
   eq(byN.read, "invest", "독서 정정");
   eq(byN.read2, "growth", "일반독서 추가");
-  eq(none.settings.seed, 3);
+  eq(none.settings.seed, 4);
 });
 t("seed 1 → 2 업그레이드: 일반독서 추가 + 독서 대분류 정정", () => {
   const d = S.defaults();
@@ -715,7 +718,7 @@ t("seed 1 → 2 업그레이드: 일반독서 추가 + 독서 대분류 정정",
   old.categories.forEach((c) => (by[c.id] = c.group));
   eq(by.read, "invest", "독서는 투자공부로 정정");
   eq(by.read2, "growth", "일반독서가 추가됨");
-  eq(old.settings.seed, 3, "seed 가 올라간다");
+  eq(old.settings.seed, 4, "seed 가 올라간다");
 });
 t("seed 보강은 두 번 돌지 않는다", () => {
   const d = S.defaults();
@@ -777,6 +780,53 @@ t("applyToTimeline 은 10분 격자에 안 맞는 경계도 스냅해서 전부 
   const pre3 = blocks.find((b) => b.t === "매매 계획 확정");
   ok(pre2 && pre3, "두 구간 모두 칠해짐");
   eq(pre2.endMin, pre3.startMin, "맞닿은 경계가 같은 값으로 스냅되어 틈/겹침이 없다");
+});
+
+/* ---------- 루틴 개정(seed 4) — 안 고친 예전 기본만 새 기본으로 ---------- */
+const PREV_PHASES = JSON.parse(fs.readFileSync(path.join(__dirname, "fixtures", "phases-2026-10-29.json"), "utf8"));
+t("예전 기본 시간표를 그대로 쓰던 seed 3 저장본은 새 기본으로 교체된다", () => {
+  const up = S.migrate(Object.assign(S.defaults(), {
+    settings: { seed: 3, routine: { enabled: true, phases: JSON.parse(JSON.stringify(PREV_PHASES)) } },
+  }));
+  eq(up.settings.routine.phases.length, 10);
+  ok(up.settings.routine.phases.some((p) => p.id === "mid"), "장중 리포트·공시가 들어온다");
+  eq(up.settings.seed, 4);
+});
+t("직접 고친 시간표는 교체하지 않는다", () => {
+  const mine = JSON.parse(JSON.stringify(PREV_PHASES));
+  mine[0].name = "내가 고친 이름";
+  const up = S.migrate(Object.assign(S.defaults(), {
+    settings: { seed: 3, routine: { enabled: true, phases: mine } },
+  }));
+  eq(up.settings.routine.phases.length, 8, "그대로 유지");
+  eq(up.settings.routine.phases[0].name, "내가 고친 이름");
+});
+t("요일 토글만 건드려도 '고친 것'으로 본다", () => {
+  const mine = JSON.parse(JSON.stringify(PREV_PHASES));
+  mine[5].days = [5];
+  const up = S.migrate(Object.assign(S.defaults(), {
+    settings: { seed: 3, routine: { enabled: true, phases: mine } },
+  }));
+  eq(up.settings.routine.phases.length, 8);
+});
+t("seed 4 저장본은 다시 교체하지 않는다", () => {
+  const up = S.migrate(Object.assign(S.defaults(), {
+    settings: { seed: 4, routine: { enabled: true, phases: JSON.parse(JSON.stringify(PREV_PHASES)) } },
+  }));
+  eq(up.settings.routine.phases.length, 8);
+});
+t("새 기본 시간표: 배분이 구간 길이를 넘지 않고, 장중 구간은 타이머가 없다", () => {
+  S.reset();
+  S.phases().forEach((p) => {
+    const b = S.phaseBudget(p);
+    ok(!b.over, `${p.id} 배분 ${b.alloc} > 구간 ${b.len}`);
+    if (p.readonly) eq(b.alloc, 0, `${p.id} 는 읽기 전용이라 배분 0`);
+  });
+});
+t("새 기본 시간표를 타임라인에 깔면 10구간이 전부 칠해진다", () => {
+  S.reset();
+  App.routine.applyToTimeline("2026-11-18");
+  eq(S.blocksOf("2026-11-18", "plan").length, 10);
 });
 
 /* ---------- 동기화 병합 (mergeStates) ---------- */
