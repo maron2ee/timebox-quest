@@ -9,7 +9,7 @@
 
   const KEY = "tbxPlanner.v1";
   const SCHEMA = 1;
-  const SEED = 4;   // 기본 카테고리·할일그룹·루틴 보강 버전 (올리면 누락분을 1회 추가)
+  const SEED = 5;   // 기본 카테고리·할일그룹·루틴 보강 버전 (올리면 누락분을 1회 추가)
 
   /* ---------- 카테고리 대분류 ----------
      productive:true = '생산 시간'에 합산 */
@@ -65,9 +65,8 @@
     { id: "pre2", name: "리포트·관심종목", start: "08:00", end: "08:30", mode: "input", catId: "research",
       items: [
         { text: "호호주주 주요 뉴스 헤드라인 + 모닝 레터·모닝 코멘트 → AM 노트 3줄 (환경 예상·예상 섹터·아침 가설)", min: 15 },
-        { text: "증권사 신규 발행 리포트 확인 — 하나TV·텔레그램", min: 10 },
+        { text: "증권사 신규 발행 리포트 확인 — 텔레그램·네이버 리서치", min: 10 },
         { text: "텔레그램 스크리너 → 관심종목 Top3", min: 5 },
-        { text: "유튜브 라이브 다시보기 (선택 — 놓친 것만)", min: 0 },
       ] },
     { id: "pre3", name: "매매 계획 확정", start: "08:30", end: "09:00", mode: "plan", catId: "research",
       note: "09:00에 가설을 잠급니다. 이후엔 고치지 않아요.",
@@ -80,6 +79,8 @@
         { text: "보유·관심·대장주-섹터 5-10-30 = 45개 종목 흐름 파악", min: 0 },
         { text: "보유 자산 가격 확인 — 싸지면 더 사기 위해", min: 0 },
         { text: "관리시트에서 계좌 상태 확인", min: 0 },
+        { text: "증권사 신규 발행 리포트 확인 — 하나TV 리서치 모닝 브리프, 텔레그램", min: 0 },
+        { text: "유튜브 라이브 다시보기 (선택 — 놓친 것만)", min: 0 },
       ] },
     { id: "mid", name: "장중 리포트·공시", start: "13:00", end: "14:50", mode: "manage", catId: "research", readonly: true,
       note: "장중엔 읽기만 — 정리는 마감 후 기록 구간에서 합니다.",
@@ -117,7 +118,7 @@
         { text: "경제 공부, 투자 시나리오 점검", min: 20 },
         { text: "텔레그램 분석 — 기업 분석, 실적·컨센서스 확인", min: 20 },
         { text: "증권사 산업 리포트 정독", min: 20 },
-        { text: "라이브 유튜브 다시보기 (선택)", min: 0 },
+        { text: "유튜브 라이브 다시보기·유튜브 공부 (선택)", min: 0 },
       ] },
     { id: "learn", name: "자기 전 미국장·독서", start: "21:00", end: "23:00", mode: "learn", catId: "read",
       items: [
@@ -226,8 +227,9 @@
     return state;
   }
 
-  // 직전 기본 시간표(2026-10-29판, tests/fixtures/phases-2026-10-29.json)의 지문 — '안 고쳤는지' 판별용
-  const PREV_PHASES_FP = -1857876564;
+  // 예전 기본 시간표들의 지문 — '안 고쳤는지' 판별용 (tests/fixtures/phases-*.json 과 1:1)
+  //   2026-10-29판(seed 3 이하) / 2026-11-18 오전판(seed 4)
+  const PREV_PHASES_FPS = [-1857876564, -1233477988];
   function phasesFingerprint(list) {
     const j = JSON.stringify(list);
     let h = 5381;
@@ -316,9 +318,9 @@
         const r2 = s.categories.find((c) => c.id === "read2");
         if (r2 && r2.name === "일반독서") r2.name = "독서";
       }
-      // seed 4: 루틴 개정(2026-11-18). 예전 기본 시간표를 한 글자도 안 고치고 쓰던 저장본만 새 기본으로 바꾼다.
+      // seed 4·5: 루틴 개정(2026-11-18). 예전 기본 시간표를 한 글자도 안 고치고 쓰던 저장본만 새 기본으로 바꾼다.
       // 하나라도 직접 고쳤다면(요일 토글 포함) 건드리지 않는다 — 설정의 '기본 시간표로 되돌리기'로 직접 받는다.
-      if (rawSeed < 4 && phasesFingerprint(s.settings.routine.phases) === PREV_PHASES_FP) {
+      if (rawSeed < 5 && PREV_PHASES_FPS.includes(phasesFingerprint(s.settings.routine.phases))) {
         s.settings.routine.phases = d.settings.routine.phases;
       }
       s.settings.seed = SEED;

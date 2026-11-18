@@ -688,7 +688,7 @@ t("예전 study 플래그를 대분류로 올린다", () => {
 t("seed 가 최신이면 지운 기본 카테고리를 되살리지 않는다", () => {
   const d = S.defaults();
   const once = S.migrate(Object.assign(d, {
-    settings: { seed: 4 },
+    settings: { seed: 5 },
     categories: [{ id: "study", name: "주식공부", color: "#fff", group: "invest" }],
   }));
   eq(once.categories.length, 1, "되살아나지 않음");
@@ -703,7 +703,7 @@ t("seed 필드가 아예 없던 저장본도 정정된다", () => {
   none.categories.forEach((c) => (byN[c.id] = c.group));
   eq(byN.read, "invest", "독서 정정");
   eq(byN.read2, "growth", "일반독서 추가");
-  eq(none.settings.seed, 4);
+  eq(none.settings.seed, 5);
 });
 t("seed 1 → 2 업그레이드: 일반독서 추가 + 독서 대분류 정정", () => {
   const d = S.defaults();
@@ -718,7 +718,7 @@ t("seed 1 → 2 업그레이드: 일반독서 추가 + 독서 대분류 정정",
   old.categories.forEach((c) => (by[c.id] = c.group));
   eq(by.read, "invest", "독서는 투자공부로 정정");
   eq(by.read2, "growth", "일반독서가 추가됨");
-  eq(old.settings.seed, 4, "seed 가 올라간다");
+  eq(old.settings.seed, 5, "seed 가 올라간다");
 });
 t("seed 보강은 두 번 돌지 않는다", () => {
   const d = S.defaults();
@@ -790,7 +790,7 @@ t("예전 기본 시간표를 그대로 쓰던 seed 3 저장본은 새 기본으
   }));
   eq(up.settings.routine.phases.length, 10);
   ok(up.settings.routine.phases.some((p) => p.id === "mid"), "장중 리포트·공시가 들어온다");
-  eq(up.settings.seed, 4);
+  eq(up.settings.seed, 5);
 });
 t("직접 고친 시간표는 교체하지 않는다", () => {
   const mine = JSON.parse(JSON.stringify(PREV_PHASES));
@@ -809,11 +809,31 @@ t("요일 토글만 건드려도 '고친 것'으로 본다", () => {
   }));
   eq(up.settings.routine.phases.length, 8);
 });
-t("seed 4 저장본은 다시 교체하지 않는다", () => {
+t("seed 5 저장본은 다시 교체하지 않는다", () => {
   const up = S.migrate(Object.assign(S.defaults(), {
-    settings: { seed: 4, routine: { enabled: true, phases: JSON.parse(JSON.stringify(PREV_PHASES)) } },
+    settings: { seed: 5, routine: { enabled: true, phases: JSON.parse(JSON.stringify(PREV_PHASES)) } },
   }));
   eq(up.settings.routine.phases.length, 8);
+});
+const PREV_1118 = JSON.parse(fs.readFileSync(path.join(__dirname, "fixtures", "phases-2026-11-18.json"), "utf8"));
+t("11-18 오전판 기본을 그대로 쓰던 seed 4 저장본도 새 기본으로 교체된다", () => {
+  const up = S.migrate(Object.assign(S.defaults(), {
+    settings: { seed: 4, routine: { enabled: true, phases: JSON.parse(JSON.stringify(PREV_1118)) } },
+  }));
+  eq(up.settings.seed, 5);
+  const obs = up.settings.routine.phases.find((p) => p.id === "obs");
+  eq(obs.items.length, 6, "관찰만 구간에 리포트·다시보기 항목이 들어온다");
+  const pre2 = up.settings.routine.phases.find((p) => p.id === "pre2");
+  eq(pre2.items.length, 3, "리포트 구간에서 다시보기 항목은 빠진다");
+});
+t("11-18 판을 직접 고친 seed 4 저장본은 교체하지 않는다", () => {
+  const mine = JSON.parse(JSON.stringify(PREV_1118));
+  mine[2].note = "내 메모";
+  const up = S.migrate(Object.assign(S.defaults(), {
+    settings: { seed: 4, routine: { enabled: true, phases: mine } },
+  }));
+  eq(up.settings.routine.phases[2].note, "내 메모");
+  eq(up.settings.routine.phases.find((p) => p.id === "obs").items.length, 4);
 });
 t("새 기본 시간표: 배분이 구간 길이를 넘지 않고, 장중 구간은 타이머가 없다", () => {
   S.reset();
