@@ -260,6 +260,30 @@ t("phaseProgress 체크 집계", () => {
   const pr = S.phaseProgress("2026-07-17", S.phaseById("evening2"));
   eq(pr, { done: 2, total: 4 });
 });
+t("phaseMust·phaseMissed: 꼭(pri 1) 항목 기준으로 누락을 판정한다", () => {
+  S.reset();
+  const ds = "2026-07-18";
+  const p = S.phaseById("evening2");               // 꼭 2개(0·1) + 2순위 2개
+  eq(S.phaseMust(ds, p), { done: 0, total: 2 });
+  ok(S.phaseMissed(ds, p), "아무것도 안 했으면 누락");
+  const d = S.getDay(ds);
+  d.checks["evening2:2"] = Date.now();             // 2순위만 함
+  ok(S.phaseMissed(ds, p), "2순위만 해도 꼭을 안 했으면 누락");
+  d.checks["evening2:0"] = Date.now();
+  ok(S.phaseMissed(ds, p), "꼭 2개 중 1개만 해도 누락");
+  d.checks["evening2:1"] = Date.now();
+  ok(!S.phaseMissed(ds, p), "꼭을 다 하면 누락 아님");
+  eq(S.phaseMust(ds, p), { done: 2, total: 2 });
+  ok(!S.phaseMissed(ds, S.phaseById("obs")), "읽기 전용 구간은 누락 없음");
+});
+t("꼭 항목이 없는 구간은 예전처럼 '하나도 안 했을 때'만 누락", () => {
+  S.reset();
+  const ds = "2026-07-19";
+  const p = { id: "z", name: "z", items: [{ text: "a", min: 0 }, { text: "b", min: 0 }] };
+  ok(S.phaseMissed(ds, p));
+  S.getDay(ds).checks["z:0"] = Date.now();
+  ok(!S.phaseMissed(ds, p));
+});
 t("구간에 달린 원칙(note)은 체크 항목이 아니다", () => {
   const close = S.phaseById("close");
   ok(close.note.includes("종가배팅"));

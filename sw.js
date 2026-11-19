@@ -1,5 +1,5 @@
 /* 하루 계획 — 서비스워커 (network-first: 배포 직후 최신 코드가 바로 반영되게) */
-const CACHE = "plan-v13";
+const CACHE = "plan-v14";
 const ASSETS = [
   "./", "./index.html", "./css/app.css", "./manifest.webmanifest", "./icon.svg",
   "./js/util.js", "./js/store.js", "./js/market.js", "./js/ui.js",

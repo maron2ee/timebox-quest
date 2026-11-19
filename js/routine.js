@@ -51,15 +51,19 @@
       const isNow = now && now.id === p.id;
       const isSel = shown && shown.id === p.id;
       const past = U.isToday(ds) && U.nowMin() >= p.endMin;
-      const missed = past && pr.total > 0 && pr.done === 0 && !p.readonly;
+      const mu = S().phaseMust(ds, p);
+      const missed = past && S().phaseMissed(ds, p);
 
       const b = U.el("button", "ph" + (isNow ? " now" : "") + (isSel ? " sel" : "") + (missed ? " missed" : ""));
       b.innerHTML =
         `<span class="ph-t">${p.start}</span>` +
         `<span class="ph-n">${U.esc(p.name)}</span>` +
-        (p.items.length && !p.readonly ? `<span class="ph-p">${pr.done}/${pr.total}</span>` : "") +
+        (p.items.length && !p.readonly
+          ? (mu.total ? `<span class="ph-p must">꼭 ${mu.done}/${mu.total}</span>` : `<span class="ph-p">${pr.done}/${pr.total}</span>`)
+          : "") +
         (missed ? `<span class="ph-x">누락</span>` : "");
-      b.title = `${p.start}~${p.end} · ${MODE[p.mode].label}`;
+      b.title = `${p.start}~${p.end} · ${MODE[p.mode].label}` +
+        (mu.total ? ` · 꼭 ${mu.done}/${mu.total}` : "") + (missed ? " · 누락" : "");
       b.onclick = () => { selected = (selected === p.id ? null : p.id); render(ds); };
       host.appendChild(b);
     });

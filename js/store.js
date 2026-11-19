@@ -549,6 +549,26 @@
     return { done, total };
   }
 
+  // '꼭 해야 하는 일'(pri 1)만의 진행도 — total 0 이면 그 구간엔 꼭 항목이 없다
+  function phaseMust(ds, p) {
+    const checks = peekDay(ds).checks || {};
+    let done = 0, total = 0;
+    (p.items || []).forEach((it, i) => {
+      if (it.pri !== 1) return;
+      total++;
+      if (checks[p.id + ":" + i]) done++;
+    });
+    return { done, total };
+  }
+  // 누락 판정(구간이 끝난 뒤 쓴다): 꼭 항목이 있으면 그중 하나라도 안 했을 때, 없으면 하나도 체크 안 했을 때.
+  function phaseMissed(ds, p) {
+    if (p.readonly) return false;
+    const mu = phaseMust(ds, p);
+    if (mu.total) return mu.done < mu.total;
+    const pr = phaseProgress(ds, p);
+    return pr.total > 0 && pr.done === 0;
+  }
+
   // 구간을 언제 끝냈는지. checks 에 저장된 timestamp 를 읽는다.
   // late = 구간 종료 시각을 넘겨서 체크함 → 사후 기록
   function phaseStamp(ds, phaseId) {
@@ -595,7 +615,7 @@
     CAT_GROUPS, catGroup, minutesByGroup, groupMin, productiveMin,
     blocksOf, verdictOf, judgeProgress,
     tasksOf, taskStats, upcomingDdays,
-    phases, phasesOn, weekdayOf, phaseAt, phaseById, phaseProgress,
+    phases, phasesOn, weekdayOf, phaseAt, phaseById, phaseProgress, phaseMust, phaseMissed,
     schedules, scheduleById, scheduleForDate,
     phaseStamp, phaseBudget,
     links, linkById, linkUrl, setLinkUrl,

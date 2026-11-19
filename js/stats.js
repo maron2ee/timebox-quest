@@ -183,7 +183,7 @@
         if (p.readonly || !(p.items || []).length) return;
         const pr = S().phaseProgress(ds, p);
         checkDone += pr.done; checkTotal += pr.total;
-        if (pr.done === 0) missedPhases++;
+        if (S().phaseMissed(ds, p)) missedPhases++;
       });
     });
 
@@ -204,7 +204,7 @@
           <div class="hs-s">${checkDone}/${checkTotal}개</div></div>
         <div class="hs${missedPhases ? " bad" : ""}"><div class="hs-v">${missedPhases}</div>
           <div class="hs-k">누락 구간</div>
-          <div class="hs-s">하나도 체크 안 한 구간</div></div>
+          <div class="hs-s">꼭 할 일을 못 한 구간 (꼭 항목이 없으면 하나도 체크 안 한 구간)</div></div>
       </div>
       <div class="stat-sub" style="margin-top:10px">
         가설·섹터 적중률은 <b>2층 시트</b>의 월말 집계(<code>AL</code>·<code>AM</code>)에서 보세요.
