@@ -1,5 +1,5 @@
 /* ===========================================================
-   day.js — 하루 계획 화면 (날짜네비 · 스탯 · Goal · Big3 · Review)
+   day.js — 하루 계획 화면 (날짜네비 · 스탯 · To-do · Goal · Review)
    Exposes: window.App.day
    =========================================================== */
 (function () {
@@ -65,35 +65,6 @@
       ta.style.height = Math.max(76, ta.scrollHeight) + "px";
       save();
     });
-  }
-
-  /* ---------- Big 3 ---------- */
-  function renderBig3() {
-    const host = U.byId("big3List");
-    if (!host) return;
-    const big3 = S().peekDay(ds).big3 || ["", "", ""];
-    host.innerHTML = "";
-    for (let i = 0; i < 3; i++) {
-      const row = U.el("div", "big3-row" + (big3[i] ? " filled" : ""));
-      row.appendChild(U.el("span", "big3-n", String(i + 1)));
-      const inp = U.el("input");
-      inp.value = big3[i] || "";
-      inp.placeholder = i === 0 ? "오늘 반드시 끝낼 일" : "";
-      inp.onchange = () => {
-        const d = S().getDay(ds);
-        d.big3[i] = inp.value;
-        S().touch(ds);
-        row.classList.toggle("filled", !!inp.value);
-      };
-      inp.onkeydown = (e) => {
-        if (e.key !== "Enter") return;
-        inp.blur();
-        const next = host.querySelectorAll("input")[i + 1];
-        if (next) next.focus();
-      };
-      row.appendChild(inp);
-      host.appendChild(row);
-    }
   }
 
   /* ---------- Daily Review (K/P/T) ---------- */
@@ -182,9 +153,9 @@
   function refresh() {
     renderHeader();
     renderGoal();
-    renderBig3();
     renderReview();
-    App.record.render(ds);
+    App.record.render(ds);     // 링크 버튼 줄
+    App.tasks.renderTodo(ds);  // To-do List 카드
     App.tasks.render(ds);      // 루틴 탭이면 내부에서 routine.render 호출
     App.routine.render(ds);    // 레일·배너는 항상
     App.timeline.render(ds);

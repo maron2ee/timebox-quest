@@ -1,5 +1,5 @@
 /* ===========================================================
-   record.js — '오늘의 기록' 허브
+   record.js — 링크 허브(아이콘 버튼 줄) + 확정 도장 구간 id
    숫자는 2층(구글시트), 서술은 3층(노션 데일리 노트)에 있다.
    앱은 그 둘로 가는 길 + 시트가 못 하는 '언제 확정했는가'만 담당한다.
    링크는 전부 아이콘 버튼으로만 보인다 — 주소는 화면에 노출하지 않는다.
@@ -14,34 +14,6 @@
   const STAMP_PHASE = "pre";
 
   function isUrl(v) { return /^https?:\/\//i.test((v || "").trim()); }
-
-  function stampEl(ds) {
-    const st = S().phaseStamp(ds, STAMP_PHASE);
-    const row = U.el("div", "rec-row");
-    row.appendChild(U.el("span", "rec-k", "가설 확정"));
-
-    if (!st) { row.appendChild(U.el("span", "rec-v muted", "구간 없음")); return row; }
-
-    if (!st.at) {
-      const late = U.isToday(ds) && U.nowMin() >= st.phase.endMin;
-      const v = U.el("span", "rec-stamp " + (late ? "bad" : "todo"),
-        late ? `미확정 — ${st.phase.end} 지남` : `${st.phase.start}~${st.phase.end}`);
-      row.appendChild(v);
-      row.appendChild(U.el("span", "rec-sub", "시트 O·P·R 칸을 채우고 체크하세요"));
-      return row;
-    }
-
-    const hhmm = U.toHHMM(st.atMin);
-    const v = U.el("span", "rec-stamp " + (st.late ? "bad" : "ok"),
-      st.late ? `${hhmm} · 장 시작 후` : `${hhmm} 확정`);
-    v.title = st.late
-      ? "장이 열린 뒤에 확정했어요. 가설이 아니라 사후 해석입니다."
-      : "장 시작 전에 확정했어요.";
-    row.appendChild(v);
-    row.appendChild(U.el("span", "rec-sub",
-      st.complete ? `${st.done}/${st.total} 완료` : `${st.done}/${st.total} — 아직 남았어요`));
-    return row;
-  }
 
   // 주소를 입력받아 저장한다. 비우면 취소.
   function promptUrl(ds, entry) {
@@ -76,25 +48,13 @@
     return group;
   }
 
+  // 링크 버튼 줄 — 박스·제목 없이 아이콘 버튼만 (2026-11-19: '오늘의 기록' 박스와 가설 확정 박스를 걷어냄)
   function render(ds) {
-    const host = U.byId("recordBox");
+    const host = U.byId("linkRow");
     if (!host) return;
     host.innerHTML = "";
-    const head = U.el("div", "row");
-    head.innerHTML = `<div class="card-label" style="margin:0">오늘의 기록</div>`;
-    head.appendChild(U.el("span", "rec-note ml-auto", "숫자는 시트 · 문장은 노션"));
-    host.appendChild(head);
-
-    host.appendChild(stampEl(ds));
-
-    const all = S().links();
-    if (!all.length) {
-      host.appendChild(U.el("div", "rec-sub", "설정 → 외부 기록 링크에서 추가하세요"));
-      return;
-    }
-    const links = U.el("div", "rec-links");
-    all.forEach((e) => links.appendChild(linkButton(ds, e)));
-    host.appendChild(links);
+    S().links().forEach((e) => host.appendChild(linkButton(ds, e)));
+    host.hidden = !host.children.length;
   }
 
   App.record = { render, STAMP_PHASE, isUrl };

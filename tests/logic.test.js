@@ -160,6 +160,15 @@ t("adherence = 계획 칸 중 실행된 비율", () => {
   eq(S.adherence("2026-07-17"), 50);
   eq(S.adherence("2026-07-18"), null, "계획 없으면 null");
 });
+t("To-do List(projectId todo)는 Todo 스탯엔 잡히고 학습/일정 탭 집계엔 안 섞인다", () => {
+  S.reset();
+  const d = S.getDay("2026-07-20");
+  d.tasks.push({ id: "t1", projectId: "todo", text: "a", done: true, must: true });
+  d.tasks.push({ id: "t2", projectId: "todo", text: "b", done: false });
+  d.tasks.push({ id: "t3", projectId: "p_stock", text: "c", done: false });
+  eq(S.taskStats("2026-07-20"), { done: 1, total: 3 }, "전체 Todo 카드");
+  eq(S.taskStats("2026-07-20", "study"), { done: 0, total: 1 }, "학습 탭엔 todo 가 안 섞인다");
+});
 t("taskStats 집계", () => {
   S.reset();
   const d = S.getDay("2026-07-17");
@@ -259,16 +268,16 @@ t("phaseProgress 체크 집계", () => {
   d.checks["evening:0"] = Date.now();
   d.checks["evening:2"] = Date.now();
   const pr = S.phaseProgress("2026-07-17", S.phaseById("evening"));
-  eq(pr, { done: 2, total: 4 });
+  eq(pr, { done: 2, total: 5 });
 });
 t("phaseMust·phaseMissed: 꼭(pri 1) 항목 기준으로 누락을 판정한다", () => {
   S.reset();
   const ds = "2026-07-18";
-  const p = S.phaseById("evening");               // 꼭 2개(0·1) + 2순위 2개
+  const p = S.phaseById("evening");               // 꼭 2개(0·1) + 종배 관찰(2, 표시 없음) + 2순위 2개(3·4)
   eq(S.phaseMust(ds, p), { done: 0, total: 2 });
   ok(S.phaseMissed(ds, p), "아무것도 안 했으면 누락");
   const d = S.getDay(ds);
-  d.checks["evening:2"] = Date.now();             // 2순위만 함
+  d.checks["evening:3"] = Date.now();             // 2순위만 함
   ok(S.phaseMissed(ds, p), "2순위만 해도 꼭을 안 했으면 누락");
   d.checks["evening:0"] = Date.now();
   ok(S.phaseMissed(ds, p), "꼭 2개 중 1개만 해도 누락");
@@ -323,9 +332,9 @@ t("applyToTimeline 은 그 날짜에 적용되는 구간만 칠한다", () => {
   p.days = [5];
   App.routine.applyToTimeline("2026-10-29");   // 목요일
   const blocks = S.blocksOf("2026-10-29", "plan");
-  ok(!blocks.some((b) => b.t === "장 마감 후"), "목요일엔 금요일 전용 구간이 안 칠해진다");
+  ok(!blocks.some((b) => b.t === "마감 스터디"), "목요일엔 금요일 전용 구간이 안 칠해진다");
   App.routine.applyToTimeline("2026-10-30");   // 금요일
-  ok(S.blocksOf("2026-10-30", "plan").some((b) => b.t === "장 마감 후"), "금요일엔 칠해진다");
+  ok(S.blocksOf("2026-10-30", "plan").some((b) => b.t === "마감 스터디"), "금요일엔 칠해진다");
 });
 
 /* ---------- 고정 시간표 세트 (routine.schedules — 월/분기별) ---------- */
@@ -381,9 +390,9 @@ t("phaseStamp 는 마지막 체크 시각을 쓴다", () => {
   const ds = "2026-07-17";
   const d = S.getDay(ds);
   const at = (h, m) => new Date(2026, 6, 17, h, m).getTime();
-  // 저녁 스터디(19:00~21:00): 꼭 2개 + 2순위 2개 — 도장은 '꼭' 항목만 센다
+  // 저녁 스터디(19:00~21:00): 꼭 2개 + 표시 없음 1개 + 2순위 2개 — 도장은 '꼭' 항목만 센다
   d.checks["evening:0"] = at(20, 5);
-  d.checks["evening:2"] = at(20, 50);               // 2순위 — 확정 시각·개수에 안 들어간다
+  d.checks["evening:3"] = at(20, 50);               // 2순위 — 확정 시각·개수에 안 들어간다
   const st = S.phaseStamp(ds, "evening");
   eq(st.done, 1);
   eq(st.total, 2, "꼭 항목만 센다");
@@ -717,7 +726,7 @@ t("예전 study 플래그를 대분류로 올린다", () => {
 t("seed 가 최신이면 지운 기본 카테고리를 되살리지 않는다", () => {
   const d = S.defaults();
   const once = S.migrate(Object.assign(d, {
-    settings: { seed: 7 },
+    settings: { seed: 8 },
     categories: [{ id: "study", name: "주식공부", color: "#fff", group: "invest" }],
   }));
   eq(once.categories.length, 1, "되살아나지 않음");
@@ -732,7 +741,7 @@ t("seed 필드가 아예 없던 저장본도 정정된다", () => {
   none.categories.forEach((c) => (byN[c.id] = c.group));
   eq(byN.read, "invest", "독서 정정");
   eq(byN.read2, "growth", "일반독서 추가");
-  eq(none.settings.seed, 7);
+  eq(none.settings.seed, 8);
 });
 t("seed 1 → 2 업그레이드: 일반독서 추가 + 독서 대분류 정정", () => {
   const d = S.defaults();
@@ -747,7 +756,7 @@ t("seed 1 → 2 업그레이드: 일반독서 추가 + 독서 대분류 정정",
   old.categories.forEach((c) => (by[c.id] = c.group));
   eq(by.read, "invest", "독서는 투자공부로 정정");
   eq(by.read2, "growth", "일반독서가 추가됨");
-  eq(old.settings.seed, 7, "seed 가 올라간다");
+  eq(old.settings.seed, 8, "seed 가 올라간다");
 });
 t("seed 보강은 두 번 돌지 않는다", () => {
   const d = S.defaults();
@@ -822,7 +831,7 @@ t("예전 기본 시간표를 그대로 쓰던 seed 3 저장본은 새 기본으
   }));
   eq(up.settings.routine.phases.length, 7);
   ok(up.settings.routine.phases.some((p) => p.id === "pre"), "장 시작 전 구간이 들어온다");
-  eq(up.settings.seed, 7);
+  eq(up.settings.seed, 8);
 });
 t("직접 고친 시간표는 교체하지 않는다", () => {
   const mine = JSON.parse(JSON.stringify(PREV_PHASES));
@@ -841,9 +850,9 @@ t("요일 토글만 건드려도 '고친 것'으로 본다", () => {
   }));
   eq(up.settings.routine.phases.length, 8);
 });
-t("seed 7 저장본은 다시 교체하지 않는다", () => {
+t("seed 8 저장본은 다시 교체하지 않는다", () => {
   const up = S.migrate(Object.assign(S.defaults(), {
-    settings: { seed: 7, routine: { enabled: true, phases: JSON.parse(JSON.stringify(PREV_PHASES)) } },
+    settings: { seed: 8, routine: { enabled: true, phases: JSON.parse(JSON.stringify(PREV_PHASES)) } },
   }));
   eq(up.settings.routine.phases.length, 8);
 });
@@ -852,7 +861,7 @@ t("11-18 오전판 기본을 그대로 쓰던 seed 4 저장본도 새 기본으�
   const up = S.migrate(Object.assign(S.defaults(), {
     settings: { seed: 4, routine: { enabled: true, phases: JSON.parse(JSON.stringify(PREV_1118)) } },
   }));
-  eq(up.settings.seed, 7);
+  eq(up.settings.seed, 8);
   const obs = up.settings.routine.phases.find((p) => p.id === "obs");
   eq(obs.items.filter((i) => i.pri === 1).length, 2, "관찰만: 꼭 해야 하는 일 2개(지수·보유종목)");
   eq(obs.items.filter((i) => i.pri === 2).length, 2, "관찰만: 2순위 2개(리포트·다시보기)");
@@ -871,7 +880,7 @@ t("11-18 문구 개정판을 그대로 쓰던 seed 5 저장본도 새 기본으�
   const up = S.migrate(Object.assign(S.defaults(), {
     settings: { seed: 5, routine: { enabled: true, phases: JSON.parse(JSON.stringify(PREV_1119)) } },
   }));
-  eq(up.settings.seed, 7);
+  eq(up.settings.seed, 8);
   ok(up.settings.routine.phases.some((p) => (p.items || []).some((i) => i.pri === 1)), "꼭 항목이 들어온다");
 });
 const PREV_1119B = JSON.parse(fs.readFileSync(path.join(__dirname, "fixtures", "phases-2026-11-19b.json"), "utf8"));
@@ -879,7 +888,7 @@ t("꼭·2순위판(seed 6) 기본을 그대로 쓰던 저장본도 새 7구간�
   const up = S.migrate(Object.assign(S.defaults(), {
     settings: { seed: 6, routine: { enabled: true, phases: JSON.parse(JSON.stringify(PREV_1119B)) } },
   }));
-  eq(up.settings.seed, 7);
+  eq(up.settings.seed, 8);
   eq(up.settings.routine.phases.map((p) => p.id), ["pre", "obs", "mid", "close", "rec", "evening", "learn"]);
 });
 t("항목 중요도(pri): 1·2 만 보존, 그 외는 키 자체가 없다", () => {

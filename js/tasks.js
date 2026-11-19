@@ -11,6 +11,12 @@
 
   let tab = "routine";   // routine | study | plan
 
+  // To-do List 카드 — day.tasks 중 projectId === "todo" 인 것(프로젝트 그룹에 안 속해서 학습/일정 탭엔 안 나온다).
+  // Todo 스탯·어제 미완료 가져오기가 그대로 같이 동작하도록 같은 배열을 쓴다.
+  // must:true 는 '오늘 반드시 끝낼 일'(최대 3).
+  const TODO = "todo";
+  const MUST_MAX = 3;
+
   function groupsOfTab() {
     const t = tab === "routine" ? "study" : tab;
     return S().state.projects.filter((p) => p.tab === t);
@@ -70,8 +76,8 @@
     });
   }
 
-  function taskRow(ds, t) {
-    const row = U.el("div", "task" + (t.done ? " done" : ""));
+  function taskRow(ds, t, withPin) {
+    const row = U.el("div", "task" + (t.done ? " done" : "") + (t.must ? " must" : ""));
     row.draggable = true;
 
     const grip = U.el("span", "task-grip", "⠿");
@@ -97,6 +103,24 @@
     };
     inp.onkeydown = (e) => { if (e.key === "Enter") inp.blur(); };
     row.appendChild(inp);
+
+    if (withPin) {
+      const pin = U.el("button", "pin-btn" + (t.must ? " on" : ""), "📌");
+      pin.title = t.must ? "오늘 반드시 끝낼 일 — 눌러서 해제" : "오늘 반드시 끝낼 일로 표시 (최대 " + MUST_MAX + "개)";
+      pin.onclick = () => {
+        const day = S().getDay(ds);
+        const x = day.tasks.find((q) => q.id === t.id);
+        if (!x) return;
+        if (!x.must && day.tasks.filter((q) => q.projectId === TODO && q.must).length >= MUST_MAX) {
+          App.ui.toast("반드시 끝낼 일은 " + MUST_MAX + "개까지예요");
+          return;
+        }
+        if (x.must) delete x.must; else x.must = true;
+        S().touch(ds);
+        App.day.refresh();
+      };
+      row.appendChild(pin);
+    }
 
     const del = U.el("button", "task-del", "✕");
     del.title = "삭제";
@@ -137,7 +161,7 @@
       // 연속 입력을 위해 같은 그룹의 입력칸으로 포커스 복귀
       setTimeout(() => {
         const idx = groupsOfTab().findIndex((p) => p.id === projectId);
-        const next = U.$$(".group-body .add-row input")[idx];
+        const next = projectId === TODO ? U.$$("#todoList .add-row input")[0] : U.$$(".group-body .add-row input")[idx];
         if (next) next.focus();
       }, 0);
     }
@@ -146,6 +170,27 @@
     inp.onblur = () => commit(false);
     row.appendChild(inp);
     return row;
+  }
+
+  function renderTodo(ds) {
+    const host = U.byId("todoList");
+    if (!host) return;
+    const all = S().peekDay(ds).tasks || [];
+    const list = all.filter((t) => t.projectId === TODO);
+    // 반드시 끝낼 일을 맨 위로 (나머지는 입력 순서 유지)
+    const sorted = list.filter((t) => t.must).concat(list.filter((t) => !t.must));
+    const must = list.filter((t) => t.must);
+    const doneMust = must.filter((t) => t.done).length;
+    const badge = U.byId("todoMust");
+    if (badge) {
+      badge.textContent = must.length
+        ? `📌 반드시 ${doneMust}/${must.length} 완료`
+        : `📌 반드시 끝낼 일 ${MUST_MAX}개를 표시해 보세요`;
+      badge.classList.toggle("all", must.length > 0 && doneMust === must.length);
+    }
+    host.innerHTML = "";
+    sorted.forEach((t) => host.appendChild(taskRow(ds, t, true)));
+    host.appendChild(addRow(ds, TODO));
   }
 
   /* ---------- 어제 미완료 가져오기 ---------- */
@@ -189,7 +234,8 @@
     });
     U.on("addGroupBtn", "click", () => addGroup(App.day.date()));
     U.on("carryBtn", "click", () => carryOver(App.day.date()));
+    U.on("todoCarry", "click", () => carryOver(App.day.date()));
   }
 
-  App.tasks = { init, render, carryOver, get tab() { return tab; } };
+  App.tasks = { init, render, renderTodo, carryOver, get tab() { return tab; } };
 })();

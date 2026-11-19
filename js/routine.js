@@ -59,11 +59,11 @@
         `<span class="ph-t">${p.start}</span>` +
         `<span class="ph-n">${U.esc(p.name)}</span>` +
         (p.items.length && !p.readonly
-          ? (mu.total ? `<span class="ph-p must">꼭 ${mu.done}/${mu.total}</span>` : `<span class="ph-p">${pr.done}/${pr.total}</span>`)
+          ? (mu.total ? `<span class="ph-p must">⭐ ${mu.done}/${mu.total}</span>` : `<span class="ph-p">${pr.done}/${pr.total}</span>`)
           : "") +
         (missed ? `<span class="ph-x">누락</span>` : "");
       b.title = `${p.start}~${p.end} · ${MODE[p.mode].label}` +
-        (mu.total ? ` · 꼭 ${mu.done}/${mu.total}` : "") + (missed ? " · 누락" : "");
+        (mu.total ? ` · ⭐꼭 ${mu.done}/${mu.total}` : "") + (missed ? " · 누락" : "");
       b.onclick = () => { selected = (selected === p.id ? null : p.id); render(ds); };
       host.appendChild(b);
     });
@@ -170,10 +170,12 @@
 
   }
 
-  // 항목 중요도 배지 — 1: 꼭 해야 하는 일, 2: 2순위
+  // 항목 중요도 이모티콘 — 1: 꼭 해야 하는 일, 2: 2순위 (store.PRI_ICON)
+  const PRI_ICON = { 1: "⭐", 2: "🔹" };
+  // (설정 화면도 같은 아이콘을 쓴다 — App.routine.PRI_ICON)
   function priTag(it) {
-    return it.pri === 1 ? '<span class="pri pri1">꼭</span>'
-         : it.pri === 2 ? '<span class="pri pri2">2순위</span>' : "";
+    return it.pri === 1 ? '<span class="pri" title="꼭 해야 하는 일">' + PRI_ICON[1] + '</span>'
+         : it.pri === 2 ? '<span class="pri" title="2순위">' + PRI_ICON[2] + '</span>' : "";
   }
 
   /* ---------- 루틴을 타임라인 PLAN에 깔기 ----------
@@ -221,6 +223,6 @@
     }, 20000);
   }
 
-  App.routine = { init, render, applyToTimeline, MODE, nowPhase, viewPhase,
+  App.routine = { init, render, applyToTimeline, MODE, PRI_ICON, nowPhase, viewPhase,
                   reset() { selected = null; } };
 })();

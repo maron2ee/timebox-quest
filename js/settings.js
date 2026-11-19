@@ -199,6 +199,23 @@
   // 구간 항목 편집 — 텍스트 + 배분 시간(분)
   function itemEditor(p) {
     const box = U.el("div", "phase-items");
+    // 구간 상단 문구(note) — 체크 항목이 아닌 한 줄 원칙/리마인드
+    {
+      const r = U.el("div", "row");
+      r.style.cssText = "gap:6px;margin-bottom:8px";
+      r.appendChild(U.el("span", "stat-sub", "상단 문구"));
+      const nt = U.el("input", "inp");
+      nt.style.cssText = "flex:1;min-width:180px";
+      nt.placeholder = "이 구간 위에 보여줄 한 줄 (비우면 없음)";
+      nt.value = p.note || "";
+      nt.onchange = () => {
+        const v = nt.value.trim();
+        if (v) p.note = v; else delete p.note;
+        S().save(); App.day.refresh();
+      };
+      r.appendChild(nt);
+      box.appendChild(r);
+    }
     if (p.readonly) {
       box.appendChild(U.el("div", "stat-sub",
         "장중 구간이라 체크박스·타이머 없이 읽기만 합니다. 문구만 고칠 수 있어요."));
@@ -208,8 +225,8 @@
       r.style.cssText = "gap:6px;margin-bottom:5px";
 
       // 중요도: 없음 → 꼭 → 2순위 순환
-      const pri = U.el("button", "pri-btn pri" + (it.pri || 0), it.pri === 1 ? "꼭" : it.pri === 2 ? "2순위" : "—");
-      pri.title = "중요도 (눌러서 바꿈): 표시 없음 → 꼭 해야 하는 일 → 2순위";
+      const pri = U.el("button", "pri-btn pri" + (it.pri || 0), it.pri ? App.routine.PRI_ICON[it.pri] : "—");
+      pri.title = "중요도 (눌러서 바꿈): 표시 없음 → ⭐ 꼭 해야 하는 일 → 🔹 2순위";
       pri.onclick = () => {
         const next = ((it.pri || 0) + 1) % 3;
         if (next) it.pri = next; else delete it.pri;
