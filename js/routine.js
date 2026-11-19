@@ -116,7 +116,7 @@
     if (p.readonly) {
       host.appendChild(U.el("div", "ro-note",
         p.note ? U.esc(p.note) : "장중에는 기록하지 않고 <b>읽기만</b> 합니다"));
-      p.items.forEach((it) => host.appendChild(U.el("div", "ro-item", U.esc(it.text))));
+      p.items.forEach((it) => host.appendChild(U.el("div", "ro-item", priTag(it) + U.esc(it.text))));
       return;
     }
 
@@ -142,7 +142,7 @@
         App.day.refresh();
       };
       row.appendChild(cb);
-      row.appendChild(U.el("span", "task-text", U.esc(it.text)));
+      row.appendChild(U.el("span", "task-text", priTag(it) + U.esc(it.text)));
 
       if (it.min > 0) {
         const t = U.el("span", "it-timer");
@@ -164,6 +164,12 @@
     });
     if (U.isToday(ds)) App.pomo.paint();   // 돌고 있는 타이머 상태 반영
 
+  }
+
+  // 항목 중요도 배지 — 1: 꼭 해야 하는 일, 2: 2순위
+  function priTag(it) {
+    return it.pri === 1 ? '<span class="pri pri1">꼭</span>'
+         : it.pri === 2 ? '<span class="pri pri2">2순위</span>' : "";
   }
 
   /* ---------- 루틴을 타임라인 PLAN에 깔기 ----------

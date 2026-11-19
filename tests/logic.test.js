@@ -255,10 +255,10 @@ t("장중 구간은 읽기 전용", () => {
 t("phaseProgress 체크 집계", () => {
   S.reset();
   const d = S.getDay("2026-07-17");
-  d.checks["rec:0"] = Date.now();
-  d.checks["rec:2"] = Date.now();
-  const pr = S.phaseProgress("2026-07-17", S.phaseById("rec"));
-  eq(pr, { done: 2, total: 6 });
+  d.checks["evening2:0"] = Date.now();
+  d.checks["evening2:2"] = Date.now();
+  const pr = S.phaseProgress("2026-07-17", S.phaseById("evening2"));
+  eq(pr, { done: 2, total: 4 });
 });
 t("구간에 달린 원칙(note)은 체크 항목이 아니다", () => {
   const close = S.phaseById("close");
@@ -356,15 +356,15 @@ t("phaseStamp 는 마지막 체크 시각을 쓴다", () => {
   const ds = "2026-07-17";
   const d = S.getDay(ds);
   const at = (h, m) => new Date(2026, 6, 17, h, m).getTime();
-  // rec 구간(15:40~16:40, 5항목)으로 '부분 완료 + 마지막 체크시각' 을 검증
-  d.checks["rec:0"] = at(15, 45);
-  d.checks["rec:1"] = at(15, 58);
-  const st = S.phaseStamp(ds, "rec");
+  // 저녁 스터디(20:00~21:00, 4항목)로 '부분 완료 + 마지막 체크시각' 을 검증
+  d.checks["evening2:0"] = at(20, 5);
+  d.checks["evening2:1"] = at(20, 38);
+  const st = S.phaseStamp(ds, "evening2");
   eq(st.done, 2);
-  eq(st.total, 6);
-  eq(st.complete, false, "6개 중 2개면 미완료");
-  eq(U.toHHMM(st.atMin), "15:58", "가장 늦은 체크 시각");
-  eq(st.late, false, "구간(~16:40) 안이면 제시간");
+  eq(st.total, 4);
+  eq(st.complete, false, "4개 중 2개면 미완료");
+  eq(U.toHHMM(st.atMin), "20:38", "가장 늦은 체크 시각");
+  eq(st.late, false, "구간(~21:00) 안이면 제시간");
 });
 t("구간 종료 후 체크하면 late", () => {
   S.reset();
@@ -688,7 +688,7 @@ t("예전 study 플래그를 대분류로 올린다", () => {
 t("seed 가 최신이면 지운 기본 카테고리를 되살리지 않는다", () => {
   const d = S.defaults();
   const once = S.migrate(Object.assign(d, {
-    settings: { seed: 5 },
+    settings: { seed: 6 },
     categories: [{ id: "study", name: "주식공부", color: "#fff", group: "invest" }],
   }));
   eq(once.categories.length, 1, "되살아나지 않음");
@@ -703,7 +703,7 @@ t("seed 필드가 아예 없던 저장본도 정정된다", () => {
   none.categories.forEach((c) => (byN[c.id] = c.group));
   eq(byN.read, "invest", "독서 정정");
   eq(byN.read2, "growth", "일반독서 추가");
-  eq(none.settings.seed, 5);
+  eq(none.settings.seed, 6);
 });
 t("seed 1 → 2 업그레이드: 일반독서 추가 + 독서 대분류 정정", () => {
   const d = S.defaults();
@@ -718,7 +718,7 @@ t("seed 1 → 2 업그레이드: 일반독서 추가 + 독서 대분류 정정",
   old.categories.forEach((c) => (by[c.id] = c.group));
   eq(by.read, "invest", "독서는 투자공부로 정정");
   eq(by.read2, "growth", "일반독서가 추가됨");
-  eq(old.settings.seed, 5, "seed 가 올라간다");
+  eq(old.settings.seed, 6, "seed 가 올라간다");
 });
 t("seed 보강은 두 번 돌지 않는다", () => {
   const d = S.defaults();
@@ -790,7 +790,7 @@ t("예전 기본 시간표를 그대로 쓰던 seed 3 저장본은 새 기본으
   }));
   eq(up.settings.routine.phases.length, 10);
   ok(up.settings.routine.phases.some((p) => p.id === "mid"), "장중 리포트·공시가 들어온다");
-  eq(up.settings.seed, 5);
+  eq(up.settings.seed, 6);
 });
 t("직접 고친 시간표는 교체하지 않는다", () => {
   const mine = JSON.parse(JSON.stringify(PREV_PHASES));
@@ -809,9 +809,9 @@ t("요일 토글만 건드려도 '고친 것'으로 본다", () => {
   }));
   eq(up.settings.routine.phases.length, 8);
 });
-t("seed 5 저장본은 다시 교체하지 않는다", () => {
+t("seed 6 저장본은 다시 교체하지 않는다", () => {
   const up = S.migrate(Object.assign(S.defaults(), {
-    settings: { seed: 5, routine: { enabled: true, phases: JSON.parse(JSON.stringify(PREV_PHASES)) } },
+    settings: { seed: 6, routine: { enabled: true, phases: JSON.parse(JSON.stringify(PREV_PHASES)) } },
   }));
   eq(up.settings.routine.phases.length, 8);
 });
@@ -820,11 +820,10 @@ t("11-18 오전판 기본을 그대로 쓰던 seed 4 저장본도 새 기본으�
   const up = S.migrate(Object.assign(S.defaults(), {
     settings: { seed: 4, routine: { enabled: true, phases: JSON.parse(JSON.stringify(PREV_1118)) } },
   }));
-  eq(up.settings.seed, 5);
+  eq(up.settings.seed, 6);
   const obs = up.settings.routine.phases.find((p) => p.id === "obs");
-  eq(obs.items.length, 6, "관찰만 구간에 리포트·다시보기 항목이 들어온다");
-  const pre2 = up.settings.routine.phases.find((p) => p.id === "pre2");
-  eq(pre2.items.length, 3, "리포트 구간에서 다시보기 항목은 빠진다");
+  eq(obs.items.filter((i) => i.pri === 1).length, 2, "관찰만: 꼭 해야 하는 일 2개(지수·보유종목)");
+  eq(obs.items.filter((i) => i.pri === 2).length, 2, "관찰만: 2순위 2개(리포트·다시보기)");
 });
 t("11-18 판을 직접 고친 seed 4 저장본은 교체하지 않는다", () => {
   const mine = JSON.parse(JSON.stringify(PREV_1118));
@@ -834,6 +833,30 @@ t("11-18 판을 직접 고친 seed 4 저장본은 교체하지 않는다", () =>
   }));
   eq(up.settings.routine.phases[2].note, "내 메모");
   eq(up.settings.routine.phases.find((p) => p.id === "obs").items.length, 4);
+});
+const PREV_1119 = JSON.parse(fs.readFileSync(path.join(__dirname, "fixtures", "phases-2026-11-19.json"), "utf8"));
+t("11-18 문구 개정판을 그대로 쓰던 seed 5 저장본도 새 기본으로 교체된다", () => {
+  const up = S.migrate(Object.assign(S.defaults(), {
+    settings: { seed: 5, routine: { enabled: true, phases: JSON.parse(JSON.stringify(PREV_1119)) } },
+  }));
+  eq(up.settings.seed, 6);
+  ok(up.settings.routine.phases.some((p) => (p.items || []).some((i) => i.pri === 1)), "꼭 항목이 들어온다");
+});
+t("항목 중요도(pri): 1·2 만 보존, 그 외는 키 자체가 없다", () => {
+  const up = S.migrate(Object.assign(S.defaults(), {
+    settings: { seed: 6, routine: { enabled: true, phases: [
+      { id: "x", name: "x", start: "10:00", end: "11:00", mode: "learn", catId: "study",
+        items: [{ text: "a", min: 0, pri: 1 }, { text: "b", min: 0, pri: 2 }, { text: "c", min: 0, pri: 9 }, { text: "d", min: 0 }] },
+    ] } },
+  }));
+  const it = up.settings.routine.phases[0].items;
+  eq(it[0].pri, 1); eq(it[1].pri, 2);
+  ok(!("pri" in it[2]) && !("pri" in it[3]), "잘못된 값·없는 값은 pri 키가 없다");
+});
+t("새 기본 시간표: 꼭(1) 항목이 있는 구간은 장전·관찰·마감·저녁·자기전", () => {
+  S.reset();
+  const must = S.phases().filter((p) => p.items.some((i) => i.pri === 1)).map((p) => p.id);
+  eq(must, ["pre1", "pre2", "obs", "rec", "evening2", "learn"]);
 });
 t("새 기본 시간표: 배분이 구간 길이를 넘지 않고, 장중 구간은 타이머가 없다", () => {
   S.reset();

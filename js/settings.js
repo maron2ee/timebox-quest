@@ -207,6 +207,16 @@
       const r = U.el("div", "row");
       r.style.cssText = "gap:6px;margin-bottom:5px";
 
+      // 중요도: 없음 → 꼭 → 2순위 순환
+      const pri = U.el("button", "pri-btn pri" + (it.pri || 0), it.pri === 1 ? "꼭" : it.pri === 2 ? "2순위" : "—");
+      pri.title = "중요도 (눌러서 바꿈): 표시 없음 → 꼭 해야 하는 일 → 2순위";
+      pri.onclick = () => {
+        const next = ((it.pri || 0) + 1) % 3;
+        if (next) it.pri = next; else delete it.pri;
+        S().save(); renderPhases(); App.day.refresh();
+      };
+      r.appendChild(pri);
+
       const text = U.el("input", "inp");
       text.value = it.text;
       text.style.flex = "1";
