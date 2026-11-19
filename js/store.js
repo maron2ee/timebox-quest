@@ -9,7 +9,7 @@
 
   const KEY = "tbxPlanner.v1";
   const SCHEMA = 1;
-  const SEED = 6;   // 기본 카테고리·할일그룹·루틴 보강 버전 (올리면 누락분을 1회 추가)
+  const SEED = 7;   // 기본 카테고리·할일그룹·루틴 보강 버전 (올리면 누락분을 1회 추가)
 
   /* ---------- 카테고리 대분류 ----------
      productive:true = '생산 시간'에 합산 */
@@ -57,30 +57,22 @@
      유튜브 라이브 편성(하나TV 7:30, 머니쇼 8:00, 오늘 경제 안녕하십니까 3:50 PM 등)은
      구간 배치를 맞추는 참고로만 썼고 시간표에는 넣지 않았다(사용자 요청). */
   const PHASES = [
-    { id: "pre1", name: "뉴스·미국장", start: "07:30", end: "08:00", mode: "input", catId: "market",
-      note: "국내장·미국장은 Investing.com(매크로)에서 확인합니다.",
+    { id: "pre", name: "장 시작 전", start: "07:30", end: "09:00", mode: "input", catId: "market",
+      note: "국내장·미국장은 Investing.com(매크로)에서 확인합니다. 09:00에 가설과 계획을 잠급니다.",
       items: [
         { text: "미국 증시 확인 — 간밤 증시·미국 뉴스(시장 분위기), 미국채 10년물 금리, WTI·금·원달러환율 → 시트 AM 숫자, 미국 주도섹터, 오늘 일정", min: 30, pri: 1 },
+        { text: "AM 노트 작성 — 호호주주 헤드라인 + 모닝 레터·모닝 코멘트 → 3줄 노트(환경 예상·예상 섹터·아침 가설), 오늘 매매 계획 확정(진입가·손절가·수량)", min: 30, pri: 1 },
+        { text: "증권사 신규 발행 리포트 확인 — 텔레그램·네이버 리서치", min: 20, pri: 2 },
+        { text: "유튜브 경제뉴스 — 모닝루틴·머니쇼·손경제 (라이브)", min: 10, pri: 2 },
       ] },
-    { id: "pre2", name: "리포트·관심종목", start: "08:00", end: "08:30", mode: "input", catId: "research",
-      items: [
-        { text: "AM 노트 작성 — 호호주주 주요 뉴스 헤드라인 + 모닝 레터·모닝 코멘트 → 3줄 노트 (환경 예상·예상 섹터·아침 가설)", min: 15, pri: 1 },
-        { text: "증권사 신규 발행 리포트 확인 — 텔레그램·네이버 리서치", min: 15, pri: 2 },
-        { text: "유튜브 경제뉴스 — 모닝루틴·머니쇼·손경제 (라이브)", min: 0, pri: 2 },
-      ] },
-    { id: "pre3", name: "매매 계획 확정", start: "08:30", end: "09:00", mode: "plan", catId: "research",
-      note: "09:00에 가설을 잠급니다. 이후엔 고치지 않아요.",
-      items: [
-        { text: "가설 확정·무효화 조건·매매 계획(진입가·손절가·수량) → 시트 기록", min: 30 },
-      ] },
-    { id: "obs", name: "관찰만", start: "09:00", end: "09:30", mode: "observe", catId: "market", readonly: true,
+    { id: "obs", name: "장 시작 후 오전", start: "09:00", end: "12:00", mode: "observe", catId: "market", readonly: true,
       items: [
         { text: "주요 지수 확인 (코스피·코스닥 방향)", min: 0, pri: 1 },
         { text: "보유 종목 뉴스·공시·시세 확인 — 증권플러스·토스·증권앱 MTS", min: 0, pri: 1 },
         { text: "증권사 신규 발행 리포트 확인 — 하나TV 리서치 모닝 브리프, 텔레그램", min: 0, pri: 2 },
         { text: "유튜브 경제뉴스 다시보기 (놓친 것만)", min: 0, pri: 2 },
       ] },
-    { id: "mid", name: "장중 리포트·공시", start: "13:00", end: "14:50", mode: "manage", catId: "research", readonly: true,
+    { id: "mid", name: "장 중 오후", start: "13:00", end: "14:50", mode: "manage", catId: "research", readonly: true,
       note: "장중엔 읽기만 — 정리는 마감 후 기록 구간에서 합니다.",
       items: [
         { text: "기업·산업 리포트 분석, 실적·컨센서스 확인 — 네이버증권(리서치·뉴스), 텔레그램 스크리너", min: 0 },
@@ -94,27 +86,21 @@
         { text: "③ 종가위치 95% 이상", min: 0 },
         { text: "④ 1회 비중 5% 이하", min: 0 },
       ] },
-    { id: "rec", name: "기록·마감 분석", start: "15:40", end: "16:40", mode: "record", catId: "research",
+    { id: "rec", name: "장 마감 후", start: "15:30", end: "16:30", mode: "record", catId: "research",
       note: "순서: 사실 기록 → 내 판정 → 남의 해석. 텔레그램·마감 리포트는 판정을 쓴 뒤에 — 다른 점은 가설 DB 후보로만.",
       items: [
         { text: "국내 증시 마감 분석 — 투자자별 매매동향, 개별종목 수급, 섹터 특이사항, 경제 매크로, 보유·관심종목 가격(투심) → 시트 PM", min: 30, pri: 1 },
         { text: "PM 노트 작성 — 아침 가설 판정(환경 실제·핵심 결론) + 호호주주 장마감 코멘트·브리핑 → 데일리 노트 + 뉴스 칸 → 노션", min: 30, pri: 1 },
       ] },
-    { id: "evening1", name: "종배 후보 관찰", start: "19:00", end: "20:00", mode: "watch", catId: "research",
-      items: [
-        { text: "종배 후보 관찰 — 8501 대시보드 한 곳에만", min: 40 },
-        { text: "내일 관찰 가격대 → 데일리 노트 4번 블록", min: 10 },
-        { text: "텔레그램 새 실적·뉴스 → 가설로 키울 만하면 가설 DB, 아니면 뉴스 칸 한 줄", min: 10 },
-      ] },
-    { id: "evening2", name: "저녁 스터디", start: "20:00", end: "21:00", mode: "learn", catId: "study",
+    { id: "evening", name: "저녁 스터디", start: "19:00", end: "21:00", mode: "learn", catId: "study",
       note: "주간 목표 — 기업분석 2종목(보유 1·신규 1), 산업분석 1섹터. 이번 주 몫을 하나씩 채워가세요.",
       items: [
-        { text: "매매일지 작성 — 당일 매매 복기, 투자 시나리오 점검", min: 20, pri: 1 },
-        { text: "기업 분석 — 텔레그램 분석, 실적·컨센서스 확인", min: 25, pri: 1 },
-        { text: "산업 리포트 스터디 — 증권사 산업 리포트", min: 15, pri: 2 },
-        { text: "유튜브 투자 공부 (라이브 다시보기)", min: 0, pri: 2 },
+        { text: "매매일지 작성 — 당일 매매 복기, 투자 시나리오 점검", min: 30, pri: 1 },
+        { text: "기업 분석 — 텔레그램 분석, 실적·컨센서스 확인", min: 40, pri: 1 },
+        { text: "산업 리포트 스터디 — 증권사 산업 리포트", min: 30, pri: 2 },
+        { text: "유튜브 투자 공부 (라이브 다시보기)", min: 20, pri: 2 },
       ] },
-    { id: "learn", name: "자기 전 경제 공부", start: "21:00", end: "23:00", mode: "learn", catId: "read",
+    { id: "learn", name: "자기 전", start: "21:00", end: "23:00", mode: "learn", catId: "read",
       items: [
         { text: "경제 공부 — 영상(유튜브·넷플릭스 경제·다큐프라임·EBS 다큐), 책, 블로그(피우스의 책도둑·와이민·메르)", min: 120, pri: 1 },
       ] },
@@ -219,8 +205,8 @@
   }
 
   // 예전 기본 시간표들의 지문 — '안 고쳤는지' 판별용 (tests/fixtures/phases-*.json 과 1:1)
-  //   2026-10-29판(seed 3 이하) / 2026-11-18 오전판(seed 4) / 2026-11-18 문구 개정판(seed 5)
-  const PREV_PHASES_FPS = [-1857876564, -1233477988, -1524420667];
+  //   2026-10-29판(seed 3 이하) / 2026-11-18 오전판(seed 4) / 2026-11-18 문구 개정판(seed 5) / 2026-11-19 꼭·2순위판(seed 6)
+  const PREV_PHASES_FPS = [-1857876564, -1233477988, -1524420667, 568441898];
   function phasesFingerprint(list) {
     const j = JSON.stringify(list);
     let h = 5381;
@@ -316,9 +302,9 @@
         const r2 = s.categories.find((c) => c.id === "read2");
         if (r2 && r2.name === "일반독서") r2.name = "독서";
       }
-      // seed 4~6: 루틴 개정(2026-11-18). 예전 기본 시간표를 한 글자도 안 고치고 쓰던 저장본만 새 기본으로 바꾼다.
+      // seed 4~7: 루틴 개정(2026-11-18). 예전 기본 시간표를 한 글자도 안 고치고 쓰던 저장본만 새 기본으로 바꾼다.
       // 하나라도 직접 고쳤다면(요일 토글 포함) 건드리지 않는다 — 설정의 '기본 시간표로 되돌리기'로 직접 받는다.
-      if (rawSeed < 6 && PREV_PHASES_FPS.includes(phasesFingerprint(s.settings.routine.phases))) {
+      if (rawSeed < 7 && PREV_PHASES_FPS.includes(phasesFingerprint(s.settings.routine.phases))) {
         s.settings.routine.phases = d.settings.routine.phases;
       }
       s.settings.seed = SEED;
@@ -577,9 +563,13 @@
     const p = phasesOn(ds).find((x) => x.id === phaseId) || phaseById(phaseId);
     if (!p) return null;
     const checks = peekDay(ds).checks || {};
-    const total = (p.items || []).length;
-    let done = 0, last = 0;
-    for (let i = 0; i < total; i++) {
+    const items = p.items || [];
+    // '확정'은 꼭 해야 하는 일(pri 1)을 기준으로 본다 — 꼭 항목이 없는 구간은 전체 항목
+    const hasMust = items.some((it) => it.pri === 1);
+    let total = 0, done = 0, last = 0;
+    for (let i = 0; i < items.length; i++) {
+      if (hasMust && items[i].pri !== 1) continue;
+      total++;
       const v = checks[p.id + ":" + i];
       if (!v) continue;
       done++;

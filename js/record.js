@@ -10,8 +10,8 @@
   const U = App.util;
   const S = () => App.store;
 
-  // 가설·매매계획을 확정하는 구간 (기본 pre3 = 08:30~09:00, 09:00에 잠김)
-  const STAMP_PHASE = "pre3";
+  // 가설·매매계획을 확정하는 구간 (기본 pre = 장 시작 전 07:30~09:00, 09:00에 잠김 — 꼭 항목을 다 하면 확정)
+  const STAMP_PHASE = "pre";
 
   function isUrl(v) { return /^https?:\/\//i.test((v || "").trim()); }
 

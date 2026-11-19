@@ -219,59 +219,60 @@ t("toneFor 는 비거래일에 null", () => {
 
 
 /* ---------- 루틴 구간 (2026-11-18 개정: 장중 리포트·공시·저녁 스터디 추가) ---------- */
-t("기본 구간은 10개, 시간순", () => {
+t("기본 구간은 7개, 시간순", () => {
   S.reset();
   const ps = S.phases();
-  eq(ps.length, 10);
+  eq(ps.map((p) => p.id), ["pre", "obs", "mid", "close", "rec", "evening", "learn"]);
   for (let i = 1; i < ps.length; i++) ok(ps[i].startMin >= ps[i - 1].endMin, "구간이 겹치지 않음");
 });
 t("phaseAt 이 맞는 구간을 찾는다", () => {
-  eq(S.phaseAt(U.toMin("07:40")).id, "pre1");
-  eq(S.phaseAt(U.toMin("08:10")).id, "pre2");
-  eq(S.phaseAt(U.toMin("08:45")).id, "pre3");
-  eq(S.phaseAt(U.toMin("09:15")).id, "obs");
-  eq(S.phaseAt(U.toMin("10:00")), null, "09:30~13:00 는 의도적으로 빈 시간");
-  eq(S.phaseAt(U.toMin("12:00")), null);
-  eq(S.phaseAt(U.toMin("13:30")).id, "mid", "장중 리포트·공시");
+  eq(S.phaseAt(U.toMin("07:40")).id, "pre", "장 시작 전");
+  eq(S.phaseAt(U.toMin("08:45")).id, "pre", "장 시작 전은 09:00 까지");
+  eq(S.phaseAt(U.toMin("09:15")).id, "obs", "장 시작 후 오전");
+  eq(S.phaseAt(U.toMin("11:59")).id, "obs");
+  eq(S.phaseAt(U.toMin("12:30")), null, "12:00~13:00 는 의도적으로 빈 시간");
+  eq(S.phaseAt(U.toMin("13:30")).id, "mid", "장 중 오후");
   eq(S.phaseAt(U.toMin("15:00")).id, "close");
+  eq(S.phaseAt(U.toMin("15:30")).id, "rec", "장 마감 후는 15:30 부터");
   eq(S.phaseAt(U.toMin("16:00")).id, "rec");
-  eq(S.phaseAt(U.toMin("19:30")).id, "evening1");
-  eq(S.phaseAt(U.toMin("20:30")).id, "evening2", "저녁 스터디");
+  eq(S.phaseAt(U.toMin("17:30")), null, "16:30~19:00 는 빈 시간");
+  eq(S.phaseAt(U.toMin("19:30")).id, "evening", "저녁 스터디 19~21");
+  eq(S.phaseAt(U.toMin("20:30")).id, "evening");
   eq(S.phaseAt(U.toMin("21:30")).id, "learn");
   eq(S.phaseAt(U.toMin("22:59")).id, "learn", "자기 전은 23:00 까지");
   eq(S.phaseAt(U.toMin("03:00")), null, "구간 밖은 null");
-  eq(S.phaseAt(U.toMin("17:30")), null, "16:40~19:00 는 빈 시간");
 });
-t("가설 잠금은 09:00 — pre3 가 거기서 끝나고 obs 가 이어받는다", () => {
-  const pre3 = S.phaseById("pre3"), obs = S.phaseById("obs");
-  eq(pre3.end, "09:00");
+t("가설 잠금은 09:00 — 장 시작 전(pre)이 거기서 끝나고 obs 가 이어받는다", () => {
+  const pre = S.phaseById("pre"), obs = S.phaseById("obs");
+  eq(pre.start, "07:30");
+  eq(pre.end, "09:00");
   eq(obs.start, "09:00");
-  eq(pre3.note, "09:00에 가설을 잠급니다. 이후엔 고치지 않아요.");
+  ok(pre.note.includes("09:00에 가설과 계획을 잠급니다"));
 });
 t("장중 구간은 읽기 전용", () => {
   ["obs", "mid", "close"].forEach((id) => ok(S.phaseById(id).readonly, id));
-  ["pre1", "pre2", "pre3", "rec", "evening1", "evening2", "learn"].forEach((id) => ok(!S.phaseById(id).readonly, id));
+  ["pre", "rec", "evening", "learn"].forEach((id) => ok(!S.phaseById(id).readonly, id));
 });
 t("phaseProgress 체크 집계", () => {
   S.reset();
   const d = S.getDay("2026-07-17");
-  d.checks["evening2:0"] = Date.now();
-  d.checks["evening2:2"] = Date.now();
-  const pr = S.phaseProgress("2026-07-17", S.phaseById("evening2"));
+  d.checks["evening:0"] = Date.now();
+  d.checks["evening:2"] = Date.now();
+  const pr = S.phaseProgress("2026-07-17", S.phaseById("evening"));
   eq(pr, { done: 2, total: 4 });
 });
 t("phaseMust·phaseMissed: 꼭(pri 1) 항목 기준으로 누락을 판정한다", () => {
   S.reset();
   const ds = "2026-07-18";
-  const p = S.phaseById("evening2");               // 꼭 2개(0·1) + 2순위 2개
+  const p = S.phaseById("evening");               // 꼭 2개(0·1) + 2순위 2개
   eq(S.phaseMust(ds, p), { done: 0, total: 2 });
   ok(S.phaseMissed(ds, p), "아무것도 안 했으면 누락");
   const d = S.getDay(ds);
-  d.checks["evening2:2"] = Date.now();             // 2순위만 함
+  d.checks["evening:2"] = Date.now();             // 2순위만 함
   ok(S.phaseMissed(ds, p), "2순위만 해도 꼭을 안 했으면 누락");
-  d.checks["evening2:0"] = Date.now();
+  d.checks["evening:0"] = Date.now();
   ok(S.phaseMissed(ds, p), "꼭 2개 중 1개만 해도 누락");
-  d.checks["evening2:1"] = Date.now();
+  d.checks["evening:1"] = Date.now();
   ok(!S.phaseMissed(ds, p), "꼭을 다 하면 누락 아님");
   eq(S.phaseMust(ds, p), { done: 2, total: 2 });
   ok(!S.phaseMissed(ds, S.phaseById("obs")), "읽기 전용 구간은 누락 없음");
@@ -322,9 +323,9 @@ t("applyToTimeline 은 그 날짜에 적용되는 구간만 칠한다", () => {
   p.days = [5];
   App.routine.applyToTimeline("2026-10-29");   // 목요일
   const blocks = S.blocksOf("2026-10-29", "plan");
-  ok(!blocks.some((b) => b.t === "기록·마감 분석"), "목요일엔 금요일 전용 구간이 안 칠해진다");
+  ok(!blocks.some((b) => b.t === "장 마감 후"), "목요일엔 금요일 전용 구간이 안 칠해진다");
   App.routine.applyToTimeline("2026-10-30");   // 금요일
-  ok(S.blocksOf("2026-10-30", "plan").some((b) => b.t === "기록·마감 분석"), "금요일엔 칠해진다");
+  ok(S.blocksOf("2026-10-30", "plan").some((b) => b.t === "장 마감 후"), "금요일엔 칠해진다");
 });
 
 /* ---------- 고정 시간표 세트 (routine.schedules — 월/분기별) ---------- */
@@ -350,10 +351,10 @@ t("phaseAt 도 세트 기간 안에서는 세트의 구간을 찾는다", () => 
   S.reset();
   S.state.settings.routine.schedules.push({
     id: "sch1", name: "11월 시간표", from: "2026-11-01", to: "2026-11-30",
-    phases: [{ id: "only-nov", name: "11월 전용", start: "10:00", end: "11:00", mode: "learn", catId: "study", items: [] }],
+    phases: [{ id: "only-nov", name: "11월 전용", start: "12:10", end: "12:50", mode: "learn", catId: "study", items: [] }],
   });
-  eq(S.phaseAt(U.toMin("10:30"), "2026-11-15").id, "only-nov");
-  eq(S.phaseAt(U.toMin("10:30"), "2026-10-31"), null, "10월엔 그 시각에 아무 구간도 없다(기본 시간표 기준)");
+  eq(S.phaseAt(U.toMin("12:30"), "2026-11-15").id, "only-nov");
+  eq(S.phaseAt(U.toMin("12:30"), "2026-10-31"), null, "10월엔 그 시각에 아무 구간도 없다(기본 시간표 기준)");
 });
 t("세트 안에서도 phase.days(요일 제한)는 그대로 적용된다", () => {
   S.reset();
@@ -380,29 +381,33 @@ t("phaseStamp 는 마지막 체크 시각을 쓴다", () => {
   const ds = "2026-07-17";
   const d = S.getDay(ds);
   const at = (h, m) => new Date(2026, 6, 17, h, m).getTime();
-  // 저녁 스터디(20:00~21:00, 4항목)로 '부분 완료 + 마지막 체크시각' 을 검증
-  d.checks["evening2:0"] = at(20, 5);
-  d.checks["evening2:1"] = at(20, 38);
-  const st = S.phaseStamp(ds, "evening2");
-  eq(st.done, 2);
-  eq(st.total, 4);
-  eq(st.complete, false, "4개 중 2개면 미완료");
-  eq(U.toHHMM(st.atMin), "20:38", "가장 늦은 체크 시각");
-  eq(st.late, false, "구간(~21:00) 안이면 제시간");
+  // 저녁 스터디(19:00~21:00): 꼭 2개 + 2순위 2개 — 도장은 '꼭' 항목만 센다
+  d.checks["evening:0"] = at(20, 5);
+  d.checks["evening:2"] = at(20, 50);               // 2순위 — 확정 시각·개수에 안 들어간다
+  const st = S.phaseStamp(ds, "evening");
+  eq(st.done, 1);
+  eq(st.total, 2, "꼭 항목만 센다");
+  eq(st.complete, false, "꼭 2개 중 1개면 미완료");
+  eq(U.toHHMM(st.atMin), "20:05", "2순위 체크 시각은 무시");
+  d.checks["evening:1"] = at(20, 38);
+  const st2 = S.phaseStamp(ds, "evening");
+  eq(st2.complete, true, "꼭을 다 하면 확정(2순위가 남아 있어도)");
+  eq(U.toHHMM(st2.atMin), "20:38");
+  eq(st2.late, false, "구간(~21:00) 안이면 제시간");
 });
 t("구간 종료 후 체크하면 late", () => {
   S.reset();
   const ds = "2026-07-17";
   const d = S.getDay(ds);
-  // pre3(08:30~09:00) 종료를 넘겨서 체크 — "09:00에 가설을 잠근다"
-  d.checks["pre3:0"] = new Date(2026, 6, 17, 9, 14).getTime();
-  const st = S.phaseStamp(ds, "pre3");
+  // 장 시작 전(07:30~09:00) 종료를 넘겨서 체크 — "09:00에 가설을 잠근다"
+  d.checks["pre:1"] = new Date(2026, 6, 17, 9, 14).getTime();
+  const st = S.phaseStamp(ds, "pre");
   ok(st.late, "09:14 는 09:00 구간을 넘김 — 사후 작성");
   eq(U.toHHMM(st.atMin), "09:14");
 });
 t("체크가 없으면 도장도 없다", () => {
   S.reset();
-  const st = S.phaseStamp("2026-07-17", "pre3");
+  const st = S.phaseStamp("2026-07-17", "pre");
   eq(st.at, null);
   eq(st.late, false);
   eq(st.done, 0);
@@ -412,15 +417,15 @@ t("없는 구간은 null", () => {
 });
 t("phaseStamp 는 그 날짜에 적용된 세트의 구간 시각을 쓴다(기본과 달라도)", () => {
   S.reset();
-  // 11월 세트에서 pre3 를 08:30~08:45 로 줄여뒀다고 가정(기본은 08:30~09:00)
+  // 11월 세트에서 pre 를 07:30~08:45 로 줄여뒀다고 가정(기본은 07:30~09:00)
   S.state.settings.routine.schedules.push({
     id: "novSched", name: "11월", from: "2026-11-01", to: "2026-11-30",
-    phases: [{ id: "pre3", name: "매매 계획 확정(11월)", start: "08:30", end: "08:45", mode: "plan", catId: "research", items: [{ text: "x", min: 0 }] }],
+    phases: [{ id: "pre", name: "장 시작 전(11월)", start: "07:30", end: "08:45", mode: "plan", catId: "research", items: [{ text: "x", min: 0 }] }],
   });
   const ds = "2026-11-10";
   const d = S.getDay(ds);
-  d.checks["pre3:0"] = new Date(2026, 10, 10, 8, 50).getTime();   // 11월 세트 기준으론 08:45 넘김 → late
-  const st = S.phaseStamp(ds, "pre3");
+  d.checks["pre:0"] = new Date(2026, 10, 10, 8, 50).getTime();   // 11월 세트 기준으론 08:45 넘김 → late
+  const st = S.phaseStamp(ds, "pre");
   ok(st.late, "11월 세트의 구간 종료(08:45)를 기준으로 판정해야 한다 — 기본(09:00) 기준이면 안 늦은 걸로 잘못 나온다");
 });
 
@@ -625,9 +630,9 @@ t("장중 구간은 배분 0 (타이머 없음)", () => {
 });
 t("배분이 구간보다 길면 over", () => {
   S.load();
-  const p = S.state.settings.routine.phases.find((x) => x.id === "pre2");
+  const p = S.state.settings.routine.phases.find((x) => x.id === "pre");
   p.items[0].min = 999;
-  const b = S.phaseBudget(S.phaseById("pre2"));
+  const b = S.phaseBudget(S.phaseById("pre"));
   ok(b.over, "초과 감지");
   ok(b.alloc > b.len);
 });
@@ -712,7 +717,7 @@ t("예전 study 플래그를 대분류로 올린다", () => {
 t("seed 가 최신이면 지운 기본 카테고리를 되살리지 않는다", () => {
   const d = S.defaults();
   const once = S.migrate(Object.assign(d, {
-    settings: { seed: 6 },
+    settings: { seed: 7 },
     categories: [{ id: "study", name: "주식공부", color: "#fff", group: "invest" }],
   }));
   eq(once.categories.length, 1, "되살아나지 않음");
@@ -727,7 +732,7 @@ t("seed 필드가 아예 없던 저장본도 정정된다", () => {
   none.categories.forEach((c) => (byN[c.id] = c.group));
   eq(byN.read, "invest", "독서 정정");
   eq(byN.read2, "growth", "일반독서 추가");
-  eq(none.settings.seed, 6);
+  eq(none.settings.seed, 7);
 });
 t("seed 1 → 2 업그레이드: 일반독서 추가 + 독서 대분류 정정", () => {
   const d = S.defaults();
@@ -742,7 +747,7 @@ t("seed 1 → 2 업그레이드: 일반독서 추가 + 독서 대분류 정정",
   old.categories.forEach((c) => (by[c.id] = c.group));
   eq(by.read, "invest", "독서는 투자공부로 정정");
   eq(by.read2, "growth", "일반독서가 추가됨");
-  eq(old.settings.seed, 6, "seed 가 올라간다");
+  eq(old.settings.seed, 7, "seed 가 올라간다");
 });
 t("seed 보강은 두 번 돌지 않는다", () => {
   const d = S.defaults();
@@ -795,15 +800,18 @@ t("직접 고친 이름은 건드리지 않는다", () => {
 t("applyToTimeline 은 10분 격자에 안 맞는 경계도 스냅해서 전부 칠한다", () => {
   S.reset();
   const ds = "2026-07-17";
+  // 08:15 는 10분 격자가 아니라서 08:20 으로 스냅된다 — 어느 한쪽도 사라지거나 겹치지 않아야 한다
+  S.state.settings.routine.phases = [
+    { id: "a", name: "구간A", start: "07:50", end: "08:15", mode: "input", catId: "market", items: [] },
+    { id: "b", name: "구간B", start: "08:15", end: "08:30", mode: "plan", catId: "research", items: [] },
+  ];
   App.routine.applyToTimeline(ds);
   const blocks = S.blocksOf(ds, "plan");
-  eq(blocks.length, S.phases().length, "모든 구간이 빠짐없이 칠해진다");
-  // pre2(07:50~08:15)/pre3(08:15~08:30) 는 08:15 가 10분 격자가 아니라서
-  // 08:20 으로 스냅된다 — 어느 한쪽도 사라지거나 겹치지 않아야 한다
-  const pre2 = blocks.find((b) => b.t === "리포트·관심종목");
-  const pre3 = blocks.find((b) => b.t === "매매 계획 확정");
-  ok(pre2 && pre3, "두 구간 모두 칠해짐");
-  eq(pre2.endMin, pre3.startMin, "맞닿은 경계가 같은 값으로 스냅되어 틈/겹침이 없다");
+  eq(blocks.length, 2, "모든 구간이 빠짐없이 칠해진다");
+  const a = blocks.find((x) => x.t === "구간A");
+  const b = blocks.find((x) => x.t === "구간B");
+  ok(a && b, "두 구간 모두 칠해짐");
+  eq(a.endMin, b.startMin, "맞닿은 경계가 같은 값으로 스냅되어 틈/겹침이 없다");
 });
 
 /* ---------- 루틴 개정(seed 4) — 안 고친 예전 기본만 새 기본으로 ---------- */
@@ -812,9 +820,9 @@ t("예전 기본 시간표를 그대로 쓰던 seed 3 저장본은 새 기본으
   const up = S.migrate(Object.assign(S.defaults(), {
     settings: { seed: 3, routine: { enabled: true, phases: JSON.parse(JSON.stringify(PREV_PHASES)) } },
   }));
-  eq(up.settings.routine.phases.length, 10);
-  ok(up.settings.routine.phases.some((p) => p.id === "mid"), "장중 리포트·공시가 들어온다");
-  eq(up.settings.seed, 6);
+  eq(up.settings.routine.phases.length, 7);
+  ok(up.settings.routine.phases.some((p) => p.id === "pre"), "장 시작 전 구간이 들어온다");
+  eq(up.settings.seed, 7);
 });
 t("직접 고친 시간표는 교체하지 않는다", () => {
   const mine = JSON.parse(JSON.stringify(PREV_PHASES));
@@ -833,9 +841,9 @@ t("요일 토글만 건드려도 '고친 것'으로 본다", () => {
   }));
   eq(up.settings.routine.phases.length, 8);
 });
-t("seed 6 저장본은 다시 교체하지 않는다", () => {
+t("seed 7 저장본은 다시 교체하지 않는다", () => {
   const up = S.migrate(Object.assign(S.defaults(), {
-    settings: { seed: 6, routine: { enabled: true, phases: JSON.parse(JSON.stringify(PREV_PHASES)) } },
+    settings: { seed: 7, routine: { enabled: true, phases: JSON.parse(JSON.stringify(PREV_PHASES)) } },
   }));
   eq(up.settings.routine.phases.length, 8);
 });
@@ -844,7 +852,7 @@ t("11-18 오전판 기본을 그대로 쓰던 seed 4 저장본도 새 기본으�
   const up = S.migrate(Object.assign(S.defaults(), {
     settings: { seed: 4, routine: { enabled: true, phases: JSON.parse(JSON.stringify(PREV_1118)) } },
   }));
-  eq(up.settings.seed, 6);
+  eq(up.settings.seed, 7);
   const obs = up.settings.routine.phases.find((p) => p.id === "obs");
   eq(obs.items.filter((i) => i.pri === 1).length, 2, "관찰만: 꼭 해야 하는 일 2개(지수·보유종목)");
   eq(obs.items.filter((i) => i.pri === 2).length, 2, "관찰만: 2순위 2개(리포트·다시보기)");
@@ -863,8 +871,16 @@ t("11-18 문구 개정판을 그대로 쓰던 seed 5 저장본도 새 기본으�
   const up = S.migrate(Object.assign(S.defaults(), {
     settings: { seed: 5, routine: { enabled: true, phases: JSON.parse(JSON.stringify(PREV_1119)) } },
   }));
-  eq(up.settings.seed, 6);
+  eq(up.settings.seed, 7);
   ok(up.settings.routine.phases.some((p) => (p.items || []).some((i) => i.pri === 1)), "꼭 항목이 들어온다");
+});
+const PREV_1119B = JSON.parse(fs.readFileSync(path.join(__dirname, "fixtures", "phases-2026-11-19b.json"), "utf8"));
+t("꼭·2순위판(seed 6) 기본을 그대로 쓰던 저장본도 새 7구간으로 교체된다", () => {
+  const up = S.migrate(Object.assign(S.defaults(), {
+    settings: { seed: 6, routine: { enabled: true, phases: JSON.parse(JSON.stringify(PREV_1119B)) } },
+  }));
+  eq(up.settings.seed, 7);
+  eq(up.settings.routine.phases.map((p) => p.id), ["pre", "obs", "mid", "close", "rec", "evening", "learn"]);
 });
 t("항목 중요도(pri): 1·2 만 보존, 그 외는 키 자체가 없다", () => {
   const up = S.migrate(Object.assign(S.defaults(), {
@@ -880,7 +896,7 @@ t("항목 중요도(pri): 1·2 만 보존, 그 외는 키 자체가 없다", () 
 t("새 기본 시간표: 꼭(1) 항목이 있는 구간은 장전·관찰·마감·저녁·자기전", () => {
   S.reset();
   const must = S.phases().filter((p) => p.items.some((i) => i.pri === 1)).map((p) => p.id);
-  eq(must, ["pre1", "pre2", "obs", "rec", "evening2", "learn"]);
+  eq(must, ["pre", "obs", "rec", "evening", "learn"]);
 });
 t("새 기본 시간표: 배분이 구간 길이를 넘지 않고, 장중 구간은 타이머가 없다", () => {
   S.reset();
@@ -890,10 +906,10 @@ t("새 기본 시간표: 배분이 구간 길이를 넘지 않고, 장중 구간
     if (p.readonly) eq(b.alloc, 0, `${p.id} 는 읽기 전용이라 배분 0`);
   });
 });
-t("새 기본 시간표를 타임라인에 깔면 10구간이 전부 칠해진다", () => {
+t("새 기본 시간표를 타임라인에 깔면 7구간이 전부 칠해진다", () => {
   S.reset();
   App.routine.applyToTimeline("2026-11-18");
-  eq(S.blocksOf("2026-11-18", "plan").length, 10);
+  eq(S.blocksOf("2026-11-18", "plan").length, 7);
 });
 
 /* ---------- 동기화 병합 (mergeStates) ---------- */
